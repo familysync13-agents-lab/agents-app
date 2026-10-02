@@ -1,5 +1,5 @@
-# Agents App V0 control plane (web + control loop). Base pinned by index digest (the Foundation v1 node image, Node 24 LTS).
-FROM node@sha256:7da5980a342ed134ad56bb16c918f94548cd15cf3b961aa231c286598accb536 AS deps
+# Agents App V0 control plane (web + control loop). Base pinned by multi-platform index digest (the same node image the gate pins in gate/images.json).
+FROM node@sha256:8ec5d7557396cfe32d21c3f9c13072355ceab22b584578ca4bb28af31120cffe AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
@@ -16,7 +16,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1 APP_BUILD_ID=${APP_BUILD_ID} NEXT_PUBLIC_BUILD_ID=${APP_BUILD_ID}
 RUN npm run typecheck && npm run build && npm prune --omit=dev --no-audit --no-fund
 
-FROM node@sha256:7da5980a342ed134ad56bb16c918f94548cd15cf3b961aa231c286598accb536
+FROM node@sha256:8ec5d7557396cfe32d21c3f9c13072355ceab22b584578ca4bb28af31120cffe
 ARG APP_BUILD_ID=dev
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOME=/tmp PORT=3000 APP_BUILD_ID=${APP_BUILD_ID}
