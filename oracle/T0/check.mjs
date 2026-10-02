@@ -97,6 +97,26 @@ async function linkOf(item) {
   assert.match(url.pathname, /^\/tasks\/[^/]+$/, 'Task link route');
   return { link: links, url };
 }
+async function decisionHeading(detail) {
+  // The label may also occur outside the decision block. Resolve every label
+  // to its nearest h2-bearing ancestor, then discard enclosing page/section
+  // candidates when a more specific labeled block is present.
+  const labels = detail.getByText('Your decision', { exact: true });
+  await labels.first().waitFor({ state: 'visible' });
+  const blocks = labels.locator('xpath=ancestor::*[.//h2][1]');
+  const indices = await blocks.evaluateAll(elements => elements
+    .map((element, index) => ({ element, index }))
+    .filter(({ element }) => !elements.some(other =>
+      other !== element && element.contains(other)))
+    .map(({ index }) => index));
+  assert(indices.length > 0, 'Your decision block must contain an h2');
+  if (indices.length !== 1) {
+    throw new Error('HARNESS: cannot uniquely identify the Your decision block among separate h2-bearing blocks');
+  }
+  const block = blocks.nth(indices[0]);
+  await block.getByText('Your decision', { exact: true }).waitFor({ state: 'visible' });
+  return block.getByRole('heading', { level: 2 });
+}
 async function taskTitle(link, url) {
   await Promise.all([
     page.waitForURL(current => current.pathname === url.pathname),
@@ -107,10 +127,7 @@ async function taskTitle(link, url) {
   assert.equal(response.status(), 200, 'T2 task page HTTP status');
   assert.equal(new URL(response.url()).pathname, url.pathname, 'Task request must not redirect elsewhere');
   await page.getByText('Demo: reading progress', { exact: true }).first().waitFor({ state: 'visible' });
-  const label = page.getByText('Your decision', { exact: true });
-  await label.waitFor({ state: 'visible' });
-  const block = label.locator('xpath=ancestor::*[.//h2][1]');
-  const heading = block.getByRole('heading', { level: 2, name: LONG, exact: true });
+  const heading = (await decisionHeading(page)).and(page.getByRole('heading', { level: 2, name: LONG, exact: true }));
   await heading.waitFor({ state: 'visible' });
   assert.equal(await heading.innerText(), LONG, 'Full title in Your decision h2');
   assert(!(await heading.innerText()).includes('…'), 'Task title contains an ellipsis');
@@ -175,9 +192,7 @@ const checks = {
         try {
           const response = await detail.goto(url.href, { waitUntil: 'domcontentloaded' });
           assert.equal(response?.status(), 200, 'Decision task HTTP status');
-          const label = detail.getByText('Your decision', { exact: true });
-          await label.waitFor({ state: 'visible' });
-          const heading = label.locator('xpath=ancestor::*[.//h2][1]').getByRole('heading', { level: 2 });
+          const heading = await decisionHeading(detail);
           await heading.waitFor({ state: 'visible' });
           full = await heading.innerText();
         } finally { await detail.close(); }
