@@ -7,7 +7,7 @@
   "by": "FamilySYNC13",
   "contract_sha256": "ef49e49787b414e3b856248d41ebfd6d3cf86a13f17333358a13eda03c1a2fe2",
   "at": "2026-10-02",
-  "basis": "owner approval of this amendment PR (contract v2, Agents App task 4); owner review on GitHub is the authoritative approval"
+  "basis": "owner approval of this amendment PR (contract v3, Agents App task 4); owner review on GitHub is the authoritative approval"
  },
  "checks": {
   "AC1": "oracle:oracle/T0/check.mjs",
@@ -37,6 +37,16 @@
    "files": {
     "tasks/T0/contract.json": "ef49e49787b414e3b856248d41ebfd6d3cf86a13f17333358a13eda03c1a2fe2",
     "oracle/T0/check.mjs": "e860e418bd3503c54350d4d69edd95e7936b88165dfeea010c5000590c53c3f0"
+   }
+  },
+  {
+   "id": "A3",
+   "at": "2026-10-02T16:00:26Z",
+   "kind": "oracle-repair",
+   "reason": "Agents App: repaired oracle of record (contract unchanged, sha256 ef49e49787b414e3b856248d41ebfd6d3cf86a13f17333358a13eda03c1a2fe2); the previous check was defective as a check. Calibrated against main; no criterion weakened.",
+   "files": {
+    "tasks/T0/contract.json": "ef49e49787b414e3b856248d41ebfd6d3cf86a13f17333358a13eda03c1a2fe2",
+    "oracle/T0/check.mjs": "9fe3ef5879b13f318b40a30fd27cda377a015906c838910ddb1d4d2d059ee7f5"
    }
   }
  ]
