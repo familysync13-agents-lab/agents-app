@@ -5,6 +5,7 @@ import { LiveRefresh } from "@/components/live-refresh";
 import { stepInfo } from "@/components/steps";
 import { Ago, Card, CardHeader, Empty, RoleTag, StateChip, cx, type Role } from "@/components/ui";
 import { failureRouting, flowState, nodeOf, NODE_LABEL, NODES, PARTY } from "@/domain/ops";
+import { shortenTitle } from "@/domain/text";
 import { commandCenter } from "@/server/queries";
 
 export const metadata = { title: "Command" };
@@ -73,7 +74,7 @@ export default async function Command() {
                 <Link href={`/tasks/${t.id}`} className="grid gap-1.5 px-5 py-3 hover:bg-owner/[0.06] sm:flex sm:flex-wrap sm:items-center sm:gap-x-4">
                   <span className="w-fit rounded-md border border-owner/50 bg-owner/15 px-2 py-0.5 text-xs font-semibold text-owner">{DECISION_LABEL[dec.kind] ?? dec.kind}</span>
                   <span className="min-w-0 text-sm font-medium sm:flex-1 sm:truncate" title={dec.title}>
-                    {dec.title}
+                    {shortenTitle(dec.title)}
                   </span>
                   <span className="text-xs text-mute">
                     {p.name} · {t.key ?? "new"} · <Ago at={dec.createdAt} />

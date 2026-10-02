@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BatchApproveForm } from "@/components/forms";
 import { LiveRefresh } from "@/components/live-refresh";
 import { Ago, Card, CardHeader, Empty } from "@/components/ui";
+import { shortenTitle } from "@/domain/text";
 import { openDecisionsList } from "@/server/queries";
 
 export const metadata = { title: "Decisions" };
@@ -62,7 +63,9 @@ export default async function Decisions() {
                     <span className="rounded-md border border-owner/40 bg-owner/10 px-1.5 py-0.5 font-semibold text-owner">{KIND[d.kind] ?? d.kind}</span>
                     {p.name} · {t.key ?? "new"} · <Ago at={d.createdAt} />
                   </div>
-                  <div className="mt-1.5 line-clamp-2 font-medium">{d.title}</div>
+                  <div className="mt-1.5 line-clamp-2 font-medium break-words" title={d.title}>
+                    {shortenTitle(d.title)}
+                  </div>
                   <p className="mt-1 line-clamp-3 text-sm text-ink-2">{d.why}</p>
                 </Link>
               </li>
