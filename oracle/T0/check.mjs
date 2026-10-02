@@ -115,8 +115,7 @@ async function taskTitle(link, url) {
   assert.equal(await heading.innerText(), LONG, 'Full title in Your decision h2');
   assert(!(await heading.innerText()).includes('…'), 'Task title contains an ellipsis');
 }
-async function shortened(path, kind) {
-  const item = await entry(path, 'T2');
+async function assertShortenedEntry(item) {
   const title = await titleOf(item, LONG);
   assert(size(title) <= 100, `T2 displayed title is ${size(title)} code points`);
   assert(title.endsWith('…'), 'T2 displayed title must end with U+2026');
@@ -124,6 +123,11 @@ async function shortened(path, kind) {
   assert(prefix.length > 0 && LONG.startsWith(prefix), 'T2 displayed title must be a nonempty prefix');
   const text = await item.innerText();
   assert(!text.includes(LONG), 'Full long title is visible inside the list item');
+}
+async function shortened(path, kind) {
+  const item = await entry(path, 'T2');
+  await assertShortenedEntry(item);
+  const text = await item.innerText();
   assert(text.includes('Demo Project · T2'), 'Missing Demo Project · T2 metadata');
   await item.getByText(kind, { exact: true }).waitFor({ state: 'visible' });
   const { link, url } = await linkOf(item);
@@ -146,6 +150,9 @@ const checks = {
     const targets = [];
     for (const path of ['/decisions', '/']) {
       const item = await entry(path, 'T2');
+      // AC4 starts from the shortened entry. A full destination heading alone
+      // also exists before the feature and cannot establish this criterion.
+      await assertShortenedEntry(item);
       const { link, url } = await linkOf(item);
       targets.push(url.pathname);
       await taskTitle(link, url);
