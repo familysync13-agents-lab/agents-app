@@ -1,0 +1,100 @@
+{
+ "canary_routes": [
+  "/",
+  "/decisions"
+ ],
+ "criteria": [
+  {
+   "given": "the gate preview with its demo data, the owner signed in via /auth/preview, and the open decision of task T2 whose title is longer than 100 characters",
+   "id": "AC1",
+   "priority": "must",
+   "tags": [],
+   "then": "the decision title shown in that list item (its visible text, as in innerText) is at most 100 characters long, ends with \"…\", and the text before the \"…\" (trailing whitespace removed) is a non-empty prefix of the full title; the full title string does not appear in the visible text of that list item; the list item still shows the kind label \"Decision\" and \"Demo Project · T2\", and its link points to /tasks/{id} of T2",
+   "type": "behavior",
+   "when": "the owner opens /decisions and reads the list item of that decision in the \"Open\" card"
+  },
+  {
+   "given": "the gate preview with its demo data, the owner signed in via /auth/preview, and the open decision of task T2 whose title is longer than 100 characters",
+   "id": "AC2",
+   "priority": "must",
+   "tags": [],
+   "then": "the decision title shown in that list item (its visible text, as in innerText) is at most 100 characters long, ends with \"…\", and the text before the \"…\" (trailing whitespace removed) is a non-empty prefix of the full title; the full title string does not appear in the visible text of that list item; the list item still shows the label \"Decide\" and \"Demo Project · T2\", and its link points to /tasks/{id} of T2",
+   "type": "behavior",
+   "when": "the owner opens / and reads the list item of that decision in the section headed \"Trust boundary - your decision is required\""
+  },
+  {
+   "given": "the gate preview with its demo data, the owner signed in, and the open decision of task T1 titled \"Approve the contract for T1: Demo: export a list as CSV\" (at most 100 characters)",
+   "id": "AC3",
+   "priority": "must",
+   "tags": [],
+   "then": "on both pages the list item of that decision shows the title \"Approve the contract for T1: Demo: export a list as CSV\" exactly and in full, with no \"…\" appended",
+   "type": "behavior",
+   "when": "the owner opens /decisions and then /"
+  },
+  {
+   "given": "the owner signed in on the gate preview and viewing the shortened T2 decision entry on /decisions (and likewise on /)",
+   "id": "AC4",
+   "priority": "must",
+   "tags": [],
+   "then": "the task page /tasks/{id} of T2 loads (HTTP 200) and its \"Your decision\" block shows an h2 whose text is exactly the full, unshortened decision title \"Should reading progress be computed per book from the pages a reader marks as read, or per list from the number of books marked finished, and should it be visible to people who open the list through a share link or only to the owner of the list?\" with no \"…\"",
+   "type": "behavior",
+   "when": "the owner follows that entry's link"
+  },
+  {
+   "conditions": "gate preview with its demo data, owner signed in via /auth/preview; measured on the visible text of the title element of every open-decision list item on both pages",
+   "id": "AC5",
+   "metric": "maximum length, in Unicode code points including the ellipsis, of any decision title as displayed in the \"Open\" list of /decisions and in the \"Trust boundary - your decision is required\" section of /",
+   "priority": "must",
+   "tags": [],
+   "target": "100 characters",
+   "type": "threshold"
+  },
+  {
+   "id": "AC6",
+   "priority": "should",
+   "refs": [
+    "/decisions",
+    "/"
+   ],
+   "statement": "A shortened title breaks at a word boundary where one exists in the allowed length (no cut-off half words before the \"…\"), and hovering the shortened entry shows the full title as a tooltip.",
+   "tags": [],
+   "type": "experience"
+  },
+  {
+   "id": "AC7",
+   "priority": "should",
+   "refs": [
+    "/decisions",
+    "/"
+   ],
+   "statement": "The open-decision lists on /decisions and / keep their existing look (kind labels, project · task key · age line, the explanation text on /decisions) and remain readable on narrow (mobile) and wide screens with the shortened titles.",
+   "tags": [],
+   "type": "experience"
+  }
+ ],
+ "id": "T0",
+ "interface": {
+  "ui": "Sign-in for the gate preview: GET /auth/preview (redirects to / with an owner session). Preview demo data (project \"Demo Project\"): task T1 with an open decision titled \"Approve the contract for T1: Demo: export a list as CSV\" (55 characters, kind label \"Contract review\" on /decisions, \"Review contract\" on /); task T2 \"Demo: reading progress\" with an open decision of kind block (label \"Decision\" on /decisions, \"Decide\" on /) whose title is the long text \"Should reading progress be computed per book from the pages a reader marks as read, or per list from the number of books marked finished, and should it be visible to people who open the list through a share link or only to the owner of the list?\". Decisions page: route /decisions, h1 \"Decisions\", card header \"Open\", one list item per open decision containing a link to /tasks/{id}. Command page: route /, section with h2 \"Trust boundary - your decision is required\", one list item per open decision containing a link to /tasks/{id}. Shortened display: at most 100 characters (Unicode code points) including a final ellipsis character \"…\" (U+2026); the text before the ellipsis, with trailing whitespace removed, is a prefix of the full title. Titles of at most 100 characters are shown exactly as written, without an ellipsis. Task page: route /tasks/{id}, block \"Your decision\" with an h2 containing the full decision title."
+ },
+ "non_goals": [
+  "Changing how workers or the control loop write decision titles, or truncating/modifying the stored decision title in the database.",
+  "Shortening the decision explanation (\"why\") text, task titles, activity messages, or any other text on the Decisions, Command or task pages.",
+  "Changing the batch card \"{n} contracts ready in {project}\" on the Decisions page, the \"Do I need to act?\" summary or the Operations reopen list on the task page.",
+  "Changing the decision kind labels, ordering, filtering, grouping or live refresh of the decision lists.",
+  "Expand/collapse controls or other new interactions for reading the full title inside the lists.",
+  "Any change to authorization, sign-in, decisions' lifecycle or the API under /api/v0."
+ ],
+ "open_questions": [],
+ "scope": {
+  "paths": [
+   "**"
+  ],
+  "summary": "In the two owner screens that list open decisions - the \"Open\" list on the Decisions page (/decisions) and the \"needs you\" strip of the Command page (/, section headed \"Trust boundary - your decision is required\") - a decision title longer than 100 characters is displayed as a shortened text of at most 100 characters (counted in Unicode code points) that ends with the ellipsis character \"…\" and otherwise is a leading part of the full title. Titles of 100 characters or fewer are displayed unchanged. The shortening is in the displayed text itself (not only a visual CSS clip), the entry still links to the decision's task page /tasks/{id}, and the full, unshortened title remains displayed on that task page in the \"Your decision\" heading. The stored decision title is not modified."
+ },
+ "tier": "standard",
+ "title": "Readable long decision titles",
+ "traces_to": [
+  "OWNER-INTENT-T0"
+ ],
+ "version": 1
+}

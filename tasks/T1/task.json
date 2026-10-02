@@ -1,0 +1,33 @@
+{
+ "id": "T1",
+ "status": "CONTRACTED",
+ "tier": "standard",
+ "contract": "tasks/T1/contract.json",
+ "approval": {
+  "by": "FamilySYNC13",
+  "contract_sha256": "384aebca16050862e4b7b77890e1a3fdd63ba0a9b299ccb9bae23460da4ba6df",
+  "at": "2026-10-02",
+  "basis": "owner approval of this amendment PR (contract v1, Agents App task 5); owner review on GitHub is the authoritative approval"
+ },
+ "checks": {
+  "AC1": "oracle:oracle/T1/check.mjs",
+  "AC2": "oracle:oracle/T1/check.mjs",
+  "AC3": "oracle:oracle/T1/check.mjs",
+  "AC4": "oracle:oracle/T1/check.mjs",
+  "AC5": "oracle:oracle/T1/check.mjs"
+ },
+ "probe_params": {},
+ "oracle_timeout_s": 900,
+ "amendments": [
+  {
+   "id": "A1",
+   "at": "2026-10-02T15:24:00Z",
+   "kind": "contract+oracle-of-record",
+   "reason": "Agents App: owner-approved contract v1 and its oracle of record (blind Verifier, authored from the contract before implementation).",
+   "files": {
+    "tasks/T1/contract.json": "384aebca16050862e4b7b77890e1a3fdd63ba0a9b299ccb9bae23460da4ba6df",
+    "oracle/T1/check.mjs": "3b522c856b1222625272e8bdd8a6c1422b2686232b8c4ce3373e6f32e05b97fe"
+   }
+  }
+ ]
+}
