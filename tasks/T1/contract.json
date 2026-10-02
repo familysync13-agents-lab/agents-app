@@ -1,0 +1,90 @@
+{
+ "canary_routes": [
+  "/",
+  "/projects/demo",
+  "/projects/demo/new"
+ ],
+ "criteria": [
+  {
+   "given": "the owner is signed in to the gate preview (GET /auth/preview) and the project \"Demo Project\" (slug \"demo\") exists",
+   "id": "AC1",
+   "priority": "must",
+   "tags": [],
+   "then": "within the panel headed \"Projects\", the list item showing \"Demo Project\" contains a link whose accessible name is or begins with \"New intent\" and whose href is \"/projects/demo/new\"",
+   "type": "behavior",
+   "when": "the owner opens \"/\""
+  },
+  {
+   "given": "the owner is signed in and on \"/\"",
+   "id": "AC2",
+   "priority": "must",
+   "tags": [],
+   "then": "the browser is at \"/projects/demo/new\" with HTTP status 200, showing the h1 heading \"New intent\", a back link \"← Demo Project\", a field labelled \"Title\", a field labelled \"What should be built or changed?\" and a button \"Record intent\"",
+   "type": "behavior",
+   "when": "the owner clicks the \"New intent\" link in the \"Demo Project\" item of the \"Projects\" panel (a single click, no other interaction)"
+  },
+  {
+   "given": "the owner is signed in and on \"/\"",
+   "id": "AC3",
+   "priority": "must",
+   "tags": [],
+   "then": "there is exactly one such \"New intent\" link per project list item, and each one's href is \"/projects/{slug}/new\" for the project of the item it is in",
+   "type": "behavior",
+   "when": "the owner counts the project list items and the links whose accessible name is or begins with \"New intent\" inside the panel headed \"Projects\""
+  },
+  {
+   "given": "the owner is signed in and on \"/\"",
+   "id": "AC4",
+   "priority": "must",
+   "tags": [],
+   "then": "the browser is at \"/projects/demo\" with HTTP status 200, showing the h1 heading \"Demo Project\" (the existing project navigation still works alongside the new shortcut)",
+   "type": "behavior",
+   "when": "the owner activates the link to \"/projects/demo\" in the \"Demo Project\" item of the \"Projects\" panel"
+  },
+  {
+   "given": "the owner is signed in and on \"/\"",
+   "id": "AC5",
+   "priority": "must",
+   "tags": [],
+   "then": "the browser is at \"/projects/demo/new\" showing the h1 heading \"New intent\"",
+   "type": "behavior",
+   "when": "the owner moves keyboard focus with Tab to the \"New intent\" link of \"Demo Project\" and presses Enter"
+  },
+  {
+   "id": "AC6",
+   "priority": "should",
+   "refs": [
+    "https://www.w3.org/TR/WCAG22/#focus-visible",
+    "https://html.spec.whatwg.org/multipage/text-level-semantics.html#the-a-element",
+    "src/app/(app)/page.tsx"
+   ],
+   "statement": "The \"New intent\" link is visibly identifiable as an action within each project row (consistent with the app's existing link/button styling), has a visible focus indicator, is not nested inside another link (no <a> inside <a>), and the Projects panel remains readable without horizontal scrolling at a 375px-wide viewport and on desktop.",
+   "tags": [],
+   "type": "experience"
+  }
+ ],
+ "id": "T1",
+ "interface": {
+  "ui": "Command page: route \"/\" (owner signed in; in the gate preview via GET /auth/preview, which redirects to \"/\"), page title \"Command · Agents\". Panel with heading (h2) \"Projects\" containing one list item per project, each showing the project name (preview: \"Demo Project\", slug \"demo\") and org/repo (preview: \"preview-org/demo-repo\"). NEW: inside each project's list item, a link with visible text \"New intent\" (accessible name \"New intent\", or beginning with \"New intent\", e.g. \"New intent for Demo Project\") whose href is \"/projects/{slug}/new\" (preview: \"/projects/demo/new\"). UNCHANGED: each project item still provides a link to \"/projects/{slug}\" whose accessible name contains the project name. Target page \"/projects/{slug}/new\": page title \"New intent · Agents\", heading (h1) \"New intent\", back link \"← {project name}\", text field labelled \"Title\", textarea labelled \"What should be built or changed?\", radio group \"Risk tier\" with \"Standard\" (default) and \"Critical\", submit button \"Record intent\"."
+ },
+ "non_goals": [
+  "Changing the intent form at /projects/{slug}/new (fields, labels, validation, risk tier, submission, \"Record intent\" button) or how a recorded intent is processed.",
+  "Embedding or inlining the intent form on the Command page (e.g. a modal or inline form); the shortcut only navigates to the existing form.",
+  "Adding \"New intent\" shortcuts anywhere other than the Projects panel of the Command page (e.g. navigation bar, Active work, project page).",
+  "Changing the other panels of the Command page (Summary, Needs you, Proposed work, Operational flow, Active work, Live events, Accepted work) or the per-project active/accepted counts.",
+  "Creating, editing or removing projects; changing sign-in, sessions or authorization."
+ ],
+ "open_questions": [],
+ "scope": {
+  "paths": [
+   "**"
+  ],
+  "summary": "On the Command page (/), every project listed in the \"Projects\" panel offers a \"New intent\" link that opens that project's existing intent form at /projects/{slug}/new in one click. The intent form itself, its fields and its submission behaviour are unchanged; the existing navigation from a project entry to its project page (/projects/{slug}) keeps working."
+ },
+ "tier": "standard",
+ "title": "New intent shortcut on the Command page",
+ "traces_to": [
+  "OWNER-INTENT-T1"
+ ],
+ "version": 1
+}
