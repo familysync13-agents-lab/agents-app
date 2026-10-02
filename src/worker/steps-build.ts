@@ -3,10 +3,9 @@ import { decisions, evidence, gateResults, tasks } from "@/db/schema";
 import { classifyVerdict } from "@/domain/lifecycle";
 import { criteriaFromGate, correctionDetails, oracleDefects, type GateEvidence } from "@/domain/gate";
 import { buildPrompt, correctionPrompt, noOutcomePrompt, OUTCOME_DIR } from "@/domain/prompts";
-import { routineChoice } from "@/domain/policy";
 import { TaskCtx } from "./context";
 import { currentContract } from "./steps-contract";
-import { blockEvidence, harnessFailure, latestGate, mainSha, ownerApproved, pollDue, PROTECTED, sub, unb64, vols } from "./common";
+import { workerOptions, blockEvidence, harnessFailure, latestGate, mainSha, ownerApproved, pollDue, PROTECTED, sub, unb64, vols } from "./common";
 import { finishSession, startSession } from "./sessions";
 
 /** Step: start the build - deliberately serialized per project (no accidental stacked branches: bake-off lesson 6). */
@@ -111,7 +110,7 @@ export async function buildCollect(ctx: TaskCtx): Promise<void> {
       const routed = await routeBuilderClaim(ctx, String(rec.unknown ?? blocked).slice(0, 2000), art);
       if (routed) return;
     }
-    const opts = Array.isArray(rec.options) ? (rec.options as unknown[]).slice(0, 6).map((o, i) => ({ id: `o${i + 1}`, label: typeof o === "string" ? o : String((o as { label?: unknown }).label ?? `Option ${i + 1}`), consequence: typeof o === "string" ? "The contract is amended accordingly and the build continues." : String((o as { consequence?: unknown }).consequence ?? "") })) : [];
+    const opts = workerOptions(rec.options, "The contract is amended accordingly and the build continues.");
     await ctx.transition(kind, `The Builder blocked (${kind === "BLOCKED_DECISION" ? "decision" : "evidence"}): ${String(rec.unknown ?? "").slice(0, 200)}`, {
       run: runId,
       file: `${OUTCOME_DIR}/BLOCKED.json`,
@@ -123,11 +122,9 @@ export async function buildCollect(ctx: TaskCtx): Promise<void> {
       why: String(rec.would_resolve ?? rec.why ?? "The Builder may not make this decision (it holds engineering rights only)."),
       options: [...opts, { id: "abandon", label: "Abandon the task", consequence: "The task ends; nothing is merged." }],
       recommendation: typeof rec.recommendation === "string" ? rec.recommendation : null,
-      context: { stage: "build", artifactId: art, runId, criteria: rec.criteria ?? [], tried: rec.tried ?? null },
+      context: { stage: "build", artifactId: art, runId, criteria: rec.criteria ?? [], tried: rec.tried ?? null, class: kind === "BLOCKED_DECISION" ? (rec.class ?? null) : null },
     };
-    const auto = kind === "BLOCKED_DECISION" ? routineChoice({ cls: rec.class, recommendation: dec.recommendation, options: dec.options, taskTier: ctx.task.tier, text: `${dec.title} ${dec.why}` }) : null;
-    if (auto) await ctx.policyDecision(dec, auto, "Routine, reversible choice inside the approved contract; the Builder's recommended option was selected.");
-    else await ctx.openDecision(dec);
+    await ctx.openDecision(dec);
     return ctx.goto("await_decision", {});
   }
   if (!report) {

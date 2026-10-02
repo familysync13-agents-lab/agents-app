@@ -14,6 +14,7 @@ import {
 } from "@/db/schema";
 import { sha256 } from "@/domain/contract";
 import { canTransition } from "@/domain/lifecycle";
+import { classifyDecision } from "@/domain/policy";
 
 export type Task = typeof tasks.$inferSelect;
 export type Project = typeof projects.$inferSelect;
@@ -126,7 +127,29 @@ export class TaskCtx {
     await this.db.insert(evidence).values({ ...e, taskId: this.task.id });
   }
 
+  /**
+   * The ONLY way a decision is raised. RECOMMENDED = AUTO-APPROVE (domain/policy.ts classifyDecision): a decision with one
+   * recommended action the control system may take is decided here, immediately, as a control-system decision (decidedVia "policy")
+   * and the workflow continues; every other decision NEEDS YOU and is stored WITHOUT a recommendation, so nothing "recommended"
+   * can ever wait for an owner click. The worker's suggestion is kept in the context for the record only.
+   */
   async openDecision(d: Omit<typeof decisions.$inferInsert, "taskId" | "status">): Promise<number> {
+    const context = (d.context ?? {}) as Record<string, unknown>;
+    const c = classifyDecision({
+      kind: d.kind,
+      stage: String(context.stage ?? ""),
+      recommendation: d.recommendation,
+      options: d.options ?? [],
+      cls: context.class,
+      taskTier: this.task.tier,
+      hasWork: !!this.task.prNumber || !!this.task.headSha,
+      text: `${d.title} ${d.why}`,
+    });
+    if (c.auto !== null) return this.policyDecision(d, c.auto, c.basis);
+    return this.insertDecision({ ...d, recommendation: null, context: { ...context, needsOwner: c.needsOwner, suggestion: d.recommendation ?? null } });
+  }
+
+  private async insertDecision(d: Omit<typeof decisions.$inferInsert, "taskId" | "status">): Promise<number> {
     await this.db
       .update(decisions)
       .set({ status: "superseded" })
@@ -137,13 +160,14 @@ export class TaskCtx {
   }
 
   /**
-   * A decision the escalation policy made without the owner (domain/policy.ts). It is stored exactly like an owner decision - same
-   * row, options and context - with decidedVia "policy", so the audit trail shows what was decided, why and on which facts.
+   * A decision the control system takes itself. It is stored exactly like an owner decision - same row, options and context - with
+   * decidedVia "policy", so the audit trail shows what was decided, why and on which facts, and that the owner was not involved.
    */
   async policyDecision(d: Omit<typeof decisions.$inferInsert, "taskId" | "status">, choice: string, basis: string): Promise<number> {
-    const id = await this.openDecision(d);
+    const id = await this.insertDecision(d);
     await this.db.update(decisions).set({ status: "decided", choice, decidedVia: "policy", note: basis.slice(0, 2000), decidedAt: this.now() }).where(eq(decisions.id, id));
-    await this.log("system", `Decided by policy (no owner action needed): ${d.title} -> ${choice}. ${basis}`.slice(0, 600), { decision: id });
+    const label = (d.options ?? []).find((o) => o.id === choice)?.label ?? choice;
+    await this.log("system", `Decided by the control system (recommended action, no owner involved): ${d.title} -> ${label}. ${basis}`.slice(0, 700), { decision: id });
     return id;
   }
 

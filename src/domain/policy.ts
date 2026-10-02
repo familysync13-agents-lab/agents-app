@@ -36,24 +36,60 @@ export function contractEscalation(f: ContractFacts): string[] {
   return why;
 }
 
-export interface BlockFacts {
-  /** worker's own classification in BLOCKED.json ("routine" = reversible engineering choice inside the approved intent) */
+export interface DecisionOption {
+  id: string;
+  label: string;
+  consequence: string;
+  /** "abandon": choosing this option ends the task (same effect as the built-in abandon) */
+  action?: "abandon";
+}
+
+export interface DecisionFacts {
+  kind: string;
+  stage: string;
+  recommendation: string | null | undefined;
+  options: DecisionOption[];
+  /** the worker's own label in BLOCKED.json; only "routine" can make a worker question automatic, and never on its own */
   cls: unknown;
-  recommendation: string | null;
-  options: { id: string; label: string }[];
   taskTier: "standard" | "critical";
+  /** a PR / built head exists: abandoning would discard work */
+  hasWork: boolean;
   text: string;
 }
 
 const OWNER_WORDS = /\b(secret|credential|token|password|permission|access|delete|irreversible|payment|billing|price|legal|privacy|personal data|security|authori[sz]|scope|architecture)\b/i;
+const OWNER_STAGES = ["security", "tamper", "access", "evidence", "budget"];
 
-/** The option to select automatically for a worker's routine question, or null when the owner must decide. */
-export function routineChoice(f: BlockFacts): string | null {
-  if (f.cls !== "routine" || !f.recommendation || f.taskTier === "critical") return null;
-  if (OWNER_WORDS.test(f.text)) return null;
+export const isAbandon = (o: DecisionOption) => o.id === "abandon" || o.action === "abandon";
+
+/**
+ * THE decision rule of the control system: RECOMMENDED = AUTO-APPROVE.
+ * A decision either has exactly one recommended action that the control system may take itself - then it is taken, recorded as a
+ * control-system decision and the workflow continues - or it NEEDS YOU and is shown to the owner WITHOUT any recommended option.
+ * There is no third state: a recommended option never waits for a click.
+ * Whether the owner is needed is decided here, mechanically, from what the decision is - never from the fact that somebody
+ * labelled an option "recommended". So a dangerous, major, irreversible, security/permission/credential or ambiguous decision cannot
+ * be turned into an automatic one by recommending an option.
+ */
+export function classifyDecision(f: DecisionFacts): { auto: string; basis: string } | { auto: null; needsOwner: string[] } {
+  const owner = (...why: string[]) => ({ auto: null, needsOwner: why });
+  if (!f.recommendation) return owner("no recommended action: a real choice");
   const rec = f.recommendation.trim().toLowerCase();
-  const hit = f.options.filter((o) => o.id !== "abandon" && (o.label.trim().toLowerCase() === rec || o.id === rec));
-  return hit.length === 1 ? hit[0]!.id : null;
+  const hits = f.options.filter((o) => o.id.toLowerCase() === rec || o.label.trim().toLowerCase() === rec);
+  if (hits.length !== 1) return owner("the recommendation does not name exactly one option");
+  const hit = hits[0]!;
+  if (f.kind !== "block") return owner(`${f.kind.replaceAll("_", " ")} is an owner authority`);
+  if (OWNER_STAGES.includes(f.stage)) return owner(`${f.stage} stop`);
+  if (f.taskTier === "critical") return owner("critical tier (security / trust-sensitive work)");
+  if (isAbandon(hit) && f.hasWork) return owner("abandoning would discard existing work (major / not reversible)");
+  // ending a task is automatic only when it is the single path left (no alternative to choose between) and nothing was built
+  if (isAbandon(hit) && f.options.every(isAbandon)) {
+    return { auto: hit.id, basis: "Recommended action: end the task. Nothing has been built, so nothing is lost and the intent can be filed again." };
+  }
+  if (f.cls !== "routine") return owner("a product / owner-level question (not a routine engineering choice)");
+  const m = OWNER_WORDS.exec(`${f.text} ${hit.label} ${hit.consequence}`);
+  if (m) return owner(`touches an owner-level matter (${m[0].toLowerCase()})`);
+  return { auto: hit.id, basis: "Recommended routine, reversible choice inside the approved intent." };
 }
 
 /** Self-recovery: automatic retries of a failed step before a person is asked (delays in seconds, by attempt). */

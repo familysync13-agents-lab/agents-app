@@ -48,7 +48,6 @@ export async function seedPreviewDemo(db: Db) {
         { id: "o1", label: "Per book, owner only", consequence: "Smallest scope." },
         { id: "o2", label: "Per list, also on the share page", consequence: "Visible to share-link readers." },
       ],
-      recommendation: "o1",
       context: { stage: "build" },
     })
     .returning();

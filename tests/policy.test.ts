@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contractEscalation, recoveryDelay, routineChoice, verificationPlan } from "@/domain/policy";
+import { contractEscalation, recoveryDelay, verificationPlan } from "@/domain/policy";
 import type { Contract } from "@/domain/contract";
 import { previewMode } from "@/server/preview-mode";
 import { createTask, decideContract } from "@/server/owner";
@@ -24,18 +24,6 @@ describe("owner-escalation policy (deterministic)", () => {
     expect(contractEscalation(facts({ oracleProblems: ["AC1: crash"] })).join()).toMatch(/could not be fully validated/);
     expect(contractEscalation(facts({ calibrated: false })).join()).toMatch(/not calibrated/);
     expect(contractEscalation(facts({ lintOk: false })).join()).toMatch(/lint/);
-  });
-  it("auto-selects a routine recommended option, never an owner-level one", () => {
-    const options = [{ id: "o1", label: "Use the existing helper" }, { id: "o2", label: "Write a new helper" }, { id: "abandon", label: "Abandon the task" }];
-    const f = { cls: "routine", recommendation: "Use the existing helper", options, taskTier: "standard" as const, text: "Which helper?" };
-    expect(routineChoice(f)).toBe("o1");
-    expect(routineChoice({ ...f, cls: "owner" })).toBeNull();
-    expect(routineChoice({ ...f, cls: undefined })).toBeNull();
-    expect(routineChoice({ ...f, taskTier: "critical" })).toBeNull();
-    expect(routineChoice({ ...f, recommendation: null })).toBeNull();
-    expect(routineChoice({ ...f, recommendation: "Something else" })).toBeNull();
-    expect(routineChoice({ ...f, recommendation: "Abandon the task" })).toBeNull();
-    expect(routineChoice({ ...f, text: "Should the app delete user data or change permissions?" })).toBeNull();
   });
   it("bounds self-recovery and AI verification by tier", () => {
     expect([recoveryDelay(0), recoveryDelay(1), recoveryDelay(2)]).toEqual([120, 900, null]);

@@ -151,7 +151,7 @@ async function apply(tx: Tx, a: AdminOp, t: typeof tasks.$inferSelect): Promise<
       if (!canTransition(t.state, to) && !(BLOCKED as readonly string[]).includes(t.state)) throw new AdminRefused(`cannot block a task in ${t.state}`);
       const [n] = await tx
         .insert(decisions)
-        .values({ taskId: t.id, kind: d.kind, title: d.title, why: d.why, options: d.options, recommendation: d.recommendation, context: { ...d.context, reopenedFrom: d.id }, status: "open" })
+        .values({ taskId: t.id, kind: d.kind, title: d.title, why: d.why, options: d.options, recommendation: null, context: { ...d.context, reopenedFrom: d.id }, status: "open" })
         .returning({ id: decisions.id });
       await tx.insert(transitions).values({ taskId: t.id, fromState: t.state, toState: to, reason: `Decision ${d.id} re-opened by an audited admin operation: ${a.reason}`.slice(0, 500), fact: { admin: "reopen_decision", decision: d.id, reopened_as: n!.id } });
       await tx.update(tasks).set({ state: to, step: "await_decision", stepData: { awaiting: n!.id }, stateReason: d.title }).where(eq(tasks.id, t.id));

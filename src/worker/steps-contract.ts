@@ -3,7 +3,7 @@ import { contracts, tasks } from "@/db/schema";
 import { canonicalJson, lintContract, oracleCriteria, sha256, type Contract } from "@/domain/contract";
 import { draftPrompt, OUTCOME_DIR } from "@/domain/prompts";
 import { TaskCtx } from "./context";
-import { routineChoice } from "@/domain/policy";
+import { workerOptions } from "./common";
 import {
   b64,
   blockEvidence,
@@ -95,13 +95,7 @@ export async function draftCollect(ctx: TaskCtx): Promise<void> {
     } catch {
       rec = { unknown: blocked.slice(0, 500) };
     }
-    const options = Array.isArray(rec.options)
-      ? (rec.options as unknown[]).slice(0, 6).map((o, i) =>
-          typeof o === "string"
-            ? { id: `o${i + 1}`, label: o, consequence: "" }
-            : { id: `o${i + 1}`, label: String((o as { label?: unknown }).label ?? `Option ${i + 1}`), consequence: String((o as { consequence?: unknown }).consequence ?? "") },
-        )
-      : [];
+    const options = workerOptions(rec.options, "");
     await ctx.transition("BLOCKED_DECISION", "The intent needs an owner decision before it can become a contract", {
       run: runId,
       file: `${OUTCOME_DIR}/BLOCKED.json`,
@@ -112,12 +106,11 @@ export async function draftCollect(ctx: TaskCtx): Promise<void> {
       title: String(rec.unknown ?? "The intent needs a decision before it can become a contract"),
       why: String(rec.why ?? rec.would_resolve ?? "The contract drafter could not turn the intent into criteria without a decision it may not make."),
       options: [...options, { id: "abandon", label: "Abandon the task", consequence: "Nothing is built." }],
+      // (a worker option that ends the task is folded into the built-in abandon: see workerOptions)
       recommendation: typeof rec.recommendation === "string" ? rec.recommendation : null,
-      context: { stage: "contract", artifactId: art, runId },
+      context: { stage: "contract", artifactId: art, runId, class: rec.class ?? null },
     };
-    const auto = routineChoice({ cls: rec.class, recommendation: dec.recommendation, options: dec.options, taskTier: ctx.task.tier, text: `${dec.title} ${dec.why}` });
-    if (auto) await ctx.policyDecision(dec, auto, "Routine, reversible choice inside the recorded intent; the worker's recommended option was selected.");
-    else await ctx.openDecision(dec);
+    await ctx.openDecision(dec);
     return ctx.goto("await_decision", {});
   }
   if (!draft) {

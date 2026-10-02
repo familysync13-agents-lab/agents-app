@@ -131,6 +131,11 @@ Rules for the contract
   class "routine" = a reversible choice inside the recorded intent with no effect on product behaviour, scope, security,
   permissions or cost (your recommended option is then applied without asking the owner); everything else is "owner".
   Prefer deciding routine matters yourself and stating the choice in the contract instead of blocking.
+  An option whose choice means THIS task must end here (for example "build it in another project/repository and file the intent
+  there") must carry "action": "abandon": choosing it ends the task at once. Never ask the owner a second time to confirm a
+  decision already made: if a decision already given means no contract can be written for this task, write BLOCKED.json with the
+  single option {"label": "Abandon the task", "action": "abandon"} and "recommendation": "Abandon the task" - the control system
+  then ends the task itself.
 - Your chat reply is not read: only the files count.${
     revision
       ? `

@@ -21,7 +21,7 @@ export const CONTRACT = (key: string) => ({
 
 const ORACLE = `import { chromium } from 'playwright';\nconst base = process.argv[2];\nconsole.log(JSON.stringify({ criterion: 'AC1', result: 'pass' }));\n`;
 
-export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean } = {}) {
+export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[] } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -95,7 +95,8 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
       const out: Record<string, unknown> = Object.fromEntries(paths.map((x) => [x, null]));
       if (paths.includes(".bakeoff/contract.json")) {
         state.drafts++;
-        if ((opts.draftBlocked && state.drafts === 1) || (opts.draftBlockedTwice && state.drafts <= 2))
+        if (opts.draftBlocks && state.drafts <= opts.draftBlocks.length) out[".bakeoff/BLOCKED.json"] = b64(JSON.stringify(opts.draftBlocks[state.drafts - 1]));
+        else if ((opts.draftBlocked && state.drafts === 1) || (opts.draftBlockedTwice && state.drafts <= 2))
           out[".bakeoff/BLOCKED.json"] = b64(
             JSON.stringify({ type: "BLOCKED:DECISION", unknown: "Sort by title or by date?", options: [{ label: "By title", consequence: "A-Z" }, { label: "By date", consequence: "newest first" }], recommendation: "By title" }),
           );

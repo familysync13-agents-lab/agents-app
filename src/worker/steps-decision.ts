@@ -21,7 +21,10 @@ export async function awaitDecision(ctx: TaskCtx): Promise<void> {
   if (!pick || pick.status !== "decided" || !pick.decidedAt) return;
   const stage = String((pick.context as { stage?: string }).stage ?? "");
   const fact = { decision: pick.id, choice: pick.choice, via: pick.decidedVia };
-  if (pick.choice === "abandon") return abandon(ctx, "Abandoned by the owner", fact);
+  const who = pick.decidedVia === "policy" ? "the control system (recommended action)" : "the owner";
+  const chosen = pick.options.find((o) => o.id === pick.choice);
+  // an option that ends the task ends it - whatever the worker called it (never back to drafting to ask again)
+  if (pick.choice === "abandon" || chosen?.action === "abandon") return abandon(ctx, `Abandoned by ${who}${chosen && chosen.id !== "abandon" ? `: ${chosen.label.slice(0, 160)}` : ""}`, fact);
 
   if (pick.kind === "budget") {
     await ctx.save({ extraCorrections: ctx.task.extraCorrections + 2 });
@@ -31,7 +34,7 @@ export async function awaitDecision(ctx: TaskCtx): Promise<void> {
   }
   if (stage === "evidence") {
     const c = pick.context as { resumeStep?: string; resumeState?: TaskState };
-    await ctx.transition((c.resumeState ?? ctx.task.resumeState ?? "PROPOSED") as TaskState, "Owner asked to retry after missing evidence", fact);
+    await ctx.transition((c.resumeState ?? ctx.task.resumeState ?? "PROPOSED") as TaskState, `Retry after missing evidence (${who})`, fact);
     return ctx.goto(c.resumeStep ?? "draft_start", {});
   }
   if (stage === "tamper") {
@@ -47,7 +50,7 @@ export async function awaitDecision(ctx: TaskCtx): Promise<void> {
 
   // stage "contract" (the drafter blocked) or "build" (the Builder blocked): the owner's answer becomes part of the contract
   const label = pick.choice === "custom" ? "Own answer (see note)" : (pick.options.find((o) => o.id === pick.choice)?.label ?? pick.choice ?? "");
-  const answer = `Owner decision: ${label}${pick.note ? `\nOwner note: ${pick.note}` : ""}`;
+  const answer = `${pick.decidedVia === "policy" ? "Control-system decision (your recommended routine option was applied; the owner was not asked)" : "Owner decision"}: ${label}${pick.note ? `\nOwner note: ${pick.note}` : ""}`;
   const art = (pick.context as { artifactId?: number }).artifactId;
   let blockText = "";
   if (art) {
@@ -64,7 +67,7 @@ export async function awaitDecision(ctx: TaskCtx): Promise<void> {
       await ctx.submit("transport", { repo: ctx.project.repo, ops: [{ op: "cleanup", id: "c", close: [ctx.task.prNumber], delete_branches: [ctx.task.branch] }] });
     await ctx.save({ prNumber: null, headSha: null, branch: null, builderSessionId: null });
   }
-  await ctx.transition("PROPOSED", "Owner decided; the contract is being revised with the decision", fact);
+  await ctx.transition("PROPOSED", `${pick.decidedVia === "policy" ? "Decided by the control system" : "Owner decided"}; the contract is being revised with the decision`, fact);
   await ctx.goto("draft_start", {
     revision: {
       previous: `${c ? `Current contract (v${c.version}):\n${c.text}\n` : ""}${blockText ? `The ${stage === "build" ? "Builder" : "drafter"} blocked with:\n${blockText}\n` : ""}`,

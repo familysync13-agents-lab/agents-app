@@ -167,3 +167,21 @@ export function latestGate(pr: Record<string, unknown> | undefined): { id: numbe
   const latest = runs.reduce((a, b) => (a.id > b.id ? a : b));
   return { id: latest.id, status: latest.status, verdict: latest.verdict ?? null };
 }
+
+/**
+ * Options a worker wrote in BLOCKED.json. An option that ends the task (action "abandon", or simply named like the built-in
+ * "Abandon the task") is not kept as a separate answer: it IS the built-in abandon, so choosing or recommending it ends the task
+ * instead of sending the worker back to drafting (finding: T2 looped through three decisions for one owner choice).
+ */
+export function workerOptions(raw: unknown, defaultConsequence: string) {
+  if (!Array.isArray(raw)) return [];
+  return (raw as unknown[])
+    .slice(0, 6)
+    .map((o, i) => {
+      const obj = typeof o === "string" ? { label: o } : ((o ?? {}) as { label?: unknown; consequence?: unknown; action?: unknown });
+      const label = String(obj.label ?? `Option ${i + 1}`);
+      const consequence = String(obj.consequence ?? defaultConsequence);
+      return { id: `o${i + 1}`, label, consequence, ...(obj.action === "abandon" ? { action: "abandon" as const } : {}) };
+    })
+    .filter((o) => !/^abandon( the| this)? task\.?$/i.test(o.label.trim()));
+}

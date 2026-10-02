@@ -276,7 +276,7 @@ export const decisions = pgTable(
     title: text("title").notNull(),
     why: text("why").notNull(),
     options: jsonb("options")
-      .$type<{ id: string; label: string; consequence: string }[]>()
+      .$type<{ id: string; label: string; consequence: string; action?: "abandon" }[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
     recommendation: text("recommendation"),
