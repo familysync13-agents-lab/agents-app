@@ -49,6 +49,10 @@ const STEP_NODE: Record<string, FlowNode> = {
   await_gate: "gate",
   gate_collect: "gate",
   regate: "gate",
+  sync_branch: "gate",
+  regress_start: "verifier",
+  regress_poll: "verifier",
+  regress_pr: "owner",
   resume_after_oracle: "gate",
   fix_start: "builder",
   attribute_start: "verifier",
@@ -62,6 +66,8 @@ const STEP_NODE: Record<string, FlowNode> = {
   mutant_eval: "verifier",
   mark_done: "decision",
   await_stack: "owner",
+  await_access: "owner",
+  self_recover: "gate",
   restack: "gate",
   contract_batch: "contract",
   batch_wait: "contract",
@@ -108,11 +114,15 @@ export function failureRouting(t: TaskLike, corrections: number): { party: Party
     if (d.resume) return { party: "oracle", selfCorrecting: false, text: "Repaired check awaits your approval on GitHub (the contract is unchanged)" };
     return null;
   }
+  if (t.step === "regress_start" || t.step === "regress_poll") return { party: "oracle", selfCorrecting: true, text: "An earlier task's check is stale against the new approved contract - the Verifier is updating it; the Builder's work is kept" };
+  if (t.step === "regress_pr") return { party: "oracle", selfCorrecting: false, text: "Updated earlier checks await your approval on GitHub" };
   if (t.step === "resume_after_oracle") return { party: "oracle", selfCorrecting: true, text: "Re-checking the kept work against the repaired check" };
   if (t.step.startsWith("attribute_")) return { party: "implementation", selfCorrecting: true, text: "An independent arbiter is reproducing the failure to decide who owns it" };
   if (t.step === "regate") return { party: "environment", selfCorrecting: true, text: "Environment failure - the gate is re-run (not charged to the work)" };
   if (t.step === "fix_start" || (t.state === "IN_PROGRESS" && corrections > 0 && (t.step === "build_poll" || t.step === "build_collect")))
     return { party: "implementation", selfCorrecting: true, text: `The Builder is correcting its work (correction ${corrections})` };
+  if (t.step === "self_recover") return { party: "environment", selfCorrecting: true, text: "A step failed - the control system repeats it by itself (no action needed)" };
+  if (t.step === "await_access") return { party: "security", selfCorrecting: false, text: "A GitHub permission only you can grant; the system resumes by itself once it exists" };
   if (t.state === "BLOCKED_EVIDENCE") return { party: "environment", selfCorrecting: false, text: "Evidence unavailable - your decision is needed" };
   if (t.state === "BLOCKED_DECISION") return { party: "ambiguity", selfCorrecting: false, text: "A decision only you can make" };
   return null;

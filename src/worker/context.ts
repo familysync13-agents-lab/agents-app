@@ -46,6 +46,10 @@ export class TaskCtx {
   /** id of the decision most recently opened in this tick: await_decision is bound to exactly that decision */
   private opened: number | undefined;
 
+  lastOpened(): number | undefined {
+    return this.opened;
+  }
+
   async goto(step: string, data: Record<string, unknown> = {}): Promise<void> {
     if (step === "await_decision") {
       const awaiting = (data.awaiting as number | undefined) ?? this.opened;
@@ -132,6 +136,17 @@ export class TaskCtx {
     return r!.id;
   }
 
+  /**
+   * A decision the escalation policy made without the owner (domain/policy.ts). It is stored exactly like an owner decision - same
+   * row, options and context - with decidedVia "policy", so the audit trail shows what was decided, why and on which facts.
+   */
+  async policyDecision(d: Omit<typeof decisions.$inferInsert, "taskId" | "status">, choice: string, basis: string): Promise<number> {
+    const id = await this.openDecision(d);
+    await this.db.update(decisions).set({ status: "decided", choice, decidedVia: "policy", note: basis.slice(0, 2000), decidedAt: this.now() }).where(eq(decisions.id, id));
+    await this.log("system", `Decided by policy (no owner action needed): ${d.title} -> ${choice}. ${basis}`.slice(0, 600), { decision: id });
+    return id;
+  }
+
   async openDecisions() {
     return this.db
       .select()
@@ -140,7 +155,7 @@ export class TaskCtx {
       .orderBy(desc(decisions.id));
   }
 
-  async closeDecisions(kind: (typeof decisions.$inferInsert)["kind"], choice: string, via: "app" | "github", note?: string) {
+  async closeDecisions(kind: (typeof decisions.$inferInsert)["kind"], choice: string, via: "app" | "github" | "policy", note?: string) {
     await this.db
       .update(decisions)
       .set({ status: "decided", choice, decidedVia: via, note: note ?? null, decidedAt: this.now() })
@@ -169,7 +184,8 @@ export class TaskCtx {
       .innerJoin(tasks, eq(tasks.id, runs.taskId))
       .where(
         and(
-          eq(tasks.projectId, this.project.id),
+          // one Builder session per Builder identity (credential volume), across every project that shares it
+          inArray(tasks.projectId, this.db.select({ id: projects.id }).from(projects).where(eq(projects.builderKey, this.project.builderKey))),
           eq(runs.role, "builder"),
           inArray(runs.status, ["starting", "running"]),
           ne(runs.taskId, this.task.id),

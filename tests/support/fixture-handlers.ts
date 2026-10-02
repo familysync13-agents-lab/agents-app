@@ -21,7 +21,7 @@ export const CONTRACT = (key: string) => ({
 
 const ORACLE = `import { chromium } from 'playwright';\nconst base = process.argv[2];\nconsole.log(JSON.stringify({ criterion: 'AC1', result: 'pass' }));\n`;
 
-export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean } = {}) {
+export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -32,6 +32,9 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
     refreshed: false,
     ownerApprovedContract: false,
     ownerApprovedTask: false,
+    forceOwner: false,
+    systemMerges: 0,
+    ownerMerges: 0,
     drafts: 0,
     builderPrompts: [] as string[],
     verifierFindingsServed: 0,
@@ -54,7 +57,8 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
     git_show: (p) => {
       if (p.tree) return { tree: { "tasks/T0/contract.json": "x", "tasks/T8/task.json": "y", "README.md": "z" } };
       const out: Record<string, unknown> = {};
-      for (const path of p.paths as string[]) out[path] = path.includes("T2/contract") ? b64('{"id":"T2"}') : null;
+      for (const path of p.paths as string[])
+        out[path] = path.includes("T2/contract") ? b64('{"id":"T2"}') : path === "tasks/T2/task.json" ? b64(JSON.stringify({ id: "T2", checks: { AC1: "oracle:oracle/T2/check.mjs" }, amendments: [{ id: "A1" }] })) : path === "oracle/T2/check.mjs" ? b64(ORACLE) : null;
       return out;
     },
     worktree: () => ({ base_sha: state.main, files: 10 }),
@@ -95,7 +99,11 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
           out[".bakeoff/BLOCKED.json"] = b64(
             JSON.stringify({ type: "BLOCKED:DECISION", unknown: "Sort by title or by date?", options: [{ label: "By title", consequence: "A-Z" }, { label: "By date", consequence: "newest first" }], recommendation: "By title" }),
           );
-        else out[".bakeoff/contract.json"] = b64(JSON.stringify(CONTRACT(state.volKey.get(vol) ?? state.key)));
+        else {
+          const cj = CONTRACT(state.volKey.get(vol) ?? state.key);
+          if (opts.sensitiveTag) (cj.criteria[0]!.tags as string[]).push("security");
+          out[".bakeoff/contract.json"] = b64(JSON.stringify(cj));
+        }
       }
       if (paths.includes("out/check.mjs")) {
         state.oraclesAuthored++;
@@ -121,7 +129,7 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
       if (paths.includes("out/attribution.json"))
         out["out/attribution.json"] = b64(
           JSON.stringify({
-            criteria: [{ criterion: "AC1", party: opts.arbiter ?? "implementation", observed: "B before a", expected: "a before B", reason: opts.arbiter === "oracle" ? "reads textContent across elements" : "the list is not sorted case-insensitively" }],
+            criteria: [{ criterion: opts.regressFail ? "T2:AC1" : "AC1", party: opts.arbiter ?? "implementation", observed: "B before a", expected: "a before B", reason: opts.arbiter === "oracle" ? "reads textContent across elements" : "the list is not sorted case-insensitively" }],
             summary: "reproduced",
           }),
         );
@@ -141,20 +149,23 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
         case "pr_state": {
           const cp = state.contractPrs.get(Number(op.pr));
           if (cp) {
-            state.ownerApprovedContract = true; // owner approves the contract PR on GitHub
+            // default (V1 policy installed in the repository): the gate confirms a hash-bound amendment without a review.
+            // repoRequiresOwner: the repository still demands the owner's review (the old trust model) until the test approves.
+            const owner = opts.repoRequiresOwner || state.forceOwner;
+            const approved = owner && state.ownerApprovedContract;
             return {
               s: {
                 ok: true,
                 head: cp.head,
                 merged: !!cp.merged,
                 merge_commit: cp.merged ?? null,
-                reviews: [{ user: "owner1", state: "APPROVED", commit: cp.head, at: "2026-10-01T10:30:00Z" }],
-                gate_runs: [{ id: cp.refreshed ? 2 : 1, status: "completed", verdict: cp.refreshed ? "AMENDMENT-OK" : "BLOCKED:DECISION" }],
+                reviews: approved ? [{ user: "owner1", state: "APPROVED", commit: cp.head, at: "2026-10-01T10:30:00Z" }] : [],
+                gate_runs: [{ id: cp.refreshed ? 2 : 1, status: "completed", verdict: opts.repoRequiresOwner ? (cp.refreshed ? "AMENDMENT-OK" : "BLOCKED:DECISION") : "AMENDMENT-OK" }],
               },
             };
           }
           state.gateCalls++;
-          const tp = state.taskPrs.get(Number(op.pr))!;
+          const tp = state.taskPrs.get(Number(op.pr))!; if (!tp) return new Error(`unknown pr ${String(op.pr)} known ${[...state.taskPrs.keys()].join(",")} contract ${[...state.contractPrs.keys()].join(",")}`);
           const failing = opts.failFirstGate && tp.head === "h1";
           state.runPr.set(1000 + state.gateCalls, Number(op.pr));
           const approved = state.approvedPrs.has(Number(op.pr)) || (state.ownerApprovedTask && Number(op.pr) === 102);
@@ -164,7 +175,7 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
               head: tp.head,
               merged: false,
               reviews: approved ? [{ user: "Owner1", state: "APPROVED", commit: tp.head, at: "2026-10-01T12:00:00Z" }] : [],
-              gate_runs: [{ id: 1000 + state.gateCalls, status: "completed", verdict: failing ? "FAIL:ORACLE" : "DONE" }],
+              gate_runs: [{ id: 1000 + state.gateCalls, status: "completed", verdict: failing ? (opts.regressFail ? "FAIL:REGRESSION" : "FAIL:ORACLE") : "DONE" }],
             },
           };
         }
@@ -174,7 +185,19 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
           state.refreshed = true;
           return { r: { ok: true } };
         }
+        case "merge_system": {
+          state.systemMerges++;
+          if (opts.rulesetRefusesMerge) {
+            state.forceOwner = true;
+            return { m: { ok: false, status: 405, message: "Repository rule violations found" } };
+          }
+          state.mainN++;
+          state.main = `m${state.mainN}`;
+          state.contractPrs.get(Number(op.pr))!.merged = state.main;
+          return { m: { ok: true, merge_commit: state.main } };
+        }
         case "merge_approved": {
+          state.ownerMerges++;
           if (state.contractPrs.has(Number(op.pr))) {
             state.mainN++;
             state.main = `m${state.mainN}`;
@@ -199,6 +222,8 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
           return { pr: { ok: true, head_sha: tp.head } };
         }
         case "update_branch": {
+          // a branch that is already current with main cannot be updated (GitHub answers 422)
+          if (opts.regressFail && ![...state.contractPrs.values()].slice(1).some((x) => x.merged)) return { u: { ok: false, status: 422, message: "already up to date" } };
           const tp = state.taskPrs.get(Number(op.pr))!;
           const old = tp.head;
           tp.head = heads(Number(op.pr), 3);
@@ -218,20 +243,20 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
       const tp = state.taskPrs.get(pr)!;
       const failing = opts.failFirstGate && tp.head === "h1";
       return {
-        verdict: failing ? "FAIL:ORACLE" : "DONE",
+        verdict: failing ? (opts.regressFail ? "FAIL:REGRESSION" : "FAIL:ORACLE") : "DONE",
         evidence: {
-          verdict: failing ? "FAIL:ORACLE" : "DONE",
+          verdict: failing ? (opts.regressFail ? "FAIL:REGRESSION" : "FAIL:ORACLE") : "DONE",
           head_sha: tp.head,
           contract_sha256: undefined,
           reasons: failing ? [`a must-criterion of ${tp.key} failed`] : [],
           criteria: {
             [`${tp.key}:AC1`]: {
-              status: failing ? "Not verified" : "Verified",
+              status: failing && !opts.regressFail ? "Not verified" : "Verified",
               check: `oracle:oracle/${tp.key}/check.mjs`,
               detail: failing ? (opts.oracleCrash ? "locator.evaluate: ReferenceError: text is not defined" : "B listed before A") : "",
             },
           },
-          regression: { "T2:AC1": { status: "Verified", check: "oracle:oracle/T2/check.mjs" } },
+          regression: { "T2:AC1": { status: failing && opts.regressFail ? "Not verified" : "Verified", check: "oracle:oracle/T2/check.mjs", detail: failing && opts.regressFail ? "control must be outside the section" : "" } },
         },
         check_run: p.check_run,
       };

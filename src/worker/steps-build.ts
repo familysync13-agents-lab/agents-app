@@ -3,9 +3,10 @@ import { decisions, evidence, gateResults, tasks } from "@/db/schema";
 import { classifyVerdict } from "@/domain/lifecycle";
 import { criteriaFromGate, correctionDetails, oracleDefects, type GateEvidence } from "@/domain/gate";
 import { buildPrompt, correctionPrompt, noOutcomePrompt, OUTCOME_DIR } from "@/domain/prompts";
+import { routineChoice } from "@/domain/policy";
 import { TaskCtx } from "./context";
 import { currentContract } from "./steps-contract";
-import { blockEvidence, harnessFailure, latestGate, ownerApproved, pollDue, PROTECTED, sub, unb64, vols } from "./common";
+import { blockEvidence, harnessFailure, latestGate, mainSha, ownerApproved, pollDue, PROTECTED, sub, unb64, vols } from "./common";
 import { finishSession, startSession } from "./sessions";
 
 /** Step: start the build - deliberately serialized per project (no accidental stacked branches: bake-off lesson 6). */
@@ -45,6 +46,13 @@ export async function buildStart(ctx: TaskCtx): Promise<void> {
     await ctx.save({ stackParentId: parent.id });
     await ctx.log("system", `Stacked on ${parent.key} (DONE at ${String(parent.headSha).slice(0, 8)}, awaiting acceptance): this task builds on its head and both are accepted together.`, { parent: parent.id, parent_head: parent.headSha });
     await ctx.setData({ mainSha: parent.headSha });
+  }
+  if (!parent) {
+    // always build on the CURRENT main (other tasks or check amendments may have been merged since this contract was merged)
+    const refs = await ctx.once("refs", "pub", () => ({ ls_remote: [ctx.project.repo] }));
+    if (!refs) return;
+    const m = refs.status === "done" ? mainSha(refs, ctx.project.repo) : undefined;
+    if (m) await ctx.setData({ mainSha: m });
   }
   const base = String(ctx.data.mainSha ?? c?.mergeCommit ?? "");
   if (!base) return blockEvidence(ctx, "No merged contract commit to build on.", { contract: c?.id ?? null });
@@ -109,14 +117,17 @@ export async function buildCollect(ctx: TaskCtx): Promise<void> {
       file: `${OUTCOME_DIR}/BLOCKED.json`,
       artifact: art,
     }, { resumeState: "CONTRACTED" });
-    await ctx.openDecision({
-      kind: "block",
+    const dec = {
+      kind: "block" as const,
       title: String(rec.unknown ?? "The Builder needs a decision"),
       why: String(rec.would_resolve ?? rec.why ?? "The Builder may not make this decision (it holds engineering rights only)."),
       options: [...opts, { id: "abandon", label: "Abandon the task", consequence: "The task ends; nothing is merged." }],
       recommendation: typeof rec.recommendation === "string" ? rec.recommendation : null,
       context: { stage: "build", artifactId: art, runId, criteria: rec.criteria ?? [], tried: rec.tried ?? null },
-    });
+    };
+    const auto = kind === "BLOCKED_DECISION" ? routineChoice({ cls: rec.class, recommendation: dec.recommendation, options: dec.options, taskTier: ctx.task.tier, text: `${dec.title} ${dec.why}` }) : null;
+    if (auto) await ctx.policyDecision(dec, auto, "Routine, reversible choice inside the approved contract; the Builder's recommended option was selected.");
+    else await ctx.openDecision(dec);
     return ctx.goto("await_decision", {});
   }
   if (!report) {
@@ -227,7 +238,7 @@ export async function awaitGate(ctx: TaskCtx): Promise<void> {
       return blockEvidence(ctx, `No gate verdict for ${head.slice(0, 8)} after 90 minutes.`, { pr: ctx.task.prNumber, head });
     return;
   }
-  await ctx.goto("gate_collect", { head, checkRun: g.id, verdict: g.verdict, envRetried: ctx.data.envRetried ?? false });
+  await ctx.goto("gate_collect", { head, checkRun: g.id, verdict: g.verdict, envRetried: ctx.data.envRetried ?? false, syncTried: ctx.data.syncTried ?? false });
 }
 
 /** Step: collect the gate's full evidence and decide: DONE, automatic correction, or block. */
@@ -273,7 +284,7 @@ export async function gateCollect(ctx: TaskCtx): Promise<void> {
     // an agent's claim is never enough: DONE requires the gate's DONE for this exact head, bound to the approved contract
     const c = await currentContract(ctx);
     if (c && ev.contract_sha256 && ev.contract_sha256 !== c.sha256)
-      return blockEvidence(ctx, "The gate evaluated a different contract version than the approved one.", { ...fact, gate_contract: ev.contract_sha256, approved: c.sha256 });
+      return blockEvidence(ctx, "The gate evaluated a different contract version than the approved one.", { ...fact, gate_contract: ev.contract_sha256, approved: c.sha256 }, { auto: false });
     return ctx.goto("acceptance_start", { head, checkRun });
   }
   if (kind === "candidate_failure") return routeFailure(ctx, verdict, ev, fact);
@@ -302,6 +313,10 @@ export async function gateCollect(ctx: TaskCtx): Promise<void> {
 async function routeFailure(ctx: TaskCtx, verdict: string, ev: GateEvidence, fact: Record<string, unknown>): Promise<void> {
   const details = correctionDetails(ev);
   if (!["FAIL:ORACLE", "FAIL:REGRESSION"].includes(verdict)) return correction(ctx, verdict, details, fact);
+  if (verdict === "FAIL:REGRESSION" && !ctx.data.syncTried) {
+    // a regression failure on a branch that is behind main is not evidence about the work: bring the branch up to date first
+    return ctx.goto("sync_branch", { head: ctx.data.head, checkRun: ctx.data.checkRun, verdict });
+  }
   const failing = criteriaFromGate(ev)
     .filter((c) => c.status !== "verified")
     .map((c) => ({ subject: c.subject, detail: c.detail, regression: c.regression }));
@@ -310,7 +325,7 @@ async function routeFailure(ctx: TaskCtx, verdict: string, ev: GateEvidence, fac
     const list = defects.map((c) => `${c.subject.replace(/^.*:/, "")}: ${c.detail.split("\n")[0]!.slice(0, 300)}`).join("\n");
     const c = await currentContract(ctx);
     await ctx.log("system", `The oracle of record crashed or could not measure (${defects.map((d) => d.subject).join(", ")}); the Verifier repairs the check. Not charged to the Builder.`, fact);
-    return ctx.goto("oracle_start", { mode: "repair", feedback: list, repairReason: list, prevCalibration: c?.calibration ?? null, resume: { head: ctx.data.head }, round: 1 });
+    return ctx.goto("oracle_start", { mode: "repair", feedback: list, repairReason: list, prevCalibration: c?.calibration ?? null, repaired: defects.map((d) => d.subject), resume: { head: ctx.data.head }, round: 1 });
   }
   const failure = { head: String(ctx.data.head), verdict, details, failing, fact };
   return ctx.goto("attribute_start", { failure, envRetried: ctx.data.envRetried ?? false });
@@ -356,6 +371,23 @@ export async function resumeAfterOracle(ctx: TaskCtx): Promise<void> {
     main: ctx.data.mainSha ?? null,
   }, { headSha: head });
   await ctx.goto("await_gate", { head, since: ctx.now().getTime() });
+}
+
+/**
+ * Step: before attributing a regression failure, bring the task branch up to date with main (GitHub merge commit; the Builder's work
+ * is kept). If the branch was behind, the gate runs again on the updated head; if it was already current, attribution proceeds.
+ */
+export async function syncBranch(ctx: TaskCtx): Promise<void> {
+  const job = await ctx.once("upd", "transport", () => ({ repo: ctx.project.repo, ops: [{ op: "update_branch", id: "u", pr: ctx.task.prNumber }] }));
+  if (!job) return;
+  const u = job.status === "done" ? sub(job, "u") : undefined;
+  if (u?.ok && u.head_sha) {
+    const head = String(u.head_sha);
+    await ctx.transition("VERIFYING", `The branch was behind main; updated (head ${head.slice(0, 8)}) and re-gated before judging the regression failure`, { pr: ctx.task.prNumber, head, previous_head: u.old_head ?? null }, { headSha: head });
+    return ctx.goto("await_gate", { head, since: ctx.now().getTime(), syncTried: true });
+  }
+  // already up to date (or the update is not possible): judge the failure as it is
+  return ctx.goto("gate_collect", { head: ctx.data.head, checkRun: ctx.data.checkRun, verdict: ctx.data.verdict, syncTried: true });
 }
 
 /** Automatic correction loop (no owner involvement) up to the project's budget; then a budget decision. */
@@ -458,7 +490,7 @@ export async function awaitAcceptance(ctx: TaskCtx): Promise<void> {
     const s = sub(job, "s");
     if (!s?.ok) return;
     if (s.merged) return finishAccepted(ctx, String(s.merge_commit), null);
-    if (s.head !== head) return blockEvidence(ctx, "The PR head changed after DONE; the verdict no longer applies.", { expected: head, actual: s.head });
+    if (s.head !== head) return blockEvidence(ctx, "The PR head changed after DONE; the verdict no longer applies.", { expected: head, actual: s.head }, { auto: false });
     const a = ownerApproved(s, ctx.project.ownerLogin, head);
     if (!a.ok) return;
     await ctx.closeDecisions("acceptance", "approved", "github");

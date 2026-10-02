@@ -68,6 +68,17 @@ export async function attributeStart(ctx: TaskCtx): Promise<void> {
     "SCAFFOLD.md": b64(VERIFIER_SCAFFOLD),
   };
   for (const [name, body] of Object.entries(ctx.project.workerDocs)) files[name] = b64(body);
+  const earlier = [...new Set(f.failing.filter((x) => x.regression).map((x) => x.subject.split(":")[0]!))].filter((k) => /^T[0-9]+$/.test(k)).slice(0, 6);
+  if (earlier.length) {
+    const show = await ctx.once("show", "git_show", () => ({ repo: ctx.project.repo, sha: f.head, paths: earlier.flatMap((k) => [`tasks/${k}/contract.json`, `oracle/${k}/check.mjs`]) }));
+    if (!show) return;
+    for (const k of earlier) {
+      const c1 = show.result?.[`tasks/${k}/contract.json`];
+      const o1 = show.result?.[`oracle/${k}/check.mjs`];
+      if (typeof c1 === "string") files[`${k}-contract.json`] = c1;
+      if (typeof o1 === "string") files[`${k}-check.mjs`] = o1;
+    }
+  }
   const job = await ctx.once("arb", "verifier", () => ({
     work_vol: v.verifier(`a${n}`),
     preview: pvKey(ctx.task.id),
@@ -117,7 +128,7 @@ export async function attributeCollect(ctx: TaskCtx): Promise<void> {
   const art = await ctx.artifact("attribution", `attribution.json (run ${runId})`, raw);
   for (const x of rows)
     await ctx.evidence({
-      subject: `attribution:${ctx.task.key}:${String(x.criterion).replace(/^.*:/, "")}`,
+      subject: `attribution:${/^T[0-9]+:/.test(String(x.criterion)) ? String(x.criterion) : `${ctx.task.key}:${String(x.criterion)}`}`,
       status: x.party === "implementation" ? "not_verified" : "unknown",
       oracle: "agent_judgment",
       persistence: "point_in_time",
@@ -127,7 +138,7 @@ export async function attributeCollect(ctx: TaskCtx): Promise<void> {
       artifactId: art,
     });
   const by = (p: Party) => rows.filter((x) => x.party === p);
-  const summary = rows.map((x) => `${String(x.criterion).replace(/^.*:/, "")}=${x.party}`).join(", ");
+  const summary = rows.map((x) => `${String(x.criterion)}=${x.party}`).join(", ");
   await ctx.log("verifier", `Arbiter: ${summary}. ${String(a?.summary ?? "").slice(0, 300)}`, { run: runId, artifact: art });
   const fact = { ...f.fact, attribution: summary, arbiter_run: runId, artifact: art };
 
@@ -147,6 +158,20 @@ export async function attributeCollect(ctx: TaskCtx): Promise<void> {
     });
     return ctx.goto("await_decision", {});
   }
+  const foreign = by("oracle").filter((x) => /^T[0-9]+:/.test(String(x.criterion)) && !String(x.criterion).startsWith(`${ctx.task.key}:`));
+  if (foreign.length) {
+    // stale/defective REGRESSION checks (earlier tasks): their checks are updated, with the owner's approval on GitHub
+    const map = new Map<string, { key: string; criteria: string[]; reason: string }>();
+    for (const x of foreign) {
+      const [key, ac] = String(x.criterion).split(":") as [string, string];
+      const t = map.get(key) ?? { key, criteria: [], reason: "" };
+      t.criteria.push(ac);
+      t.reason += `${ac}: ${x.reason ?? ""}\n  observed in the application: ${x.observed ?? ""}\n  required: ${x.expected ?? ""}\n`;
+      map.set(key, t);
+    }
+    await ctx.log("system", `The arbiter attributes the regression failures to the checks of ${[...map.keys()].join(", ")} (stale against the approved contract of ${ctx.task.key}); the Verifier updates them. Nothing is charged to the Builder.`, fact);
+    return ctx.goto("regress_start", { targets: [...map.values()], i: 0, done: [], head: f.head, round: n });
+  }
   if (by("oracle").length) {
     // repair the check first (the Builder's work is kept); implementation failures, if any, are re-judged against the repaired check
     const c = await currentContract(ctx);
@@ -159,6 +184,7 @@ export async function attributeCollect(ctx: TaskCtx): Promise<void> {
       feedback: reason,
       repairReason: reason,
       prevCalibration: c?.calibration ?? null,
+      repaired: by("oracle").map((x) => String(x.criterion)),
       resume: { head: f.head },
       round: n,
     });

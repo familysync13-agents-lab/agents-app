@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { and, eq } from "drizzle-orm";
-import { decisions, evidence, gateResults, runs, transitions } from "@/db/schema";
+import { decisions, evidence, gateResults, runs, tasks, transitions } from "@/db/schema";
 import { canonicalJson } from "@/domain/contract";
-import { createTask, decideBlock, decideContract } from "@/server/owner";
-import { clock, contractRows, FakeExecutor, openDecisions, runUntil, setup, taskRow } from "./support/harness";
+import { createTask, decideBlock } from "@/server/owner";
+import { clock, contractRows, FakeExecutor, contractApproved, openDecisions, policyDecisions, runUntil, setup, taskRow } from "./support/harness";
 import { CONTRACT, fixtureHandlers as scenario } from "./support/fixture-handlers";
 
 describe("control loop (scripted executor)", () => {
@@ -14,7 +14,7 @@ describe("control loop (scripted executor)", () => {
     const ex = new FakeExecutor(db, h);
     const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
 
-    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_owner_contract");
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
     const t1 = await taskRow(db, id);
     expect(t1.key).toBe("T9");
     expect(t1.state).toBe("PROPOSED");
@@ -23,10 +23,12 @@ describe("control loop (scripted executor)", () => {
     expect(c!.text).toBe(canonicalJson(CONTRACT("T9")));
     expect(c!.oracleJs).toContain("criterion");
     expect(state.builderPrompts[0]).toContain("Sort lists");
-    expect((await openDecisions(db, id)).map((d) => d.kind)).toEqual(["contract_approval"]);
+    expect(await openDecisions(db, id)).toEqual([]); // a contract within the intent is not an owner decision
+    expect((await policyDecisions(db, id)).map((d) => [d.kind, d.choice])).toEqual([["contract_approval", "approve"]]);
 
-    await decideContract(db, { taskId: id, contractId: c!.id, choice: "approve", note: "", sha256: c!.sha256 });
     await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "IN_PROGRESS");
+    // the mutation test is critical-tier depth: raise the tier of the built task to exercise it in this end-to-end run
+    await db.update(tasks).set({ tier: "critical" }).where(eq(tasks.id, id));
     const cc = (await contractRows(db, id))[0]!;
     expect(cc.status).toBe("merged");
     expect(cc.mergeCommit).toBe("m1");
@@ -91,7 +93,7 @@ describe("control loop (scripted executor)", () => {
     expect(d!.title).toBe("Sort by title or by date?");
     expect(d!.options.map((o) => o.label)).toEqual(["By title", "By date", "Abandon the task"]);
     await decideBlock(db, { decisionId: d!.id, choice: "o1", note: "Alphabetical by list name." });
-    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_owner_contract");
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
     expect((await taskRow(db, id)).state).toBe("PROPOSED");
     const prompts = ex.log.filter((l) => l.op === "builder").map((l) => String(l.params.prompt_text));
     expect(prompts[1]).toContain("Owner decision: By title");
@@ -115,7 +117,7 @@ describe("control loop (scripted executor)", () => {
     const [d2] = await openDecisions(db, id);
     expect(d2!.status).toBe("open");
     await decideBlock(db, { decisionId: d2!.id, choice: "o2", note: "" });
-    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_owner_contract");
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
     const prompts = ex.log.filter((l) => l.op === "builder").map((l) => String(l.params.prompt_text));
     expect(prompts[2]).toContain("Owner decision: By date");
   });
@@ -126,7 +128,7 @@ describe("control loop (scripted executor)", () => {
     const { state, h } = scenario({ smokeDefectOnce: true });
     const ex = new FakeExecutor(db, h);
     const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
-    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_owner_contract");
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
     expect(state.smokeRuns).toBe(2);
     expect(state.verifierPrompts.length).toBe(2);
     expect(state.verifierPrompts[1]).toContain("ReferenceError: text is not defined");
@@ -143,7 +145,7 @@ describe("control loop (scripted executor)", () => {
     const { state, h } = scenario({ badImport: true });
     const ex = new FakeExecutor(db, h);
     const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
-    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_owner_contract");
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
     expect(state.oraclesAuthored).toBe(2);
     expect(state.smokeRuns).toBe(1); // the defective version never reached a preview
     expect(state.verifierPrompts[1]).toContain('imports "lodash"');
@@ -155,9 +157,8 @@ describe("control loop (scripted executor)", () => {
     const { state, h } = scenario({ failFirstGate: true, oracleCrash: true });
     const ex = new FakeExecutor(db, h);
     const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
-    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_owner_contract");
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
     const [c] = await contractRows(db, id);
-    await decideContract(db, { taskId: id, contractId: c!.id, choice: "approve", note: "", sha256: c!.sha256 });
     await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "DONE");
     const t = await taskRow(db, id);
     expect(t.corrections).toBe(0);
@@ -181,14 +182,30 @@ describe("control loop (scripted executor)", () => {
     const { state, h } = scenario({ failFirstGate: true, arbiter: "oracle" });
     const ex = new FakeExecutor(db, h);
     const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
-    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_owner_contract");
-    const [c] = await contractRows(db, id);
-    await decideContract(db, { taskId: id, contractId: c!.id, choice: "approve", note: "", sha256: c!.sha256 });
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
     await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "DONE");
     expect((await taskRow(db, id)).corrections).toBe(0);
     expect(state.updatedBranch).toBe(1);
     const ev = await db.select().from(evidence).where(eq(evidence.taskId, id));
     expect(ev.find((e) => e.subject === "attribution:T9:AC1")!.detail).toContain("ORACLE");
+  });
+
+  it("updates a stale regression check of an earlier task (owner approves on GitHub) instead of blaming the Builder", async () => {
+    const { db, project } = await setup();
+    const clk = clock();
+    const { state, h } = scenario({ failFirstGate: true, regressFail: true, arbiter: "oracle" });
+    const ex = new FakeExecutor(db, h);
+    const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "DONE");
+    expect((await taskRow(db, id)).corrections).toBe(0);
+    expect(state.updatedBranch).toBe(1);
+    const prs = [...state.contractPrs.values()];
+    expect(prs[1]!.files).toEqual(["oracle/T2/check.mjs", "tasks/T2/task.json"]);
+    const pf = ex.log.filter((l) => l.op === "transport" && (l.params.ops as { op: string }[])[0]!.op === "pr_from_files")[1]!;
+    expect(String((pf.params.ops as { branch: string }[])[0]!.branch)).toMatch(/^amend\/T2\/regress-/);
+    expect(state.verifierPrompts.some((p) => p.includes("EARLIER task T2"))).toBe(true);
+    expect((await contractRows(db, id)).length).toBe(1); // this task's own contract and oracle were not touched
   });
 
   it("sends a critical/high finding of the independent Verifier back to the Builder automatically", async () => {
@@ -197,9 +214,7 @@ describe("control loop (scripted executor)", () => {
     const { h } = scenario({ verifierHigh: true });
     const ex = new FakeExecutor(db, h);
     const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
-    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_owner_contract");
-    const [c] = await contractRows(db, id);
-    await decideContract(db, { taskId: id, contractId: c!.id, choice: "approve", note: "", sha256: c!.sha256 });
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
     await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "DONE");
     const t = await taskRow(db, id);
     expect(t.corrections).toBe(1);
@@ -219,10 +234,36 @@ describe("control loop (scripted executor)", () => {
     expect(t.corrections).toBe(0);
     const [d] = await db.select().from(decisions).where(and(eq(decisions.taskId, id), eq(decisions.status, "open")));
     expect(d!.why).toContain("infrastructure, not the work");
+    // before anyone was asked, the control system repeated the step by itself twice (audited), with growing delays
+    const auto = (await policyDecisions(db, id)).filter((x) => (x.context as { stage?: string }).stage === "recovery");
+    expect(auto.map((x) => x.choice)).toEqual(["retry", "retry"]);
+    expect(d!.title).toMatch(/automatic recovery did not succeed/);
+    expect(ex.log.filter((l) => l.op === "pub").length).toBe(12); // (1 + 3 immediate retries) x 3 rounds
     // the owner retries once the infrastructure is back
     h.pub = () => ({ "ls:bakeoff-c1": { "refs/heads/main": "m0" } });
     await decideBlock(db, { decisionId: d!.id, choice: "retry", note: "" });
-    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_owner_contract");
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
+  });
+
+  it("recovers from a temporary executor outage without the owner (no Retry button)", async () => {
+    const { db, project } = await setup();
+    const clk = clock();
+    const { h } = scenario();
+    const ok = h.pub!;
+    let calls = 0;
+    h.pub = (p, j) => (++calls <= 5 ? new Error("docker: connection refused") : ok(p, j));
+    const ex = new FakeExecutor(db, h);
+    const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
+    const seen = new Set<string>();
+    await runUntil(db, ex, clk, async () => {
+      const t = await taskRow(db, id);
+      seen.add(t.state);
+      for (const d of await openDecisions(db, id)) seen.add(`asked:${d.kind}`);
+      return await contractApproved(db, id);
+    });
+    expect([...seen]).toEqual(["PROPOSED"]); // never blocked, nobody asked
+    expect((await policyDecisions(db, id)).filter((x) => (x.context as { stage?: string }).stage === "recovery").length).toBe(1);
+    expect((await taskRow(db, id)).corrections).toBe(0);
   });
 
   it("asks the owner when the correction budget is exhausted", async () => {
@@ -236,9 +277,7 @@ describe("control loop (scripted executor)", () => {
     };
     const ex = new FakeExecutor(db, h);
     const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
-    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_owner_contract");
-    const [c] = await contractRows(db, id);
-    await decideContract(db, { taskId: id, contractId: c!.id, choice: "approve", note: "", sha256: c!.sha256 });
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
     await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "BLOCKED_DECISION");
     const t = await taskRow(db, id);
     expect(t.corrections).toBe(2); // project budget

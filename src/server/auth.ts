@@ -31,8 +31,9 @@ export async function exchangeLoginToken(token: string): Promise<string | null> 
 }
 
 /** Gate preview only (see /auth/preview): a short owner session in a throwaway preview database. */
+import { previewMode } from "./preview-mode";
 export async function createPreviewSession(): Promise<string> {
-  if (process.env.APP_ENV !== "preview") throw new Error("preview sessions exist only in the gate preview");
+  if (!previewMode()) throw new Error("preview sessions exist only in the gate preview");
   const db = await getDb();
   const sid = randomBytes(32).toString("base64url");
   await db.insert(ownerSessions).values({ idHash: hash(sid), expiresAt: new Date(Date.now() + 3600_000) });

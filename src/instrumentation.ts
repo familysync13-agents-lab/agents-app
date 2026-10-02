@@ -4,7 +4,9 @@
  * operator configuration owns projects - nothing happens here.
  */
 export async function register() {
-  if (process.env.NEXT_RUNTIME !== "nodejs" || process.env.APP_ENV !== "preview") return;
+  if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  const { previewMode } = await import("@/server/preview-mode");
+  if (!previewMode()) return;
   const { createDb } = await import("@/db/client");
   const { migrate } = await import("@/db/migrate");
   const { seedProjects, PREVIEW_PROJECTS } = await import("@/db/seed");

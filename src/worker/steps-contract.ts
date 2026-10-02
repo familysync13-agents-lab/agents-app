@@ -3,6 +3,7 @@ import { contracts, tasks } from "@/db/schema";
 import { canonicalJson, lintContract, oracleCriteria, sha256, type Contract } from "@/domain/contract";
 import { draftPrompt, OUTCOME_DIR } from "@/domain/prompts";
 import { TaskCtx } from "./context";
+import { routineChoice } from "@/domain/policy";
 import {
   b64,
   blockEvidence,
@@ -106,14 +107,17 @@ export async function draftCollect(ctx: TaskCtx): Promise<void> {
       file: `${OUTCOME_DIR}/BLOCKED.json`,
       artifact: art,
     }, { resumeState: "PROPOSED" });
-    await ctx.openDecision({
-      kind: "block",
+    const dec = {
+      kind: "block" as const,
       title: String(rec.unknown ?? "The intent needs a decision before it can become a contract"),
       why: String(rec.why ?? rec.would_resolve ?? "The contract drafter could not turn the intent into criteria without a decision it may not make."),
       options: [...options, { id: "abandon", label: "Abandon the task", consequence: "Nothing is built." }],
       recommendation: typeof rec.recommendation === "string" ? rec.recommendation : null,
       context: { stage: "contract", artifactId: art, runId },
-    });
+    };
+    const auto = routineChoice({ cls: rec.class, recommendation: dec.recommendation, options: dec.options, taskTier: ctx.task.tier, text: `${dec.title} ${dec.why}` });
+    if (auto) await ctx.policyDecision(dec, auto, "Routine, reversible choice inside the recorded intent; the worker's recommended option was selected.");
+    else await ctx.openDecision(dec);
     return ctx.goto("await_decision", {});
   }
   if (!draft) {
@@ -193,7 +197,7 @@ function taskJson(ctx: TaskCtx, c: ContractRow, existing: Record<string, unknown
       by: ctx.project.ownerLogin,
       contract_sha256: c.sha256,
       at: now.slice(0, 10),
-      basis: `owner approval of this amendment PR (contract v${c.version}, Agents App task ${ctx.task.id}); owner review on GitHub is the authoritative approval`,
+      basis: `owner intent recorded in Agents App task ${ctx.task.id}; contract v${c.version} approved under the owner's standing V1 escalation policy (within intent) or by the owner in person; hash-bound amendment confirmed by the gate`,
     },
     checks: Object.fromEntries(criteria.map((id) => [id, `oracle:oracle/${ctx.task.key}/check.mjs`])),
     probe_params: (existing?.probe_params as Record<string, unknown> | undefined) ?? {},
@@ -279,8 +283,8 @@ export async function contractPr(ctx: TaskCtx): Promise<void> {
         branch,
         title: repair ? `${ctx.task.key}: oracle repair (contract unchanged) - ${ctx.task.title}` : `${ctx.task.key}: contract v${c.version} - ${ctx.task.title}`,
         body: repair
-          ? `The approved contract of ${ctx.task.key} is unchanged (sha256 ${c.sha256}). Its oracle of record was defective as a check:\n\n${String(c.ownerNote ?? "").slice(0, 1500)}\n\nThe Verifier repaired only the harness; the repaired check was calibrated against main and no criterion became weaker. Oracle sha256 ${c.oracleSha256}\n\nApproving this PR on GitHub is the authoritative approval of the repaired check. The Builder's work is kept.`
-          : `Owner-approved intent turned into a contract by Agents App (task ${ctx.task.id}).\n\nContract sha256 ${c.sha256}\nOracle sha256 ${c.oracleSha256}\n\nApproving this PR on GitHub is the authoritative contract approval.`,
+          ? `The approved contract of ${ctx.task.key} is unchanged (sha256 ${c.sha256}). Its oracle of record was defective as a check:\n\n${String(c.ownerNote ?? "").slice(0, 1500)}\n\nThe Verifier repaired only the harness; the repaired check was calibrated against main and no criterion became weaker. Oracle sha256 ${c.oracleSha256}\n\nThe Builder's work is kept.`
+          : `Owner intent turned into a contract by Agents App (task ${ctx.task.id}).\n\nContract sha256 ${c.sha256}\nOracle sha256 ${c.oracleSha256}\n\nHash-bound amendment: the gate confirms it and the control system merges it.`,
         files: {
           ...(repair ? {} : { [`tasks/${ctx.task.key}/contract.json`]: b64(c.text) }),
           [`tasks/${ctx.task.key}/task.json`]: b64(tj),
@@ -296,16 +300,7 @@ export async function contractPr(ctx: TaskCtx): Promise<void> {
     .update(contracts)
     .set({ status: "pr_open", prNumber: Number(pr.pr), prHead: String(pr.head_sha) })
     .where(eq(contracts.id, c.id));
-  await ctx.openDecision({
-    kind: "contract_github_approval",
-    title: repair ? `Approve the repaired check of ${ctx.task.key} on GitHub (contract unchanged)` : `Confirm contract v${c.version} of ${ctx.task.key} on GitHub`,
-    why: repair
-      ? "The acceptance check was defective as a check. The product contract is unchanged; the protected oracle file can only change with your review on GitHub. The Builder's work is kept and re-checked afterwards."
-      : "The repository only accepts protected contract and oracle changes with your review on GitHub (the trust boundary).",
-    options: [{ id: "github", label: `Approve PR #${pr.pr} on GitHub`, consequence: repair ? "The control system merges it and re-runs the gate on the Builder's work." : "The control system merges it and starts the build." }],
-    context: { pr: pr.pr, head: pr.head_sha, repo: ctx.project.repo, org: ctx.project.org, oracleOnly: repair },
-  });
-  await ctx.log("system", `${repair ? "Oracle-only amendment" : "Contract"} PR #${pr.pr} opened (${branch}); waiting for your approval on GitHub.`, { pr: pr.pr, head: pr.head_sha });
+  await ctx.log("system", `${repair ? "Oracle-only amendment" : "Contract"} PR #${pr.pr} opened (${branch}); the gate validates it and the control system merges it (no owner action).`, { pr: pr.pr, head: pr.head_sha });
   await ctx.goto("await_github_contract", { contractId: c.id, pr: pr.pr, head: pr.head_sha, resume: ctx.data.resume ?? null });
 }
 
@@ -359,14 +354,7 @@ async function contractPrBatch(ctx: TaskCtx, members: { taskId: number; contract
         .update(tasks)
         .set({ step: "await_github_contract", stepData: { contractId: t.currentContractId, pr: pr.pr, head: pr.head_sha, follower: true, leader: ctx.task.id } })
         .where(eq(tasks.id, t.id));
-  await ctx.openDecision({
-    kind: "contract_github_approval",
-    title: `Confirm ${mts.length} contracts on GitHub with one approval (${mts.map((t) => t.key).join(", ")})`,
-    why: "Each contract was approved by you in Agents App. The repository accepts protected contract and oracle changes only with your review on GitHub; one PR carries all of them.",
-    options: [{ id: "github", label: `Approve PR #${pr.pr} on GitHub`, consequence: "The control system merges it and starts the builds (serialized or stacked per project)." }],
-    context: { pr: pr.pr, head: pr.head_sha, repo: ctx.project.repo, org: ctx.project.org, members: mts.map((t) => t.id) },
-  });
-  await ctx.log("system", `Combined contract PR #${pr.pr} opened for ${mts.map((t) => t.key).join(", ")} (${branch}); one GitHub approval confirms all.`, { pr: pr.pr, head: pr.head_sha });
+  await ctx.log("system", `Combined contract PR #${pr.pr} opened for ${mts.map((t) => t.key).join(", ")} (${branch}); the gate validates it and the control system merges it.`, { pr: pr.pr, head: pr.head_sha });
   await ctx.goto("await_github_contract", { contractId: ctx.data.contractId, pr: pr.pr, head: pr.head_sha, members: mts.map((t) => t.id) });
 }
 
@@ -390,8 +378,33 @@ export async function awaitGithubContract(ctx: TaskCtx): Promise<void> {
     return ctx.goto("contract_merge", { contractId: ctx.data.contractId, pr: prNo, head, approvedAt: appr.at, resume: ctx.data.resume ?? null });
   }
   if (ownerRequestedChanges(s, ctx.project.ownerLogin, head)) {
-    await ctx.log("owner", `Changes requested on contract PR #${prNo} on GitHub; revise it in Agents App.`, { pr: prNo });
+    if (!ctx.data.changesLogged) {
+      await ctx.log("owner", `Changes requested on contract PR #${prNo} on GitHub; revise it in Agents App.`, { pr: prNo });
+      await ctx.setData({ changesLogged: true });
+    }
+    return;
   }
+  // No owner approval is needed for a hash-bound contract/check amendment when the repository gate confirms it (AMENDMENT-OK).
+  const g = latestGate(s);
+  if (!g || g.status !== "completed") return;
+  if (g.verdict === "AMENDMENT-OK" && ctx.data.escalated) return;
+  if (g.verdict === "AMENDMENT-OK") return ctx.goto("contract_merge", { contractId: ctx.data.contractId, pr: prNo, head, auto: true, gateRun: g.id, members: ctx.data.members ?? null, resume: ctx.data.resume ?? null });
+  if (g.verdict === "BLOCKED:DECISION") return escalateGithub(ctx, prNo, head, "The repository's gate requires your review for this protected change.");
+  return blockEvidence(ctx, `The gate rejected the contract PR #${prNo} (verdict ${g.verdict}).`, { pr: prNo, run: g.id }, { auto: false });
+}
+
+/** The repository itself (gate / ruleset) insists on the owner's review: only then is the owner asked, once. */
+export async function escalateGithub(ctx: TaskCtx, prNo: number, head: string, why: string) {
+  if (ctx.data.escalated) return;
+  await ctx.openDecision({
+    kind: "contract_github_approval",
+    title: `Approve PR #${prNo} of ${ctx.task.key} on GitHub`,
+    why: `${why} This is a trust boundary enforced by the repository, not by Agents App.`,
+    options: [{ id: "github", label: `Approve PR #${prNo} on GitHub`, consequence: "The control system merges it and continues." }],
+    context: { pr: prNo, head, repo: ctx.project.repo, org: ctx.project.org },
+  });
+  await ctx.log("system", `PR #${prNo} needs your approval on GitHub (${why})`, { pr: prNo });
+  await ctx.setData({ escalated: true });
 }
 
 async function pollAmendmentGate(ctx: TaskCtx, prNo: number) {
@@ -411,6 +424,23 @@ export async function contractMerge(ctx: TaskCtx): Promise<void> {
   const prNo = ctx.data.pr as number;
   const c = await currentContract(ctx);
   if (!c) return;
+  if (!ctx.data.merged && ctx.data.auto) {
+    const m = await ctx.once("merge", "transport", () => ({ repo: ctx.project.repo, ops: [{ op: "merge_system", id: "m", pr: prNo }] }));
+    if (!m) return;
+    const mr = m.status === "done" ? sub(m, "m") : undefined;
+    if (m.status === "error" || !mr?.ok) {
+      if (mr && [405, 409, 422].includes(Number(mr.status))) {
+        // the repository's ruleset still demands a review: fall back to the owner's approval (the trust boundary decides, not the app)
+        const head = String(ctx.data.head);
+        await ctx.goto("await_github_contract", { contractId: ctx.data.contractId, pr: prNo, head, members: ctx.data.members ?? null, resume: ctx.data.resume ?? null });
+        return escalateGithub(ctx, prNo, head, "The repository's ruleset requires your review to merge this protected change.");
+      }
+      await ctx.forget("merge");
+      return harnessFailure(ctx, { ...m, error: m.error ?? JSON.stringify(mr ?? {}).slice(0, 300) }, "merge", "merging the gate-confirmed contract PR");
+    }
+    await ctx.setData({ merged: true, mergeCommit: mr.merge_commit });
+    return;
+  }
   if (!ctx.data.merged) {
     if (!ctx.data.refreshed) {
       const r = await ctx.once("refresh", "transport", () => ({ repo: ctx.project.repo, ops: [{ op: "refresh_pr", id: "r", pr: prNo }] }));
@@ -456,7 +486,7 @@ export async function contractMerge(ctx: TaskCtx): Promise<void> {
     return ctx.goto("build_start", { mainSha: mergeCommit });
   }
   await ctx.save({ corrections: 0, extraCorrections: 0, budgetContractId: c.id });
-  await ctx.transition("CONTRACTED", `Contract v${c.version} approved by the owner on GitHub and merged (sha256 ${c.sha256.slice(0, 12)})`, {
+  await ctx.transition("CONTRACTED", `Contract v${c.version} ${ctx.data.auto ? "confirmed by the gate" : "approved by the owner on GitHub"} and merged (sha256 ${c.sha256.slice(0, 12)})`, {
     contract: c.id,
     contract_sha256: c.sha256,
     oracle_sha256: c.oracleSha256,

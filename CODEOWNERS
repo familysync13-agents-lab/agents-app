@@ -1,7 +1,10 @@
-# Owner review is required for every authoritative / enforcement path (tamper gate backstop).
-/oracle/ @FamilySYNC13
+# The owner's review is required for every change (final acceptance of work, enforcement files, baselines) ...
+* @FamilySYNC13
+# ... except task records and oracles: hash-bound amendments opened by the control system are confirmed by the required gate
+# (policy.json amendment_approval; gate/gate.py). A path with no owner needs no code-owner review.
+/tasks/
+/oracle/
 /baselines/ @FamilySYNC13
-/tasks/ @FamilySYNC13
 /.github/ @FamilySYNC13
 /CODEOWNERS @FamilySYNC13
 /gate/ @FamilySYNC13

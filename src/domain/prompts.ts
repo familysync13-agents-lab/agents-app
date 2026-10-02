@@ -19,7 +19,10 @@ const RULES = `Rules
    it would require a product, design, architecture or security decision the contract does not make, do NOT guess and do NOT
    implement around it. Instead write /work/${OUTCOME_DIR}/BLOCKED.json:
    {"type": "BLOCKED:DECISION" or "BLOCKED:EVIDENCE", "criteria": [...], "unknown": "...", "tried": "...",
-    "would_resolve": "...", "options": ["..."], "recommendation": "..."}
+    "would_resolve": "...", "options": ["..."], "recommendation": "<one of the options, verbatim>",
+    "class": "routine" or "owner"}
+   class "routine" = a reversible choice inside the approved contract with no effect on product behaviour, scope, security,
+   permissions or cost (your recommended option is then applied without asking anyone); everything else is "owner".
    and stop. Correct blocking is counted as a success; guessing is not.
 4. Keep the Dockerfile \`check\` stage passing (lint, type-check, automated tests) and write automated tests for your work.
 5. Server-side secrets (for example V0_SECRET_CANARY) must never reach the browser in any form.
@@ -124,7 +127,10 @@ Rules for the contract
 - If the intent is ambiguous or contradictory, or turning it into criteria requires a product, design, security or architecture
   decision the owner has not made, do NOT guess: write /work/${OUTCOME_DIR}/BLOCKED.json instead:
   {"type": "BLOCKED:DECISION", "unknown": "<the decision needed, one sentence>", "why": "<why it cannot be decided by you>",
-   "options": [{"label": "...", "consequence": "..."}], "recommendation": "<option label>"}
+   "options": [{"label": "...", "consequence": "..."}], "recommendation": "<option label, verbatim>", "class": "routine" | "owner"}
+  class "routine" = a reversible choice inside the recorded intent with no effect on product behaviour, scope, security,
+  permissions or cost (your recommended option is then applied without asking the owner); everything else is "owner".
+  Prefer deciding routine matters yourself and stating the choice in the contract instead of blocking.
 - Your chat reply is not read: only the files count.${
     revision
       ? `
@@ -256,8 +262,10 @@ export function arbiterPrompt(key: string, head: string, builderClaim?: string):
   return `You are the independent failure arbiter for task ${key}. The gate rejected the build at commit ${head.slice(0, 12)}. Your job is to
 decide, for every failing criterion, which party owns the failure - with evidence you reproduce yourself. You change nothing.
 
-Inputs: /work/contract.json (owner-approved, authoritative), /work/check.mjs (the oracle of record that the gate ran; it takes the base
-URL as argv[2]), /work/FAILURES.md (the gate's failing criteria and details), /work/SCAFFOLD.md (the oracle environment), test
+Inputs: /work/contract.json (owner-approved, authoritative, the newest decision of the owner), /work/check.mjs (this task's oracle of
+record; it takes the base URL as argv[2]), for failing criteria of EARLIER tasks their contracts and checks as /work/<T>-contract.json
+and /work/<T>-check.mjs (an earlier check is "oracle"-owned when it enforces behaviour that this task's approved contract explicitly
+supersedes, or when it observes the application wrongly), /work/FAILURES.md (the gate's failing criteria and details), /work/SCAFFOLD.md (the oracle environment), test
 environment notes in /work/*.md. A preview of exactly this build runs at http://preview:8080 (fresh database, same test doubles as
 the gate). You have no source code; do not look for it.${
     builderClaim ? `\nThe Builder also claims: ${builderClaim.slice(0, 1500)}\n(treat this as a claim to test, not as evidence)` : ""
@@ -275,9 +283,29 @@ Be strict: when the behaviour contradicts the contract, it is "implementation" e
 behaviour the contract forbids.
 
 Write /work/out/attribution.json:
-{"criteria": [{"criterion": "AC1", "party": "implementation|oracle|environment|ambiguity",
+{"criteria": [{"criterion": "<the id EXACTLY as listed in FAILURES.md, including its task prefix, e.g. T9:AC1>", "party": "implementation|oracle|environment|ambiguity",
    "observed": "<what the app actually does, reproduced>", "expected": "<what the contract requires>",
    "reason": "<why this party; for oracle: the exact harness problem, e.g. 'reads textContent across elements without spaces'>"}],
  "summary": "<one paragraph>"}
 Keep scripts in /work/out/. Spend at most 15 minutes. Finish with the single line VERIFIER-DONE.`;
+}
+
+export function regressionRepairPrompt(target: string, current: string, criteria: string[], reason: string, docFiles: string[]): string {
+  return `You are the blind Verifier. /work/previous-check.mjs is the accepted oracle of record of the EARLIER task ${target}
+(/work/contract.json is ${target}'s contract). The owner has since approved the contract of task ${current}
+(/work/superseding-contract.json), which deliberately changes part of ${target}'s behaviour. The gate ran the old check against a build of
+${current} and it failed ${criteria.join(", ")}; an independent arbiter reproduced the application's behaviour black-box and found that
+the application follows the approved ${current} contract and that the old check is stale or defective as a check:
+
+${reason.slice(0, 3500)}
+
+Write the updated check for ${target} to /work/out/check.mjs (same invocation and output format, same criterion ids as the previous
+check - see /work/SCAFFOLD.md). Rules:
+- Where ${current}'s contract explicitly supersedes a behaviour of ${target}, assert the NEW behaviour exactly as ${current}'s contract
+  states it. Everything else that ${target} requires stays asserted, unchanged and at least as strict.
+- Fix harness defects the findings name (selectors, text extraction across elements, fixtures) without weakening product assertions.
+- Do not drop a criterion; every criterion id of the previous check must still produce exactly one result line.
+- Explain each changed assertion in /work/out/NOTES.md (old assertion, new assertion, the contract sentence that justifies it).
+Test environment notes: ${docFiles.map((f) => `/work/${f}`).join(", ") || "(none)"}. No preview and no source code are available.
+Check syntax with \`node --check /work/out/check.mjs\`. Finish with the single line VERIFIER-DONE.`;
 }

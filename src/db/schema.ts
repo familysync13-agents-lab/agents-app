@@ -284,7 +284,7 @@ export const decisions = pgTable(
     status: text("status").$type<"open" | "decided" | "superseded">().notNull().default("open"),
     choice: text("choice"),
     note: text("note"),
-    decidedVia: text("decided_via").$type<"app" | "github">(),
+    decidedVia: text("decided_via").$type<"app" | "github" | "policy">(),
     decidedAt: timestamp("decided_at", { withTimezone: true }),
     createdAt: created(),
   },

@@ -2,28 +2,27 @@ import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { decisions, projects, transitions } from "@/db/schema";
 import { createTask, decideContract } from "@/server/owner";
-import { clock, contractRows, FakeExecutor, openDecisions, runUntil, setup, taskRow } from "./support/harness";
+import { clock, contractRows, FakeExecutor, contractApproved, openDecisions, runUntil, setup, taskRow } from "./support/harness";
 import { fixtureHandlers as scenario } from "./support/fixture-handlers";
 
 const intent = (s: string) => `Let owners ${s} on the list index, without changing anything else.`;
 
-async function approveContract(db: Parameters<typeof decideContract>[0], id: number) {
-  const [c] = await contractRows(db, id);
-  await decideContract(db, { taskId: id, contractId: c!.id, choice: "approve", note: "", sha256: c!.sha256 });
-}
-
 describe("several tasks: batched approvals, serialized and stacked work", () => {
-  it("batches contracts approved in one sitting into ONE GitHub approval", async () => {
+  it("batches escalated contracts the owner approves in one sitting into ONE amendment PR, merged without a GitHub approval", async () => {
     const { db, project } = await setup();
     const clk = clock();
-    const { state, h } = scenario();
+    const { state, h } = scenario({ sensitiveTag: true });
     const ex = new FakeExecutor(db, h);
     const a = await createTask(db, { projectId: project.id, title: "Sort lists", intent: intent("sort lists"), tier: "standard" });
     const b = await createTask(db, { projectId: project.id, title: "Filter lists", intent: intent("filter lists"), tier: "standard" });
+    // both contracts touch a trust boundary (tagged "security"), so both are escalated; the owner approves them in one sitting
     await runUntil(db, ex, clk, async () => (await taskRow(db, a)).step === "await_owner_contract" && (await taskRow(db, b)).step === "await_owner_contract");
-    await approveContract(db, a);
-    await approveContract(db, b);
-    await runUntil(db, ex, clk, async () => (await openDecisions(db, a)).some((d) => d.kind === "contract_github_approval"));
+    expect((await openDecisions(db, a))[0]!.why).toMatch(/trust boundary \(security\)/);
+    for (const id of [a, b]) {
+      const [c] = await contractRows(db, id);
+      await decideContract(db, { taskId: id, contractId: c!.id, choice: "approve", note: "", sha256: c!.sha256 });
+    }
+    await runUntil(db, ex, clk, async () => state.contractPrs.size > 0);
     expect(state.contractPrs.size).toBe(1); // one PR for both
     const [only] = [...state.contractPrs.values()];
     const ka = (await taskRow(db, a)).key!;
@@ -31,11 +30,11 @@ describe("several tasks: batched approvals, serialized and stacked work", () => 
     expect(only!.files).toEqual([`oracle/${ka}/check.mjs`, `oracle/${kb}/check.mjs`, `tasks/${ka}/contract.json`, `tasks/${ka}/task.json`, `tasks/${kb}/contract.json`, `tasks/${kb}/task.json`].sort());
     const prFiles = ex.log.find((l) => l.op === "transport" && (l.params.ops as { op: string }[])[0]!.op === "pr_from_files")!;
     expect(String((prFiles.params.ops as { branch: string }[])[0]!.branch)).toMatch(/^amend\/multi\//);
-    expect((await openDecisions(db, b)).length).toBe(0); // the owner confirms once, on the leader's decision
+    expect([...(await openDecisions(db, a)), ...(await openDecisions(db, b))].length).toBe(0); // nobody is asked
     await runUntil(db, ex, clk, async () => (await taskRow(db, a)).state === "IN_PROGRESS" && (await taskRow(db, b)).state !== "PROPOSED");
     expect((await taskRow(db, a)).state).toBe("IN_PROGRESS"); // a builds first ...
     expect((await taskRow(db, b)).state).toBe("CONTRACTED"); // ... b is serialized behind it (this project serializes)
-    const merges = ex.log.filter((l) => l.op === "transport" && (l.params.ops as { op: string }[])[0]!.op === "merge_approved");
+    const merges = ex.log.filter((l) => l.op === "transport" && (l.params.ops as { op: string }[])[0]!.op === "merge_system");
     expect(merges.length).toBe(1);
   });
 
@@ -46,13 +45,11 @@ describe("several tasks: batched approvals, serialized and stacked work", () => 
     const { state, h } = scenario();
     const ex = new FakeExecutor(db, h);
     const a = await createTask(db, { projectId: project.id, title: "Sort lists", intent: intent("sort lists"), tier: "standard" });
-    await runUntil(db, ex, clk, async () => (await taskRow(db, a)).step === "await_owner_contract");
-    await approveContract(db, a);
+    await runUntil(db, ex, clk, async () => (await contractApproved(db, a)));
     await runUntil(db, ex, clk, async () => (await taskRow(db, a)).step === "await_acceptance");
     const ta = await taskRow(db, a);
     const b = await createTask(db, { projectId: project.id, title: "Filter lists", intent: intent("filter lists"), tier: "standard" });
-    await runUntil(db, ex, clk, async () => (await taskRow(db, b)).step === "await_owner_contract");
-    await approveContract(db, b);
+    await runUntil(db, ex, clk, async () => (await contractApproved(db, b)));
     await runUntil(db, ex, clk, async () => (await taskRow(db, b)).step === "await_acceptance");
     const tb = await taskRow(db, b);
     expect(tb.stackParentId).toBe(a);

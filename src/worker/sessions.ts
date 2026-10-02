@@ -1,5 +1,5 @@
 import type { TaskCtx } from "./context";
-import { harnessFailure, pollDue, vols } from "./common";
+import { blockEvidence, harnessFailure, pollDue, vols } from "./common";
 
 /**
  * Start a Builder-slot session: a fresh worktree of the repository at `ref`, then Claude Code in its isolated container. The
@@ -74,6 +74,14 @@ export async function finishSession(ctx: TaskCtx, runId: number, container: stri
     closingText: typeof res?.result === "string" ? res.result.slice(0, 4000) : typeof r.tail === "string" ? String(r.tail).slice(-1500) : null,
     finishedAt: ctx.now(),
   });
+  const closing = typeof res?.result === "string" ? res.result : "";
+  if (/Failed to authenticate|OAuth session expired|Invalid API key|Please run \/login/i.test(closing) && Number(res?.num_turns ?? 0) <= 1) {
+    // the worker never started working: its vendor login is not usable. Not the work's fault and not fixable by retrying blindly.
+    const run = await ctx.run(runId);
+    await ctx.updateRun(runId, { status: "harness_error", outcome: "aborted" });
+    await blockEvidence(ctx, `The ${run?.role === "verifier" ? "Verifier" : "Builder"}'s vendor login is not usable (${closing.slice(0, 120)}). This is a credential problem of the worker environment, not of the work.`, { run: runId, credential: true }, { auto: false });
+    return "running";
+  }
   if (typeof res?.session_id === "string") {
     const run = await ctx.run(runId);
     if (run?.role === "builder" && run.purpose !== "draft_contract") await ctx.save({ builderSessionId: res.session_id });

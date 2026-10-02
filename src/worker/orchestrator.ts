@@ -9,6 +9,8 @@ import * as D from "./steps-decision";
 import * as M from "./steps-mutation";
 import * as O from "./steps-oracle";
 import * as A from "./steps-attribute";
+import * as R from "./steps-regress";
+import { awaitAccess, selfRecover } from "./common";
 
 type Step = (ctx: TaskCtx) => Promise<void>;
 
@@ -42,7 +44,11 @@ export const STEPS: Record<string, Step> = {
   attribute_poll: A.attributePoll,
   attribute_collect: A.attributeCollect,
   regate: A.regate,
+  regress_start: R.regressStart,
+  regress_poll: R.regressPoll,
+  regress_pr: R.regressPr,
   resume_after_oracle: B.resumeAfterOracle,
+  sync_branch: B.syncBranch,
   mutation_start: M.mutationStart,
   mutation_poll: M.mutationPoll,
   mutant_eval: M.mutantEval,
@@ -52,6 +58,8 @@ export const STEPS: Record<string, Step> = {
   await_acceptance: B.awaitAcceptance,
   cleanup: B.cleanup,
   await_decision: D.awaitDecision,
+  await_access: awaitAccess,
+  self_recover: selfRecover,
   done: async () => {},
 };
 

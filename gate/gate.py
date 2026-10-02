@@ -141,14 +141,23 @@ def main():
                 if p == "tasks/%s/task.json" % tid: continue
                 b = show(head, p)
                 if listed.get(p) != (sha256(b) if b is not None else "DELETED"): finish("FAIL:TAMPER", "protected file %s not covered by the latest amendment hash of %s" % (p, tid))
-        try: reviews = api("/repos/%s/pulls/%s/reviews?per_page=100" % (REPO, PR["number"]))
-        except Exception as e: finish("BLOCKED:EVIDENCE", "cannot read reviews: %s" % str(e)[:120])
-        mine = [r for r in reviews if (r.get("user") or {}).get("login", "").lower() == policy["owner_login"].lower() and r.get("state") in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED")]
-        last = max(mine, key=lambda r: (r.get("submitted_at") or "", r.get("id") or 0)) if mine else None
-        ok = bool(last) and last.get("state") == "APPROVED" and last.get("commit_id") == head
-        OUT["checks"]["owner_approval_of_head"] = bool(ok)
-        if not ok: finish("BLOCKED:DECISION", "protected change awaits the owner's approval of head %s" % head)
         if [p for p in changed if p not in prot]: finish("FAIL:TAMPER", "an amendment PR may change only protected files")
+        # V1 owner policy (policy.json on the BASE branch, owner-only path): a hash-bound amendment of task records and oracles that
+        # was opened by the control system's own App needs no owner review - the owner approved the intent, the control system
+        # validated the contract and calibrated the check. Baselines (design decisions), any other author, or a repository without
+        # this policy keep the owner's review of the exact head.
+        ap = policy.get("amendment_approval") or {}
+        author = (PR.get("user") or {}).get("login", "")
+        by_gate = ap.get("mode") == "gate" and bool(ap.get("author")) and author.lower() == str(ap.get("author")).lower() and all(p.split("/")[0] in ("tasks", "oracle") for p in prot)
+        OUT["checks"]["amendment_approval"] = "gate" if by_gate else "owner"
+        if not by_gate:
+            try: reviews = api("/repos/%s/pulls/%s/reviews?per_page=100" % (REPO, PR["number"]))
+            except Exception as e: finish("BLOCKED:EVIDENCE", "cannot read reviews: %s" % str(e)[:120])
+            mine = [r for r in reviews if (r.get("user") or {}).get("login", "").lower() == policy["owner_login"].lower() and r.get("state") in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED")]
+            last = max(mine, key=lambda r: (r.get("submitted_at") or "", r.get("id") or 0)) if mine else None
+            ok = bool(last) and last.get("state") == "APPROVED" and last.get("commit_id") == head
+            OUT["checks"]["owner_approval_of_head"] = bool(ok)
+            if not ok: finish("BLOCKED:DECISION", "protected change awaits the owner's approval of head %s" % head)
         finish("AMENDMENT-OK")
     # ---------------- task / contract binding (from BASE only) ----------------
     m = re.match(r"^task/(T[0-9]+)/", branch)

@@ -85,7 +85,7 @@ export interface OracleResult {
  * recognised mechanically and routed to the oracle's author, never to the Builder.
  */
 export const ORACLE_DEFECT =
-  /(^|\s|·\s)HARNESS:|\b(ReferenceError|SyntaxError|is not defined|is not a function|Cannot measure|Cannot read properties of (undefined|null)|oracle exit \d+|result line\(s\))/;
+  /(^|\s|·\s)HARNESS:|\b(ReferenceError|SyntaxError|TypeError|is not defined|is not a function|Cannot measure|Cannot read properties of (undefined|null)|strict mode violation|oracle exit \d+|result line\(s\))/;
 
 export function isOracleDefect(detail: string | undefined | null): boolean {
   return ORACLE_DEFECT.test(String(detail ?? ""));

@@ -6,6 +6,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { contracts, evidence } from "@/db/schema";
 import { oracleCriteria, sha256, type Contract } from "@/domain/contract";
 import { calibrate, isOracleDefect, loosenedCriteria, staticOracleProblems, type OracleResult } from "@/domain/oracle-check";
+import { contractEscalation } from "@/domain/policy";
 import { oraclePrompt, VERIFIER_SCAFFOLD } from "@/domain/prompts";
 import type { TaskCtx } from "./context";
 import { currentContract, type ContractRow } from "./steps-contract";
@@ -80,7 +81,7 @@ export async function oracleStart(ctx: TaskCtx): Promise<void> {
 /** Data that travels through the whole oracle pipeline. */
 function keep(ctx: TaskCtx) {
   const d = ctx.data;
-  return { mode: d.mode ?? "contract", round: d.round, repairReason: d.repairReason, prevCalibration: d.prevCalibration, resume: d.resume };
+  return { mode: d.mode ?? "contract", round: d.round, repairReason: d.repairReason, prevCalibration: d.prevCalibration, resume: d.resume, repaired: d.repaired };
 }
 
 export async function oraclePoll(ctx: TaskCtx): Promise<void> {
@@ -184,9 +185,32 @@ export async function oracleCalibrate(ctx: TaskCtx): Promise<void> {
   const problems = [...cal.problems];
   const prev = ctx.data.prevCalibration as Cal | undefined;
   if (mode === "repair" && prev) {
-    const loosened = loosenedCriteria(prev.failsOnMain, cal.failsOnMain);
+    // criteria whose check was itself found defective are exempt: their earlier "fail on main" may have been the defect, not the product
+    const exempt = new Set(((ctx.data.repaired as string[] | undefined) ?? []).map((k) => String(k).replace(/^.*:/, "")));
+    const loosened = loosenedCriteria(prev.failsOnMain, cal.failsOnMain).filter((k) => !exempt.has(k));
     for (const k of loosened)
       problems.push(`${k}: the previous check FAILED on main (the feature does not exist there) but the repaired check PASSES there - the repair made the check weaker; keep every product assertion and fix only the harness`);
+  }
+  const headSha = (ctx.data.resume as { head?: string } | undefined)?.head;
+  if (mode === "repair" && headSha && !problems.length) {
+    // a repaired check must also EXECUTE against the build it will judge (the arbiter showed the application is fine there): any
+    // crash / harness signature on that build means the repair did not fix the defect. Passing is not required here.
+    const wh = await ctx.once("wth", "worktree", () => ({ vol: v.final, repo: ctx.project.repo, ref: headSha }));
+    if (!wh) return;
+    const xh = wh.status === "done" ? await ctx.once("xfh", "vol_export", () => ({ name: v.final, dir: `agents-${ctx.task.id}` })) : wh;
+    if (!xh) return;
+    const uh = xh.status === "done" ? await ctx.once("pvh", "preview", () => ({ candidate: pv, action: "up", xfer_ctx: `agents-${ctx.task.id}`, tag: headSha.slice(0, 12) })) : xh;
+    if (!uh) return;
+    if (uh.status === "done" && uh.result?.build_ok && uh.result?.health) {
+      const rh = await ctx.once("runh", "oracle_run", () => ({ preview: pv, oracle_js: js }));
+      if (!rh) return;
+      const dh = await ctx.once("downh", "preview", () => ({ candidate: pv, action: "down" }));
+      if (!dh) return;
+      if (rh.status === "done") {
+        const onHead = calibrate(expected, (rh.result?.results as OracleResult[] | undefined) ?? [], String(rh.result?.stderr ?? ""));
+        for (const pr of onHead.problems) problems.push(`against the build under test (${headSha.slice(0, 8)}): ${pr}`);
+      }
+    }
   }
   const attempt = Number(ctx.data.attempt ?? 1);
   if (!problems.length)
@@ -217,19 +241,30 @@ export async function openContractApproval(ctx: TaskCtx, c: ContractRow, js: str
   await ctx.artifact("oracle", `oracle/${ctx.task.key}/check.mjs (contract v${c.version})`, js);
   if (notes) await ctx.artifact("verifier-notes", "Verifier NOTES.md", notes);
   await ctx.db.update(contracts).set({ oracleJs: js, oracleSha256: oracleSha, status: "review", calibration: cal }).where(eq(contracts.id, c.id));
-  await ctx.openDecision({
-    kind: "contract_approval",
+  const decision = {
+    kind: "contract_approval" as const,
     title: `Approve the contract for ${ctx.task.key}: ${ctx.task.title}`,
-    why: "Work may start only on an owner-approved contract. Once approved it is frozen; changes need an amendment.",
+    why: "Work may start only on an approved contract. Once approved it is frozen; changes need an amendment.",
     options: [
-      { id: "approve", label: "Approve contract", consequence: "The contract and its oracle are proposed for the repository; you confirm once on GitHub." },
+      { id: "approve", label: "Approve contract", consequence: "The contract and its oracle become authoritative in the repository and the build starts." },
       { id: "changes", label: "Request changes", consequence: "The drafter revises the contract using your note." },
       { id: "reject", label: "Reject the intent", consequence: "The task ends; nothing is built." },
     ],
     recommendation: "approve",
-    context: { contractId: c.id, version: c.version, sha256: c.sha256, oracleSha256: oracleSha, notes: notes ?? null, calibration: cal, problems },
-  });
-  await ctx.log("verifier", `Oracle of record written and validated (${js.length} bytes, sha ${oracleSha.slice(0, 12)}); contract v${c.version} is ready for your approval.`, {
+    context: { contractId: c.id, version: c.version, sha256: c.sha256, oracleSha256: oracleSha, notes: notes ?? null, calibration: cal, problems } as Record<string, unknown>,
+  };
+  // A contract that exists is not a reason to ask the owner. It is approved automatically when it mechanically stays within the
+  // recorded intent; the owner is asked only for a real owner-level decision (domain/policy.ts).
+  const escalate = contractEscalation({ taskTier: ctx.task.tier, body: c.body as unknown as Contract, lintOk: c.lint?.ok === true, oracleProblems: problems, calibrated: cal !== null });
+  if (escalate.length === 0) {
+    await ctx.db.update(contracts).set({ status: "approved_app" }).where(eq(contracts.id, c.id));
+    await ctx.policyDecision(decision, "approve", `Contract v${c.version} (sha256 ${c.sha256.slice(0, 12)}) is lint-clean, standard tier, touches no trust boundary, and its check passed validation and calibration: within the recorded intent.`);
+    return ctx.goto("contract_batch", { contractId: c.id, since: ctx.now().getTime() });
+  }
+  decision.why = `This contract needs your decision: ${escalate.join("; ")}.`;
+  decision.context.escalation = escalate;
+  await ctx.openDecision(decision);
+  await ctx.log("verifier", `Oracle of record written and validated (${js.length} bytes, sha ${oracleSha.slice(0, 12)}); contract v${c.version} needs your approval: ${escalate.join("; ")}.`, {
     run: runId,
   });
   await ctx.goto("await_owner_contract", { contractId: c.id });

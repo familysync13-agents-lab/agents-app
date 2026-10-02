@@ -1,4 +1,7 @@
-import type { TaskState } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
+import { decisions, type TaskState } from "@/db/schema";
+import { recoveryDelay } from "@/domain/policy";
+import { BLOCKED } from "@/domain/lifecycle";
 import type { Job, TaskCtx } from "./context";
 
 export const PROTECTED = ["oracle/**", "baselines/**", "tasks/**", ".github/**", "CODEOWNERS", "gate/**", "policy.json"];
@@ -30,6 +33,7 @@ export async function pollDue(ctx: TaskCtx, seconds: number): Promise<boolean> {
  * Returns true when the caller should just wait (a retry was scheduled or the task was blocked).
  */
 export async function harnessFailure(ctx: TaskCtx, job: Job, key: string, what: string): Promise<void> {
+  if (String(job.error ?? "").includes("ACCESS:")) return accessBlock(ctx, key, what);
   const n = ctx.task.infraRetries + 1;
   await ctx.log("executor", `${what} failed in the executor (harness): ${String(job.error ?? "").slice(0, 300)}`, { job: job.id });
   if (n <= MAX_INFRA_RETRIES) {
@@ -42,14 +46,73 @@ export async function harnessFailure(ctx: TaskCtx, job: Job, key: string, what: 
   });
 }
 
-export async function blockEvidence(ctx: TaskCtx, reason: string, fact: Record<string, unknown>) {
+/**
+ * A permission problem, not a transient failure: GitHub refuses the agent App a token for this repository. Retrying cannot help and is
+ * never offered (V1 finding: the owner was asked to "Retry" the same failure eight times). The task waits in `await_access`, which
+ * probes access by itself and resumes the moment access exists - no owner click in the app is needed.
+ */
+export async function accessBlock(ctx: TaskCtx, key: string, what: string) {
   const resumeState = ctx.task.state;
   const resumeStep = ctx.task.step;
+  const data = { ...ctx.data };
+  delete data[key];
+  const url = `https://github.com/organizations/${ctx.project.org}/settings/installations`;
+  if (!(BLOCKED as readonly string[]).includes(resumeState))
+    await ctx.transition("BLOCKED_EVIDENCE", `GitHub permission missing: the agent App has no access to ${ctx.project.org}/${ctx.project.repo} (${what})`, { permission: "agent-app-repository-access", repo: ctx.project.repo });
+  await ctx.openDecision({
+    kind: "block",
+    title: `GitHub permission needed: give the agent App access to ${ctx.project.repo}`,
+    why: `GitHub refuses the agent App a token for ${ctx.project.org}/${ctx.project.repo}: its installation does not include this repository. Only you can grant it: open ${url} , choose Configure next to the agent App, add "${ctx.project.repo}" under Repository access and Save. Nothing needs to be clicked here afterwards - the control system checks every minute and continues by itself.`,
+    options: [{ id: "abandon", label: "Abandon the task", consequence: "The task ends; nothing is merged." }],
+    context: { stage: "access", url },
+  });
+  await ctx.log("system", `Waiting for GitHub access to ${ctx.project.repo} (checked every minute; resumes automatically).`, {});
+  await ctx.save({ infraRetries: 0, step: "await_access", stepData: { resumeStep, resumeState: (BLOCKED as readonly string[]).includes(resumeState) ? (ctx.task.resumeState ?? "PROPOSED") : resumeState, resumeData: data, decision: ctx.lastOpened() } });
+}
+
+export async function awaitAccess(ctx: TaskCtx): Promise<void> {
+  const [d] = await ctx.db.select().from(decisions).where(eq(decisions.id, Number(ctx.data.decision)));
+  if (d?.status === "decided" && d.choice === "abandon") {
+    await ctx.transition("ABANDONED", "Abandoned by the owner while waiting for GitHub access", { decision: d.id });
+    return ctx.goto("done", {});
+  }
+  if (!("probe" in ctx.data) && !(await pollDue(ctx, 60))) return;
+  const job = await ctx.once("probe", "access_check", () => ({ repo: ctx.project.repo }));
+  if (!job) return;
+  await ctx.forget("probe");
+  if (job.status !== "done" || !job.result?.ok) return;
+  await ctx.closeDecisions("block", "granted", "github", "access detected automatically");
+  await ctx.transition(ctx.data.resumeState as TaskState, `GitHub access to ${ctx.project.repo} detected; continuing automatically`, { access_check: job.id });
+  await ctx.goto(String(ctx.data.resumeStep), (ctx.data.resumeData as Record<string, unknown>) ?? {});
+}
+
+/**
+ * A step cannot continue. Self-recovery first: the step is repeated automatically after a delay (twice per step, recorded as policy
+ * decisions) - the owner is not a Retry button. Only when that is exhausted, or when repeating cannot help (`auto: false`: a
+ * credential, a security stop, a fact that will not change), the task blocks and the owner is asked.
+ */
+export async function blockEvidence(ctx: TaskCtx, reason: string, fact: Record<string, unknown>, opts: { auto?: boolean } = {}) {
+  const resumeState = ctx.task.state;
+  const resumeStep = ctx.task.step;
+  if (opts.auto !== false && !(BLOCKED as readonly string[]).includes(resumeState) && resumeStep !== "self_recover") {
+    const prior = await ctx.db.select({ id: decisions.id, context: decisions.context }).from(decisions).where(and(eq(decisions.taskId, ctx.task.id), eq(decisions.decidedVia, "policy")));
+    const used = prior.filter((d) => (d.context as { stage?: string; resumeStep?: string }).stage === "recovery" && (d.context as { resumeStep?: string }).resumeStep === resumeStep).length;
+    const delay = recoveryDelay(used);
+    if (delay !== null) {
+      await ctx.policyDecision(
+        { kind: "block", title: `Self-recovery: repeat "${resumeStep}"`, why: reason, options: [{ id: "retry", label: "Retry", consequence: "The control system repeats the failed step." }], recommendation: "retry", context: { stage: "recovery", resumeStep, fact } },
+        "retry",
+        `Automatic retry ${used + 1} of 2 in ${Math.round(delay / 60)} min (retryable failure; reversible; no owner decision involved).`,
+      );
+      await ctx.save({ infraRetries: 0 });
+      return ctx.goto("self_recover", { resumeStep, at: ctx.now().getTime() + delay * 1000, reason: reason.slice(0, 500) });
+    }
+  }
   // state first: a decision is only ever opened for a task that is actually blocked
   await ctx.transition("BLOCKED_EVIDENCE", reason, fact, { resumeState: resumeState as TaskState, infraRetries: 0 });
   await ctx.openDecision({
     kind: "block",
-    title: "Blocked: evidence unavailable",
+    title: opts.auto === false ? "Blocked: needs you" : "Blocked: automatic recovery did not succeed",
     why: reason,
     options: [
       { id: "retry", label: "Retry", consequence: "The control system repeats the failed step." },
@@ -59,6 +122,13 @@ export async function blockEvidence(ctx: TaskCtx, reason: string, fact: Record<s
     context: { stage: "evidence", resumeStep, resumeState },
   });
   await ctx.goto("await_decision", {});
+}
+
+/** Step: wait out the recovery delay, then repeat the step that failed (fresh step data). */
+export async function selfRecover(ctx: TaskCtx): Promise<void> {
+  if (ctx.now().getTime() < Number(ctx.data.at ?? 0)) return;
+  await ctx.log("system", `Self-recovery: repeating "${String(ctx.data.resumeStep)}".`, {});
+  await ctx.goto(String(ctx.data.resumeStep), {});
 }
 
 /** Result of a transport job: the named sub-operation's result. */

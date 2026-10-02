@@ -14,6 +14,8 @@ export const AdminOp = z.discriminatedUnion("op", [
   z.object({ op: z.literal("pause"), taskId: z.number().int(), reason: z.string().min(8).max(2000) }),
   z.object({ op: z.literal("resume"), taskId: z.number().int(), reason: z.string().min(8).max(2000) }),
   z.object({ op: z.literal("stop_run"), taskId: z.number().int(), runId: z.number().int(), reason: z.string().min(8).max(2000) }),
+  z.object({ op: z.literal("retry_blocked"), taskId: z.number().int(), reason: z.string().min(8).max(2000) }),
+  z.object({ op: z.literal("recheck_gate"), taskId: z.number().int(), reason: z.string().min(8).max(2000) }),
   z.object({ op: z.literal("retry_step"), taskId: z.number().int(), reason: z.string().min(8).max(2000) }),
   z.object({ op: z.literal("reset_budget"), taskId: z.number().int(), reason: z.string().min(8).max(2000) }),
   z.object({ op: z.literal("reopen_decision"), taskId: z.number().int(), decisionId: z.number().int(), reason: z.string().min(8).max(2000) }),
@@ -24,6 +26,8 @@ export const ADMIN_OPS: Record<AdminOp["op"], { label: string; help: string }> =
   pause: { label: "Pause the task", help: "The control loop stops advancing this task (running worker sessions finish on their own)." },
   resume: { label: "Resume the task", help: "The control loop continues from the step where the task was paused." },
   stop_run: { label: "Stop a worker session", help: "Kills a running Builder/Verifier session by name and records the run as aborted." },
+  retry_blocked: { label: "Retry an infrastructure block", help: "Answers an open 'evidence unavailable' block with Retry (only infrastructure blocks; never product or security decisions)." },
+  recheck_gate: { label: "Re-evaluate the latest gate result", help: "Returns a task with an open PR to reading the gate's latest verdict for its current head (failure routing runs again). No state is invented." },
   retry_step: { label: "Retry the current step", help: "Forgets the current step's cached executor results so the step runs again (harness recovery)." },
   reset_budget: { label: "Reset the correction budget", help: "Sets the task's correction count to 0 (e.g. when corrections were caused by check defects)." },
   reopen_decision: { label: "Re-open a decision", help: "A decision that was applied or superseded wrongly is re-opened as a fresh open decision; the task waits for it." },
@@ -94,6 +98,32 @@ async function apply(tx: Tx, a: AdminOp, t: typeof tasks.$inferSelect): Promise<
       await tx.insert(executorJobs).values({ taskId: t.id, op: "session", params: { name: r.container, kill: true } });
       await tx.update(runs).set({ status: "finished", outcome: "aborted", finishedAt: new Date() }).where(eq(runs.id, r.id));
       return { run: r.id, container: r.container, stopped: true };
+    }
+    case "retry_blocked": {
+      if (t.state !== "BLOCKED_EVIDENCE" || t.step !== "await_decision") throw new AdminRefused("task is not waiting on an evidence block");
+      const [d] = await tx.select().from(decisions).where(and(eq(decisions.id, Number((t.stepData as { awaiting?: number }).awaiting)), eq(decisions.taskId, t.id)));
+      if (!d || d.status !== "open" || d.kind !== "block") throw new AdminRefused("no open block decision is awaited");
+      if (String((d.context as { stage?: string }).stage) !== "evidence" || !d.options.some((o) => o.id === "retry")) throw new AdminRefused("only infrastructure (evidence) blocks can be retried by an operator");
+      await tx.update(decisions).set({ status: "decided", choice: "retry", decidedVia: "app", decidedAt: new Date(), note: `operator retry (admin): ${a.reason}`.slice(0, 2000) }).where(eq(decisions.id, d.id));
+      return { decision: d.id, choice: "retry" };
+    }
+    case "recheck_gate": {
+      if (terminal) throw new AdminRefused(`task is ${t.state}`);
+      if (!t.prNumber || !t.headSha) throw new AdminRefused("task has no open PR head to re-evaluate");
+      if (t.state === "BLOCKED_DECISION") {
+        // only a Builder block raised while correcting a gate failure may be set aside this way (never an owner product question
+        // from contract drafting, a budget or a security stop)
+        const [od] = await tx.select().from(decisions).where(and(eq(decisions.taskId, t.id), eq(decisions.status, "open")));
+        if (!od || od.kind !== "block" || String((od.context as { stage?: string }).stage) !== "build") throw new AdminRefused("the open decision is not a Builder block from a gate correction");
+      } else if (t.state !== "VERIFYING" && t.state !== "BLOCKED_EVIDENCE") throw new AdminRefused(`task is ${t.state}, not VERIFYING or blocked`);
+      const running = await tx.select({ id: runs.id }).from(runs).where(and(eq(runs.taskId, t.id), eq(runs.status, "running")));
+      if (running.length) throw new AdminRefused(`worker run(s) ${running.map((r) => r.id).join(", ")} still running - stop them first`);
+      if (t.state !== "VERIFYING") {
+        await tx.update(decisions).set({ status: "superseded" }).where(and(eq(decisions.taskId, t.id), eq(decisions.status, "open")));
+        await tx.insert(transitions).values({ taskId: t.id, fromState: t.state, toState: "VERIFYING", reason: `Gate result re-evaluated by an audited admin operation: ${a.reason}`.slice(0, 500), fact: { admin: "recheck_gate", head: t.headSha } });
+      }
+      await tx.update(tasks).set({ state: "VERIFYING", step: "await_gate", stepData: { head: t.headSha, since: Date.now() } }).where(eq(tasks.id, t.id));
+      return { step: "await_gate", head: t.headSha };
     }
     case "retry_step": {
       if (terminal) throw new AdminRefused(`task is ${t.state}`);

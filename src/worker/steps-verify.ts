@@ -1,8 +1,9 @@
 import { acceptancePrompt, VERIFIER_SCAFFOLD } from "@/domain/prompts";
+import { verificationPlan } from "@/domain/policy";
 import type { TaskCtx } from "./context";
 import { currentContract } from "./steps-contract";
 import { correction, markDone } from "./steps-build";
-import { b64, mainSha, unb64, vols } from "./common";
+import { b64, blockEvidence, mainSha, unb64, vols } from "./common";
 import { finishSession } from "./sessions";
 
 interface Finding {
@@ -35,6 +36,8 @@ export async function acceptanceStart(ctx: TaskCtx): Promise<void> {
       commitSha: head,
       detail: `The independent Verifier check could not run (${what}); the gate's deterministic evidence stands alone.`,
     });
+    // Unknown is recorded, not escalated: it blocks only where the tier requires independent evidence (critical)
+    if (verificationPlan(ctx.task.tier).unknownBlocks) return blockEvidence(ctx, `Critical tier: the independent Verifier check is required but could not run (${what}).`, { head });
     await ctx.goto("mark_done", { acceptance: "unavailable" });
   };
   const wt = await ctx.once("wt", "worktree", () => ({ vol: v.final, repo: ctx.project.repo, ref: head }));
@@ -119,6 +122,7 @@ export async function acceptanceCollect(ctx: TaskCtx): Promise<void> {
       commitSha: head,
       detail: "The Verifier wrote no structured findings file.",
     });
+    if (verificationPlan(ctx.task.tier).unknownBlocks) return blockEvidence(ctx, "Critical tier: the independent Verifier wrote no findings file.", { head, run: runId });
     return ctx.goto("mark_done", { acceptance: "no_output" });
   }
   await ctx.updateRun(runId, { outcome: "output" });
@@ -158,7 +162,8 @@ export async function acceptanceCollect(ctx: TaskCtx): Promise<void> {
       artifact: art,
     });
   }
-  await ctx.goto("mutation_start", { acceptance: { run: runId, findings: findings.length } });
+  // token policy: the oracle mutation test (an extra AI session and previews) runs for the critical tier only
+  await ctx.goto(verificationPlan(ctx.task.tier).mutation ? "mutation_start" : "mark_done", { acceptance: { run: runId, findings: findings.length } });
 }
 
 export { markDone };

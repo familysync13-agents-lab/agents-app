@@ -77,3 +77,12 @@ export async function openDecisions(db: Db, taskId: number) {
   const rows = await db.select().from(decisions).where(eq(decisions.taskId, taskId));
   return rows.filter((d) => d.status === "open");
 }
+
+/** The contract has been approved (by policy or by the owner) and is on its way into the repository. */
+export async function contractApproved(db: Db, taskId: number) {
+  return (await contractRows(db, taskId)).some((c) => ["approved_app", "pr_open", "merged"].includes(c.status));
+}
+export async function policyDecisions(db: Db, taskId: number) {
+  const rows = await db.select().from(decisions).where(eq(decisions.taskId, taskId));
+  return rows.filter((d) => d.decidedVia === "policy");
+}

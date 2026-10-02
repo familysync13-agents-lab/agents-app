@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { adminActions, decisions, executorJobs, runs, tasks } from "@/db/schema";
 import { createTask, decideBlock } from "@/server/owner";
 import { runAdmin } from "@/server/admin";
-import { clock, FakeExecutor, openDecisions, runUntil, setup, taskRow } from "./support/harness";
+import { clock, FakeExecutor, contractApproved, openDecisions, runUntil, setup, taskRow } from "./support/harness";
 import { fixtureHandlers as scenario } from "./support/fixture-handlers";
 import { tick } from "@/worker/orchestrator";
 
@@ -24,7 +24,7 @@ describe("audited admin operations", () => {
     const again = await runAdmin(db, "owner", { op: "pause", taskId: id, reason: "second pause attempt here" });
     expect(again).toMatchObject({ ok: false, refusal: "task is already paused" });
     expect((await runAdmin(db, "owner", { op: "resume", taskId: id, reason: "investigation finished, safe" })).ok).toBe(true);
-    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_owner_contract");
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
     const audit = await db.select().from(adminActions).orderBy(adminActions.id);
     expect(audit.map((a) => [a.op, a.outcome])).toEqual([
       ["pause", "applied"],
@@ -60,6 +60,27 @@ describe("audited admin operations", () => {
     // the control loop keeps waiting (the old decided decision is not re-applied)
     for (let i = 0; i < 5; i++) await tick(db, clk.now);
     expect((await taskRow(db, id)).state).toBe("BLOCKED_DECISION");
+  });
+
+  it("waits for a GitHub permission without offering Retry, and resumes by itself when access exists", async () => {
+    const { db, project } = await setup();
+    const clk = clock();
+    const { h } = scenario();
+    let access = false;
+    const wt = h.worktree!;
+    h.worktree = (p, j) => (access ? wt(p, j) : new Error("JobError: ACCESS: the agent GitHub App installation has no access to repository bakeoff-c1 (token mint refused)"));
+    h.access_check = () => ({ ok: access });
+    const ex = new FakeExecutor(db, h);
+    const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_access");
+    const [d] = await openDecisions(db, id);
+    expect(d!.options.map((o) => o.id)).toEqual(["abandon"]); // no Retry button for a permission problem
+    expect(d!.why).toContain("settings/installations");
+    await expect(runUntil(db, ex, clk, async () => (await taskRow(db, id)).step !== "await_access", 10)).rejects.toThrow();
+    expect(ex.log.filter((l) => l.op === "worktree").length).toBe(1); // not hammered
+    access = true;
+    await runUntil(db, ex, clk, async () => await contractApproved(db, id));
+    expect((await db.select().from(decisions).where(eq(decisions.id, d!.id)))[0]!.choice).toBe("granted");
   });
 
   it("refuses invalid requests and records the refusal", async () => {
