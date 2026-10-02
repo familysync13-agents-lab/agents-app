@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FlowMap } from "@/components/flow-map";
 import { ProposalsForm } from "@/components/forms";
 import { LiveRefresh } from "@/components/live-refresh";
+import { ProjectItem } from "@/components/project-item";
 import { stepInfo } from "@/components/steps";
 import { Ago, Card, CardHeader, Empty, RoleTag, StateChip, cx, type Role } from "@/components/ui";
 import { failureRouting, flowState, nodeOf, NODE_LABEL, NODES, PARTY } from "@/domain/ops";
@@ -230,20 +231,15 @@ export default async function Command() {
             {d.projects.map((p) => {
               const pt = d.tasks.filter((t) => t.projectId === p.id);
               return (
-                <li key={p.id}>
-                  <Link href={`/projects/${p.slug}`} className="grid grid-cols-[1fr_auto] items-center gap-2 px-5 py-3.5 hover:bg-panel-2/50">
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">{p.name}</span>
-                      <span className="block truncate font-mono text-xs text-mute">
-                        {p.org}/{p.repo}
-                      </span>
-                    </span>
-                    <span className="flex gap-4 text-xs text-ink-2 tabular-nums">
-                      <span>{pt.filter((t) => !["ACCEPTED", "REJECTED", "ABANDONED"].includes(t.state)).length} active</span>
-                      <span className="text-ok">{pt.filter((t) => t.state === "ACCEPTED").length} accepted</span>
-                    </span>
-                  </Link>
-                </li>
+                <ProjectItem
+                  key={p.id}
+                  slug={p.slug}
+                  name={p.name}
+                  org={p.org}
+                  repo={p.repo}
+                  active={pt.filter((t) => !["ACCEPTED", "REJECTED", "ABANDONED"].includes(t.state)).length}
+                  accepted={pt.filter((t) => t.state === "ACCEPTED").length}
+                />
               );
             })}
           </ul>
