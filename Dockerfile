@@ -1,0 +1,31 @@
+# Agents App V0 control plane (web + control loop). Base pinned by index digest (the Foundation v1 node image, Node 24 LTS).
+FROM node@sha256:7da5980a342ed134ad56bb16c918f94548cd15cf3b961aa231c286598accb536 AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+# `check` stage: what the repository gate runs as the candidate checks (types, lint, tests on PGlite).
+FROM deps AS check
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+CMD ["npm", "run", "check"]
+
+FROM deps AS build
+ARG APP_BUILD_ID=dev
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1 APP_BUILD_ID=${APP_BUILD_ID} NEXT_PUBLIC_BUILD_ID=${APP_BUILD_ID}
+RUN npm run typecheck && npm run build && npm prune --omit=dev --no-audit --no-fund
+
+FROM node@sha256:7da5980a342ed134ad56bb16c918f94548cd15cf3b961aa231c286598accb536
+ARG APP_BUILD_ID=dev
+WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOME=/tmp PORT=3000 APP_BUILD_ID=${APP_BUILD_ID}
+COPY --from=build /app/package.json /app/package-lock.json /app/next.config.ts /app/tsconfig.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/src ./src
+COPY --from=build /app/drizzle ./drizzle
+USER 1000:1000
+EXPOSE 3000
+# `next start` listens on $PORT (3000 here; the gate preview sets 8080)
+CMD ["node_modules/.bin/next", "start", "-H", "0.0.0.0"]

@@ -1,0 +1,196 @@
+import "server-only";
+import { and, desc, eq, gt, inArray, like, notInArray, sql } from "drizzle-orm";
+import { getDb } from "@/db/client";
+import {
+  activity,
+  adminActions,
+  artifacts,
+  backups,
+  contracts,
+  decisions,
+  evidence,
+  executorJobs,
+  gateResults,
+  heartbeats,
+  intentProposals,
+  projects,
+  runs,
+  tasks,
+  transitions,
+  type TaskState,
+} from "@/db/schema";
+
+const TERMINAL: TaskState[] = ["ACCEPTED", "REJECTED", "ABANDONED"];
+
+/* Read models for the UI. Everything shown is read from the operational record - nothing is simulated. */
+
+export async function systemStatus() {
+  const db = await getDb();
+  const hb = await db.select().from(heartbeats);
+  const now = Date.now();
+  const age = (name: string) => {
+    const h = hb.find((x) => x.name === name);
+    return h ? Math.round((now - h.at.getTime()) / 1000) : null;
+  };
+  const exec = hb.find((x) => x.name === "executor")?.info ?? {};
+  const [lastBackup] = await db.select().from(backups).orderBy(desc(backups.id)).limit(1);
+  return {
+    worker: age("worker"),
+    executor: age("executor"),
+    kitRoot: typeof exec.kit_root === "string" ? exec.kit_root : null,
+    operatorQueue: typeof exec.operator_queue === "number" ? exec.operator_queue : null,
+    build: process.env.APP_BUILD_ID ?? "dev",
+    lastBackup: lastBackup ? { at: lastBackup.at, verified: lastBackup.verified, file: lastBackup.file, bytes: lastBackup.bytes } : null,
+  };
+}
+
+/** Everything the command view shows, in one read of the operational record. */
+export async function commandCenter() {
+  const db = await getDb();
+  const ps = await db.select().from(projects).where(eq(projects.active, true)).orderBy(projects.name);
+  const all = await db.select().from(tasks).orderBy(desc(tasks.updatedAt));
+  const live = all.filter((t) => !TERMINAL.includes(t.state));
+  const ids = live.map((t) => t.id);
+  const running = await db.select().from(runs).where(inArray(runs.status, ["starting", "running"]));
+  const openDecisions = await db
+    .select({ d: decisions, t: tasks, p: projects })
+    .from(decisions)
+    .innerJoin(tasks, eq(tasks.id, decisions.taskId))
+    .innerJoin(projects, eq(projects.id, tasks.projectId))
+    .where(eq(decisions.status, "open"))
+    .orderBy(desc(decisions.createdAt));
+  const events = await db
+    .select({ a: activity, key: tasks.key, title: tasks.title, taskId: tasks.id })
+    .from(activity)
+    .innerJoin(tasks, eq(tasks.id, activity.taskId))
+    .orderBy(desc(activity.id))
+    .limit(40);
+  const since = new Date(Date.now() - 90_000);
+  const recentTransitions = await db.select().from(transitions).where(gt(transitions.at, since)).orderBy(desc(transitions.id)).limit(20);
+  const gates = ids.length ? await db.select().from(gateResults).where(inArray(gateResults.taskId, ids)).orderBy(desc(gateResults.id)) : [];
+  const attributions = ids.length
+    ? await db
+        .select({ taskId: evidence.taskId, detail: evidence.detail, commitSha: evidence.commitSha, id: evidence.id })
+        .from(evidence)
+        .where(and(inArray(evidence.taskId, ids), like(evidence.subject, "attribution:%")))
+        .orderBy(desc(evidence.id))
+    : [];
+  const accepted = all.filter((t) => t.state === "ACCEPTED").slice(0, 8);
+  const proposals = await db
+    .select({ p: intentProposals, project: projects.name })
+    .from(intentProposals)
+    .innerJoin(projects, eq(projects.id, intentProposals.projectId))
+    .where(eq(intentProposals.status, "proposed"))
+    .orderBy(intentProposals.id);
+  return { projects: ps, tasks: all, live, running, openDecisions, events, recentTransitions, gates, attributions, accepted, proposals, system: await systemStatus() };
+}
+
+export async function systemPage() {
+  const db = await getDb();
+  const hb = await db.select().from(heartbeats);
+  const bk = await db.select().from(backups).orderBy(desc(backups.id)).limit(20);
+  const audit = await db
+    .select({ a: adminActions, key: tasks.key, title: tasks.title })
+    .from(adminActions)
+    .leftJoin(tasks, eq(tasks.id, adminActions.taskId))
+    .orderBy(desc(adminActions.id))
+    .limit(50);
+  const jobs = await db
+    .select({ status: executorJobs.status, n: sql<number>`count(*)::int` })
+    .from(executorJobs)
+    .groupBy(executorJobs.status);
+  const recentErrors = await db.select().from(executorJobs).where(eq(executorJobs.status, "error")).orderBy(desc(executorJobs.id)).limit(10);
+  return { heartbeats: hb, backups: bk, audit, jobs, recentErrors, system: await systemStatus() };
+}
+
+export async function overview() {
+  const db = await getDb();
+  const ps = await db.select().from(projects).where(eq(projects.active, true)).orderBy(projects.name);
+  const ts = await db.select().from(tasks).orderBy(desc(tasks.updatedAt));
+  const open = await db
+    .select({ d: decisions, t: tasks })
+    .from(decisions)
+    .innerJoin(tasks, eq(tasks.id, decisions.taskId))
+    .where(eq(decisions.status, "open"))
+    .orderBy(desc(decisions.createdAt));
+  return { projects: ps, tasks: ts, decisions: open };
+}
+
+export async function projectBySlug(slug: string) {
+  const db = await getDb();
+  const [p] = await db.select().from(projects).where(eq(projects.slug, slug));
+  if (!p) return null;
+  const ts = await db.select().from(tasks).where(eq(tasks.projectId, p.id)).orderBy(desc(tasks.updatedAt));
+  return { project: p, tasks: ts };
+}
+
+export async function taskDetail(id: number) {
+  const db = await getDb();
+  const [t] = await db.select().from(tasks).where(eq(tasks.id, id));
+  if (!t) return null;
+  const [p] = await db.select().from(projects).where(eq(projects.id, t.projectId));
+  const cs = await db.select().from(contracts).where(eq(contracts.taskId, id)).orderBy(desc(contracts.version));
+  const rs = await db.select().from(runs).where(eq(runs.taskId, id)).orderBy(desc(runs.id));
+  const gs = await db.select().from(gateResults).where(eq(gateResults.taskId, id)).orderBy(desc(gateResults.id));
+  const ev = await db.select().from(evidence).where(eq(evidence.taskId, id)).orderBy(desc(evidence.id));
+  const ds = await db.select().from(decisions).where(eq(decisions.taskId, id)).orderBy(desc(decisions.id));
+  const tr = await db.select().from(transitions).where(eq(transitions.taskId, id)).orderBy(transitions.id);
+  const ac = await db.select().from(activity).where(eq(activity.taskId, id)).orderBy(desc(activity.id)).limit(200);
+  const arts = await db
+    .select({ id: artifacts.id, kind: artifacts.kind, name: artifacts.name, sha256: artifacts.sha256, createdAt: artifacts.createdAt, workerAuthored: artifacts.workerAuthored, size: sql<number>`length(${artifacts.content})` })
+    .from(artifacts)
+    .where(eq(artifacts.taskId, id))
+    .orderBy(desc(artifacts.id));
+  return { task: t, project: p!, contracts: cs, runs: rs, gates: gs, evidence: ev, decisions: ds, transitions: tr, activity: ac, artifacts: arts };
+}
+
+export async function artifactBody(taskId: number, artifactId: number) {
+  const db = await getDb();
+  const [a] = await db.select().from(artifacts).where(and(eq(artifacts.id, artifactId), eq(artifacts.taskId, taskId)));
+  return a ?? null;
+}
+
+export async function openDecisionsList() {
+  const db = await getDb();
+  return db
+    .select({ d: decisions, t: tasks, p: projects })
+    .from(decisions)
+    .innerJoin(tasks, eq(tasks.id, decisions.taskId))
+    .innerJoin(projects, eq(projects.id, tasks.projectId))
+    .where(eq(decisions.status, "open"))
+    .orderBy(desc(decisions.createdAt));
+}
+
+export async function activeRunsByTask(taskIds: number[]) {
+  if (taskIds.length === 0) return [];
+  const db = await getDb();
+  return db.select().from(runs).where(and(inArray(runs.taskId, taskIds), inArray(runs.status, ["starting", "running"])));
+}
+
+
+/** Read-only state for the future Agent Operations Interface: authoritative facts only. */
+export async function stateSnapshot() {
+  const db = await getDb();
+  const live = await db.select().from(tasks).where(notInArray(tasks.state, TERMINAL)).orderBy(tasks.id);
+  const ids = live.map((t) => t.id);
+  const rs = await activeRunsByTask(ids);
+  const ds = ids.length ? await db.select().from(decisions).where(and(inArray(decisions.taskId, ids), eq(decisions.status, "open"))) : [];
+  const gs = ids.length ? await db.select().from(gateResults).where(inArray(gateResults.taskId, ids)).orderBy(desc(gateResults.id)) : [];
+  return {
+    at: new Date().toISOString(),
+    system: await systemStatus(),
+    tasks: live.map((t) => ({
+      id: t.id,
+      key: t.key,
+      title: t.title,
+      state: t.state,
+      step: t.step,
+      pr: t.prNumber,
+      head: t.headSha,
+      corrections: t.corrections,
+      activeRuns: rs.filter((r) => r.taskId === t.id).map((r) => ({ role: r.role, purpose: r.purpose, since: r.startedAt })),
+      latestGate: gs.find((g) => g.taskId === t.id) ?? null,
+      ownerActionRequired: ds.filter((d) => d.taskId === t.id).map((d) => ({ kind: d.kind, title: d.title })),
+    })),
+  };
+}

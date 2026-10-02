@@ -1,0 +1,28 @@
+{
+ "owner_login": "FamilySYNC13",
+ "note": "Agents App (managed by Agents App). The owner holds every non-engineering decision right; merge authority = owner approval + required gate check (ruleset, empty bypass list).",
+ "protected_paths": [
+  "oracle/**",
+  "baselines/**",
+  "tasks/**",
+  ".github/**",
+  "CODEOWNERS",
+  "gate/**",
+  "policy.json"
+ ],
+ "owner_only_paths": [
+  ".github/**",
+  "gate/**",
+  "CODEOWNERS",
+  "policy.json"
+ ],
+ "decision_rights": {
+  "engineering": "workers",
+  "product": "owner",
+  "design": "owner",
+  "architecture": "owner",
+  "operational": "owner",
+  "security_financial": "owner"
+ },
+ "task_order": []
+}

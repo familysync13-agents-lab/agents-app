@@ -1,0 +1,11 @@
+import next from "eslint-config-next/core-web-vitals";
+import ts from "eslint-config-next/typescript";
+
+const config = [
+  ...next,
+  ...ts,
+  { ignores: ["drizzle/**", ".next/**", "node_modules/**", "next-env.d.ts", "gate/**", "oracle/**", "baselines/**", "tasks/**", ".data/**"] },
+  { rules: { "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }] } },
+];
+
+export default config;
