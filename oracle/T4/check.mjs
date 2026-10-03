@@ -120,13 +120,14 @@ const checks = {
     const heading = await visible(page.getByRole('heading', { level: 2, name: 'Projects', exact: true }));
     const panel = heading.locator('xpath=ancestor::*[descendant::a][1]');
     await visible(panel.getByText('Demo Project', { exact: true }));
-    const links = panel.getByRole('link', { name: 'New intent', exact: true });
+    // AC5 specifies visible link text; an aria-label may give the link a different accessible name.
+    const links = panel.getByRole('link');
     await visible(links.first());
     let matched = false;
     for (let i = 0; i < await links.count(); i++) {
       const link = links.nth(i);
       const href = await link.getAttribute('href');
-      if (href && new URL(href, page.url()).href === `${baseURL}/projects/demo/new` && await link.isVisible()) matched = true;
+      if (href && new URL(href, page.url()).href === `${baseURL}/projects/demo/new` && await link.isVisible() && (await link.innerText()).trim() === 'New intent') matched = true;
     }
     assert.ok(matched, 'Projects panel must include New intent linking to /projects/demo/new');
     await open(page, '/decisions');
