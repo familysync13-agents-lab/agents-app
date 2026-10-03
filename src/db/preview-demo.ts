@@ -10,12 +10,12 @@ export const PREVIEW_CAPABILITY_PROFILE: CapabilityProfile = {
   languages: ["typescript"],
   framework: "next",
   packageManager: "npm",
-  commands: { build: "npm run build", test: "npm run test", lint: null, typecheck: "npm run typecheck" },
+  commands: { build: "npm run build", test: "npm run test", lint: "npm run lint", typecheck: null },
   checkStage: true,
-  browserTests: false,
+  browserTests: true,
   database: "postgresql",
   tooling: [],
-  unknown: ["lint command"],
+  unknown: ["typecheck command"],
 };
 
 /**
@@ -26,7 +26,8 @@ export const PREVIEW_CAPABILITY_PROFILE: CapabilityProfile = {
 export async function seedPreviewDemo(db: Db) {
   const [p] = await db.select().from(projects).where(eq(projects.slug, "demo"));
   if (!p) return;
-  if (!p.capabilityProfile)
+  // a profile carrying the demo commit is earlier demo data of this preview database and is brought up to date; a detected one is kept
+  if (!p.capabilityProfile || p.capabilityProfile.commit === PREVIEW_CAPABILITY_PROFILE.commit)
     await db
       .update(projects)
       .set({ capabilityProfile: PREVIEW_CAPABILITY_PROFILE as unknown as Record<string, unknown> })

@@ -10,6 +10,7 @@ import { LiveRefresh } from "@/components/live-refresh";
 import { stepInfo } from "@/components/steps";
 import { Ago, buttonPrimary, Card, CardHeader, cx, Empty, EvidenceChip, RoleTag, Sha, StateChip, type Role } from "@/components/ui";
 import { taskDetail } from "@/server/queries";
+import { requireOwner } from "@/server/auth";
 
 export const metadata = { title: "Task" };
 
@@ -19,6 +20,8 @@ type Criterion = { id: string; type: string; priority: string; tags?: string[]; 
 const gh = (d: Detail, pr: number | null | undefined) => (pr ? `https://github.com/${d.project.org}/${d.project.repo}/pull/${pr}` : null);
 
 export default async function TaskPage({ params }: { params: Promise<{ id: string }> }) {
+  // checked here too: the layout renders concurrently, so its check alone would let page data stream into the redirect
+  await requireOwner();
   const { id } = await params;
   const d = await taskDetail(Number(id));
   if (!d) notFound();

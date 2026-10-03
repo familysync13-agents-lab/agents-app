@@ -10,7 +10,7 @@ import { planTaskPrompt } from "@/domain/prompts";
 import { activePlan, planBlockers, recordPlan } from "@/server/plans";
 import { planBranch, planCursor, savePlan } from "./steps-plan";
 import { TaskCtx } from "./context";
-import { currentContract } from "./steps-contract";
+import { currentContract, isBehind } from "./steps-contract";
 import { workerOptions, blockEvidence, harnessFailure, latestGate, mainSha, ownerApproved, pollDue, PROTECTED, sub, unb64, vols } from "./common";
 import { finishSession, startSession } from "./sessions";
 
@@ -333,6 +333,10 @@ export async function gateCollect(ctx: TaskCtx): Promise<void> {
 async function routeFailure(ctx: TaskCtx, verdict: string, ev: GateEvidence, fact: Record<string, unknown>): Promise<void> {
   const details = correctionDetails(ev);
   if (!["FAIL:ORACLE", "FAIL:REGRESSION"].includes(verdict)) return correction(ctx, verdict, details, fact);
+  if (verdict === "FAIL:REGRESSION") {
+    const deps = await unmergedDependencies(ctx, criteriaFromGate(ev).filter((c) => c.status === "not_verified" && c.regression).map((c) => c.subject));
+    if (deps.wait) return waitForDependencies(ctx, deps.keys, verdict);
+  }
   if (verdict === "FAIL:REGRESSION" && !ctx.data.syncTried) {
     // a regression failure on a branch that is behind main is not evidence about the work: bring the branch up to date first
     return ctx.goto("sync_branch", { head: ctx.data.head, checkRun: ctx.data.checkRun, verdict });
@@ -349,6 +353,36 @@ async function routeFailure(ctx: TaskCtx, verdict: string, ev: GateEvidence, fac
   }
   const failure = { head: String(ctx.data.head), verdict, details, failing, fact };
   return ctx.goto("attribute_start", { failure, envRetried: ctx.data.envRetried ?? false });
+}
+
+/**
+ * A "regression" on the criteria of an EARLIER task whose contract is on main but whose work is not merged yet is not a regression
+ * at all: that behaviour does not exist on main, so no branch built from main can pass it. It is neither the Builder's defect nor a
+ * stale check (found in the first decomposed run: T6.a failed only on T4's criteria while T4 was still unaccepted). The task waits
+ * for that work to be accepted, then takes it in from main and is gated again. Nobody is asked and no check is rewritten.
+ */
+export async function unmergedDependencies(ctx: TaskCtx, regressionSubjects: string[]): Promise<{ wait: boolean; keys: string[] }> {
+  const keys = [...new Set(regressionSubjects.map((s) => s.split(":")[0]!).filter((k) => /^T[0-9]+$/.test(k) && k !== ctx.task.key))];
+  if (keys.length === 0) return { wait: false, keys: [] };
+  const rows = await ctx.db.select({ key: tasks.key, state: tasks.state }).from(tasks).where(and(eq(tasks.projectId, ctx.project.id), inArray(tasks.key, keys)));
+  const open = rows.filter((r) => !["ACCEPTED", "REJECTED", "ABANDONED"].includes(r.state)).map((r) => r.key!);
+  // wait only when EVERY failing regression criterion belongs to such unmerged work (anything else is judged normally)
+  return { wait: open.length > 0 && keys.every((k) => open.includes(k)), keys: open };
+}
+
+export async function waitForDependencies(ctx: TaskCtx, keys: string[], verdict: string): Promise<void> {
+  await ctx.log("system", `The gate failed only on criteria of ${keys.join(", ")}, whose work is not merged yet. Waiting for it to be accepted, then this branch takes it in from main and is gated again (nothing is charged, no check is changed).`, { waiting_for: keys });
+  await ctx.goto("await_dependency", { keys, head: ctx.data.head ?? ctx.task.headSha, checkRun: ctx.data.checkRun ?? null, verdict });
+}
+
+/** Step: wait until the earlier tasks this branch depends on are merged (or gone), then update the branch with main and re-gate. */
+export async function awaitDependency(ctx: TaskCtx): Promise<void> {
+  const keys = (ctx.data.keys as string[]) ?? [];
+  const rows = await ctx.db.select({ key: tasks.key, state: tasks.state }).from(tasks).where(and(eq(tasks.projectId, ctx.project.id), inArray(tasks.key, keys)));
+  if (rows.some((r) => !["ACCEPTED", "REJECTED", "ABANDONED"].includes(r.state))) return;
+  await ctx.log("system", `${keys.join(", ")} ${rows.every((r) => r.state === "ACCEPTED") ? "merged" : "no longer in progress"}; updating this branch with main and re-running the gate.`, {});
+  // depsChecked: whatever the gate says on the updated branch is judged normally from here on
+  await ctx.goto("sync_branch", { head: ctx.data.head, checkRun: ctx.data.checkRun, verdict: ctx.data.verdict, depsChecked: true });
 }
 
 async function routeBuilderClaim(ctx: TaskCtx, claim: string, art: number): Promise<boolean> {
@@ -404,10 +438,10 @@ export async function syncBranch(ctx: TaskCtx): Promise<void> {
   if (u?.ok && u.head_sha) {
     const head = String(u.head_sha);
     await ctx.transition("VERIFYING", `The branch was behind main; updated (head ${head.slice(0, 8)}) and re-gated before judging the regression failure`, { pr: ctx.task.prNumber, head, previous_head: u.old_head ?? null }, { headSha: head });
-    return ctx.goto("await_gate", { head, since: ctx.now().getTime(), syncTried: true });
+    return ctx.goto("await_gate", { head, since: ctx.now().getTime(), syncTried: true, depsChecked: ctx.data.depsChecked ?? false });
   }
   // already up to date (or the update is not possible): judge the failure as it is
-  return ctx.goto("gate_collect", { head: ctx.data.head, checkRun: ctx.data.checkRun, verdict: ctx.data.verdict, syncTried: true });
+  return ctx.goto("gate_collect", { head: ctx.data.head, checkRun: ctx.data.checkRun, verdict: ctx.data.verdict, syncTried: true, depsChecked: ctx.data.depsChecked ?? false });
 }
 
 /** Automatic correction loop (no owner involvement) up to the project's budget; then a budget decision. */
@@ -544,6 +578,13 @@ export async function awaitAcceptance(ctx: TaskCtx): Promise<void> {
   if (!m) return;
   const mr = m.status === "done" ? sub(m, "m") : undefined;
   if (m.status === "error" || !mr?.ok) {
+    if (isBehind(mr)) {
+      // main moved after this head was verified and approved: the ruleset demands an up-to-date branch. Not an infrastructure
+      // failure and not retryable as-is: take main in, verify the new head, and ask for acceptance of THAT head (an approval is
+      // bound to the exact commit - GitHub dismisses it when the branch changes).
+      await ctx.log("system", `PR #${ctx.task.prNumber} was approved but main has moved since; the branch is brought up to date and verified again. Your approval was for ${String(ctx.data.head).slice(0, 8)} and is needed once more for the updated head.`, { pr: ctx.task.prNumber });
+      return ctx.goto("restack", {});
+    }
     await ctx.forget("merge");
     return harnessFailure(ctx, { ...m, error: m.error ?? JSON.stringify(mr ?? {}).slice(0, 300) }, "merge", "merging the accepted PR");
   }
@@ -606,8 +647,13 @@ export async function restack(ctx: TaskCtx): Promise<void> {
   if (!job) return;
   const u = job.status === "done" ? sub(job, "u") : undefined;
   if (job.status === "error" || !u?.ok) return harnessFailure(ctx, { ...job, error: job.error ?? JSON.stringify(u ?? {}).slice(0, 300) }, "upd", "updating the task branch with main");
+  if (u.up_to_date) {
+    // nothing to bring in: the verified head is unchanged, so its verdict stands (no re-verification of an identical head)
+    await ctx.log("system", "The PR is already up to date with main; its verified head is unchanged.", { pr: ctx.task.prNumber, head: ctx.task.headSha });
+    return ctx.goto("mark_done", {});
+  }
   const head = String(u.head_sha);
-  await ctx.transition("VERIFYING", `PR updated with main after the stack parent was merged (head ${head.slice(0, 8)}); gate re-evaluation started`, { pr: ctx.task.prNumber, head, previous_head: u.old_head ?? null }, { headSha: head });
+  await ctx.transition("VERIFYING", `PR updated with main (head ${head.slice(0, 8)}); gate re-evaluation started`, { pr: ctx.task.prNumber, head, previous_head: u.old_head ?? null }, { headSha: head });
   await ctx.goto("await_gate", { head, since: ctx.now().getTime() });
 }
 

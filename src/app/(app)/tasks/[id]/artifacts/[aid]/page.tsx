@@ -2,10 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardHeader, Sha } from "@/components/ui";
 import { artifactBody } from "@/server/queries";
+import { requireOwner } from "@/server/auth";
 
 export const metadata = { title: "Evidence file" };
 
 export default async function ArtifactPage({ params }: { params: Promise<{ id: string; aid: string }> }) {
+  // checked here too: the layout renders concurrently, so its check alone would let page data stream into the redirect
+  await requireOwner();
   const { id, aid } = await params;
   const a = await artifactBody(Number(id), Number(aid));
   if (!a) notFound();

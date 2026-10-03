@@ -21,7 +21,7 @@ export const CONTRACT = (key: string) => ({
 
 const ORACLE = `import { chromium } from 'playwright';\nconst base = process.argv[2];\nconsole.log(JSON.stringify({ criterion: 'AC1', result: 'pass' }));\n`;
 
-export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; mainMovedOnce?: boolean; localLlm?: "agree" | "disagree" | "invalid" | "unavailable" } = {}) {
+export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: "agree" | "disagree" | "invalid" | "unavailable" } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -51,6 +51,8 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
     approvedPrs: new Set<number>(),
     closedPrs: [] as number[],
     plansServed: 0,
+    mainAdvanced: false,
+    taskBehindServed: false,
     branches: new Map<number, string>(),
     bases: new Map<number, string>(),
     builderCalls: [] as Record<string, unknown>[],
@@ -265,6 +267,10 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
             state.contractPrs.get(Number(op.pr))!.merged = state.main;
             return { m: { ok: true, merge_commit: state.main, approval_at: "2026-10-01T10:30:00Z" } };
           }
+          if (opts.taskBehindOnce && !state.taskBehindServed) {
+            state.taskBehindServed = true;
+            return { m: { ok: false, status: 405, message: 'Repository rule violations found\n\nRequired status check "gate" is expected.\n\n' } };
+          }
           return { m: { ok: true, merge_commit: Number(op.pr) === 102 ? "mt" : `mt${String(op.pr)}`, approval_at: "2026-10-01T12:00:00Z" } };
         }
         case "pr_from_worktree": {
@@ -292,7 +298,7 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
             return { u: { ok: true, head_sha: cpr.head } };
           }
           // a branch that is already current with main cannot be updated (GitHub answers 422)
-          if (opts.regressFail && ![...state.contractPrs.values()].slice(1).some((x) => x.merged)) return { u: { ok: false, status: 422, message: "already up to date" } };
+          if (opts.regressFail && !state.mainAdvanced && ![...state.contractPrs.values()].slice(1).some((x) => x.merged)) return { u: { ok: false, status: 422, message: "already up to date" } };
           const tp = state.taskPrs.get(Number(op.pr))!;
           const old = tp.head;
           tp.head = heads(Number(op.pr), 3);

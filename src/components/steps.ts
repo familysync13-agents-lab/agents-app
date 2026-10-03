@@ -38,6 +38,7 @@ export const STEP_INFO: Record<string, { label: string; role: Role; waitingOnOwn
   mutation_start: { label: "Preparing the oracle mutation test", role: "system" },
   mutation_poll: { label: "Writing realistic defects to test the oracle", role: "builder" },
   mutant_eval: { label: "Checking that the oracle catches each defect", role: "gate" },
+  await_dependency: { label: "Waiting for earlier work to be merged, then re-gating on top of it", role: "system" },
   await_quota: { label: "Paused: worker quota exhausted (resumes automatically, nothing lost)", role: "system" },
   plan_start: { label: "Planning: splitting the complex contract into tasks", role: "builder" },
   plan_poll: { label: "Planner writing the task graph", role: "builder" },

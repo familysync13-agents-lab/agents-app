@@ -4,7 +4,7 @@ import { arbiterPrompt, VERIFIER_SCAFFOLD } from "@/domain/prompts";
 import { submitCandidate } from "./shadow";
 import type { TaskCtx } from "./context";
 import { currentContract } from "./steps-contract";
-import { correction } from "./steps-build";
+import { correction, unmergedDependencies, waitForDependencies } from "./steps-build";
 import { b64, blockEvidence, unb64, vols } from "./common";
 import { finishSession, ledger, routeFor } from "./sessions";
 
@@ -117,6 +117,15 @@ export async function attributeCollect(ctx: TaskCtx): Promise<void> {
     a = raw ? (JSON.parse(raw) as Attribution) : null;
   } catch {
     a = null;
+  }
+  // an arbiter verdict about criteria of an earlier task whose work is simply not merged yet must not be acted on (no check rewritten)
+  if (f.verdict === "FAIL:REGRESSION") {
+    const deps = await unmergedDependencies(ctx, f.failing.filter((x) => x.regression && !/not yet required at this plan task/.test(x.detail)).map((x) => x.subject));
+    if (deps.wait) {
+      await ctx.updateRun(runId, { outcome: raw ? "output" : "no_structured_outcome" });
+      await ctx.setData({ head: f.head, checkRun: (f.fact as { check_run?: unknown }).check_run ?? null });
+      return waitForDependencies(ctx, deps.keys, f.verdict);
+    }
   }
   const parties = new Set(["implementation", "oracle", "environment", "ambiguity"]);
   const rows = (a?.criteria ?? []).filter((x) => x && parties.has(String(x.party))).slice(0, 40);
