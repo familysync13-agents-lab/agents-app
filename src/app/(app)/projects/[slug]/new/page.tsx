@@ -3,10 +3,13 @@ import { notFound } from "next/navigation";
 import { NewTaskForm } from "@/components/forms";
 import { Card } from "@/components/ui";
 import { projectBySlug } from "@/server/queries";
+import { requireOwner } from "@/server/auth";
 
 export const metadata = { title: "New intent" };
 
 export default async function NewIntent({ params }: { params: Promise<{ slug: string }> }) {
+  // checked here too: the layout renders concurrently, so its check alone would let page data stream into the redirect
+  await requireOwner();
   const { slug } = await params;
   const data = await projectBySlug(slug);
   if (!data) notFound();

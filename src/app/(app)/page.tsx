@@ -8,6 +8,7 @@ import { Ago, Card, CardHeader, Empty, RoleTag, StateChip, cx, type Role } from 
 import { failureRouting, flowState, nodeOf, NODE_LABEL, NODES, PARTY } from "@/domain/ops";
 import { shortenTitle } from "@/domain/text";
 import { commandCenter } from "@/server/queries";
+import { requireOwner } from "@/server/auth";
 
 export const metadata = { title: "Command" };
 
@@ -30,6 +31,8 @@ const PARTY_TONE: Record<string, string> = {
 const ACTOR_ROLE: Record<string, Role> = { system: "system", builder: "builder", verifier: "verifier", gate: "gate", owner: "owner", executor: "executor" };
 
 export default async function Command() {
+  // checked here too: the layout renders concurrently, so its check alone would let page data stream into the redirect
+  await requireOwner();
   const d = await commandCenter();
   const projectOf = new Map(d.projects.map((p) => [p.id, p]));
   const flow = flowState({
