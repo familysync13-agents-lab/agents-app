@@ -209,9 +209,13 @@ def main():
         except Exception as e: OUT["checks"]["reuse_error"] = str(e)[:200]
     reg = []
     order = task_order(base)
-    for t in order[:order.index(tid)] if tid in order else []:
+    # regression set: every other task that is numerically earlier OR whose work is already merged into the base (so accepting an
+    # older task cannot silently break a newer accepted one); a task the owner retired ("superseded_by") is no longer required
+    merged = git("log", "--first-parent", "--format=%s", base, check=False).decode(errors="replace")
+    for t in order if tid in order else []:
+        if t == tid or not (order.index(t) < order.index(tid) or ("task/%s/" % t) in merged): continue
         tj, c, _ = load_task(t)
-        if tj and c and tj.get("checks") and tj.get("status") != "BLOCKED:DECISION": reg.append((t, tj, c))
+        if tj and c and tj.get("checks") and tj.get("status") != "BLOCKED:DECISION" and not tj.get("superseded_by"): reg.append((t, tj, c))
     run_preview(head, base, tid, task, contract, reg, policy)
 
 def run_preview(head, base, tid, task, contract, reg, policy):

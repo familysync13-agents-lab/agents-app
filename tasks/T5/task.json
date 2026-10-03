@@ -29,6 +29,14 @@
     "tasks/T5/contract.json": "91a856df8677f163fbf38b08ce45ae6e8fe14a5ed3d89fae535b6cbf371b0924",
     "oracle/T5/check.mjs": "47a180789eea5984d20f680c1228104e8120389f10ab9d7bfe87b4b7445c4451"
    }
+  },
+  {
+   "id": "A2",
+   "at": "2026-10-03T04:40:00Z",
+   "kind": "superseded",
+   "reason": "Owner decision 2026-10-03: T4 and T5 were started from the same intent and their contracts contradict each other; T4 stands, T5 is retired from the regression set. Contract and oracle are kept unchanged for the record.",
+   "files": {}
   }
- ]
+ ],
+ "superseded_by": "T4"
 }
