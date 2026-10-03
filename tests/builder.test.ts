@@ -409,3 +409,23 @@ describe("BT15 a 'regression' on an earlier task whose work is not merged yet (f
     expect((await taskRow(db, id)).corrections).toBe(0);
   }, 60000);
 });
+
+describe("BT16 an accepted PR that fell behind main (found live on T4)", () => {
+  it("is not retried blindly and not escalated as an infrastructure failure: update, verify the new head, accept that head, merge", async () => {
+    const { db, clk, state, ex, id } = await start({ taskBehindOnce: true });
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_acceptance");
+    state.approvedPrs.add(102);
+    const states = new Set<string>();
+    await runUntil(db, ex, clk, async () => {
+      states.add((await taskRow(db, id)).state);
+      return (await taskRow(db, id)).state === "ACCEPTED";
+    });
+    expect([...states].some((s) => s.startsWith("BLOCKED"))).toBe(false);
+    expect(ex.log.filter((l) => l.op === "transport" && (l.params.ops as { op: string }[])[0]!.op === "merge_approved").length).toBe(2); // one refusal, one merge - no retry storm
+    expect(state.updatedBranch).toBe(1);
+    const t = await taskRow(db, id);
+    expect(t.headSha).toBe("h3"); // the updated head was verified and is the one accepted
+    const tr = (await db.select().from(transitions).where(eq(transitions.taskId, id)).orderBy(transitions.id)).map((x) => x.toState);
+    expect(tr.slice(-4)).toEqual(["DONE", "VERIFYING", "DONE", "ACCEPTED"]);
+  }, 60000);
+});

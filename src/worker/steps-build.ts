@@ -10,7 +10,7 @@ import { planTaskPrompt } from "@/domain/prompts";
 import { activePlan, planBlockers, recordPlan } from "@/server/plans";
 import { planBranch, planCursor, savePlan } from "./steps-plan";
 import { TaskCtx } from "./context";
-import { currentContract } from "./steps-contract";
+import { currentContract, isBehind } from "./steps-contract";
 import { workerOptions, blockEvidence, harnessFailure, latestGate, mainSha, ownerApproved, pollDue, PROTECTED, sub, unb64, vols } from "./common";
 import { finishSession, startSession } from "./sessions";
 
@@ -578,6 +578,13 @@ export async function awaitAcceptance(ctx: TaskCtx): Promise<void> {
   if (!m) return;
   const mr = m.status === "done" ? sub(m, "m") : undefined;
   if (m.status === "error" || !mr?.ok) {
+    if (isBehind(mr)) {
+      // main moved after this head was verified and approved: the ruleset demands an up-to-date branch. Not an infrastructure
+      // failure and not retryable as-is: take main in, verify the new head, and ask for acceptance of THAT head (an approval is
+      // bound to the exact commit - GitHub dismisses it when the branch changes).
+      await ctx.log("system", `PR #${ctx.task.prNumber} was approved but main has moved since; the branch is brought up to date and verified again. Your approval was for ${String(ctx.data.head).slice(0, 8)} and is needed once more for the updated head.`, { pr: ctx.task.prNumber });
+      return ctx.goto("restack", {});
+    }
     await ctx.forget("merge");
     return harnessFailure(ctx, { ...m, error: m.error ?? JSON.stringify(mr ?? {}).slice(0, 300) }, "merge", "merging the accepted PR");
   }
@@ -646,7 +653,7 @@ export async function restack(ctx: TaskCtx): Promise<void> {
     return ctx.goto("mark_done", {});
   }
   const head = String(u.head_sha);
-  await ctx.transition("VERIFYING", `PR updated with main after the stack parent was merged (head ${head.slice(0, 8)}); gate re-evaluation started`, { pr: ctx.task.prNumber, head, previous_head: u.old_head ?? null }, { headSha: head });
+  await ctx.transition("VERIFYING", `PR updated with main (head ${head.slice(0, 8)}); gate re-evaluation started`, { pr: ctx.task.prNumber, head, previous_head: u.old_head ?? null }, { headSha: head });
   await ctx.goto("await_gate", { head, since: ctx.now().getTime() });
 }
 
