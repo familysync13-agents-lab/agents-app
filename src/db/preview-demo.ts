@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { Db } from "./client";
 import type { CapabilityProfile } from "@/domain/profile";
-import { contracts, decisions, projects, tasks, transitions } from "./schema";
+import { contracts, decisions, projects, qualificationRecords, runs, tasks, transitions } from "./schema";
 
 /** Demonstration capability profile of the demo project (no control loop runs in a preview, so nothing would ever detect one). */
 export const PREVIEW_CAPABILITY_PROFILE: CapabilityProfile = {
@@ -32,7 +32,11 @@ export async function seedPreviewDemo(db: Db) {
       .set({ capabilityProfile: PREVIEW_CAPABILITY_PROFILE as unknown as Record<string, unknown> })
       .where(eq(projects.id, p.id));
   const existing = await db.select({ id: tasks.id }).from(tasks).where(eq(tasks.projectId, p.id)).limit(1);
-  if (existing.length) return;
+  if (!existing.length) await seedDemoTasks(db, p.id);
+  await seedDemoLedger(db, p.id);
+}
+
+async function seedDemoTasks(db: Db, projectId: number) {
   const body = {
     id: "T1",
     title: "Demo: export a list as CSV",
@@ -48,7 +52,7 @@ export async function seedPreviewDemo(db: Db) {
   };
   const text = JSON.stringify(body);
   const mk = async (key: string, title: string, state: (typeof tasks.$inferInsert)["state"], step: string) => {
-    const [t] = await db.insert(tasks).values({ projectId: p.id, key, title, intent: `Demo intent for ${title}.`, state, step }).returning();
+    const [t] = await db.insert(tasks).values({ projectId, key, title, intent: `Demo intent for ${title}.`, state, step }).returning();
     await db.insert(transitions).values({ taskId: t!.id, fromState: null, toState: "PROPOSED", reason: "Demo data (gate preview)", fact: { demo: true } });
     return t!;
   };
@@ -74,4 +78,33 @@ export async function seedPreviewDemo(db: Db) {
     .returning();
   await db.update(tasks).set({ stepData: { awaiting: d!.id } }).where(eq(tasks.id, b.id));
   await mk("T3", "Demo: list descriptions", "IN_PROGRESS", "build_poll");
+}
+
+/** Marker of the demonstration qualification records (they also reference a demo task, so they cannot be mistaken for evidence). */
+const DEMO_NOTE = "Demo data (gate preview)";
+
+/**
+ * GATE PREVIEW ONLY: the execution ledger of the demo tasks (two finished Builder runs) and three shadow qualification records of the
+ * local model for log_summary, so the System page's ledger and routing sections can be checked black-box. Idempotent, also on a
+ * preview database whose demo tasks were seeded before these rows existed. Never called in production (see instrumentation.ts).
+ */
+async function seedDemoLedger(db: Db, projectId: number) {
+  const demo = await db.select({ id: tasks.id, key: tasks.key }).from(tasks).where(and(eq(tasks.projectId, projectId), inArray(tasks.key, ["T1", "T3"])));
+  const t1 = demo.find((t) => t.key === "T1");
+  const t3 = demo.find((t) => t.key === "T3");
+  if (!t1 || !t3) return;
+  const now = Date.now();
+  const ago = (minutes: number) => new Date(now - minutes * 60_000);
+  const hasRuns = await db.select({ id: runs.id }).from(runs).where(inArray(runs.taskId, [t1.id, t3.id])).limit(1);
+  if (!hasRuns.length) {
+    const claude = { role: "builder", status: "finished", outcome: "report", worker: "claude-code", harness: "claude-code", provider: "anthropic-subscription", model: "opus" } as const;
+    // the contract-drafting run of T1 (no context package), then - started later - the build run of T3 with its context package
+    await db.insert(runs).values({ ...claude, taskId: t1.id, purpose: "draft_contract", taskClass: "contract_draft", routeReason: "trusted worker (no alternative is defined for this class)", contextBytes: null, startedAt: ago(120), finishedAt: ago(114) });
+    await db.insert(runs).values({ ...claude, taskId: t3.id, purpose: "build", taskClass: "build", routeReason: "trusted worker (no alternative has qualified for this class)", contextBytes: 48213, contextFiles: ["src/db/schema.ts", "src/app/(app)/lists/[id]/page.tsx"], startedAt: ago(60), finishedAt: ago(38) });
+  }
+  const hasQual = await db.select({ id: qualificationRecords.id }).from(qualificationRecords).where(eq(qualificationRecords.note, DEMO_NOTE)).limit(1);
+  if (!hasQual.length)
+    await db.insert(qualificationRecords).values(
+      [1, 2, 3].map((i) => ({ worker: "local-llm", taskClass: "log_summary", mode: "shadow" as const, taskId: t3.id, inputSha256: String(i).padStart(64, "0"), expected: "demo summary", output: { summary: "demo summary" }, valid: true, agree: true, durationMs: 1200, note: DEMO_NOTE })),
+    );
 }
