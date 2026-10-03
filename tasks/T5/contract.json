@@ -1,0 +1,211 @@
+{
+ "assumptions": [
+  {
+   "basis": "existing behaviour",
+   "chosen": "Every project registered by the operator configuration that is active (projects.active = true) - the same set the Command page's \"Projects\" panel lists.",
+   "id": "A1",
+   "question": "Which projects count as \"configured\"?",
+   "reversible": true
+  },
+  {
+   "basis": "existing behaviour",
+   "chosen": "As the values recorded by the detector (e.g. \"typescript\", \"next\", \"npm\"), compared case-insensitively; several languages are separated by \", \"; a value the detector could not establish is shown as \"Not detected\". A capability is shown as \"Available\" (optionally followed by the detected command) or \"Not available\".",
+   "id": "A2",
+   "question": "How are the detected language, framework and package manager written?",
+   "reversible": true
+  },
+  {
+   "basis": "existing behaviour",
+   "chosen": "Like the other preview demo data, the preview (APP_ENV=preview only) records a demonstration capability profile for \"Demo Project\": languages [\"typescript\"], framework \"next\", package manager \"npm\", build \"npm run build\", test \"npm run test\", type-check \"npm run typecheck\", no lint command, no browser tests. Production data is untouched.",
+   "id": "A3",
+   "question": "The gate preview's \"Demo Project\" has no capability profile (no control loop runs in a preview), so the section could not be checked black-box. What does the preview show?",
+   "reversible": true
+  }
+ ],
+ "canary_routes": [
+  "/",
+  "/system"
+ ],
+ "constraints": [
+  {
+   "id": "C1",
+   "kind": "regression",
+   "statement": "The existing System page content remains: h1 \"System\", the cards headed \"Backups\", \"Recent executor errors\" and \"Administrative operations (audit log)\", the \"Build\" and \"Executor jobs\" tiles, and the page title \"System · Agents\".",
+   "trace": {
+    "ref": "do not break existing functionality",
+    "source": "intent"
+   },
+   "verify": "blackbox"
+  },
+  {
+   "id": "C2",
+   "kind": "prohibited",
+   "statement": "The section only reads the recorded capability profile; opening /system never writes to the database, contacts a project repository or creates executor jobs.",
+   "trace": {
+    "ref": "shows the detected capability profile for each configured project",
+    "source": "intent"
+   },
+   "verify": "judgment"
+  }
+ ],
+ "criteria": [
+  {
+   "given": "the gate preview with its demo data and the owner signed in via /auth/preview",
+   "id": "AC1",
+   "priority": "must",
+   "tags": [],
+   "then": "the response is HTTP 200 and the page shows an h2 heading whose text is exactly \"Project Capabilities\"; within that section there is a table whose column headers are, in order, \"Project\", \"Language\", \"Framework\", \"Package manager\", \"Build\", \"Test\", \"Lint\", \"Type-check\", \"Browser tests\"",
+   "trace": {
+    "ref": "Add a Project Capabilities section to the System page",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\""
+  },
+  {
+   "given": "the gate preview with its demo data (one configured project, \"Demo Project\") and the owner signed in",
+   "id": "AC2",
+   "priority": "must",
+   "tags": [],
+   "then": "there is exactly one body row per configured project - in the preview exactly one row - and its \"Project\" cell shows \"Demo Project\"",
+   "trace": {
+    "ref": "for each configured project",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\" and reads the body rows of the \"Project Capabilities\" table"
+  },
+  {
+   "given": "the gate preview with its demo data, whose \"Demo Project\" has the demonstration capability profile (languages typescript, framework next, package manager npm), and the owner signed in",
+   "id": "AC3",
+   "priority": "must",
+   "tags": [],
+   "then": "compared case-insensitively with surrounding whitespace removed, the \"Language\" cell is \"typescript\", the \"Framework\" cell is \"next\" and the \"Package manager\" cell is \"npm\"",
+   "trace": {
+    "ref": "Show the detected language, framework, package manager",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\" and reads the \"Demo Project\" row of the \"Project Capabilities\" table"
+  },
+  {
+   "given": "the gate preview with its demo data, whose \"Demo Project\" profile records build, test and type-check commands but no lint command and no browser tests, and the owner signed in",
+   "id": "AC4",
+   "priority": "must",
+   "tags": [],
+   "then": "the visible text of the \"Build\", \"Test\" and \"Type-check\" cells each starts with \"Available\"; the visible text of the \"Lint\" and \"Browser tests\" cells is exactly \"Not available\"",
+   "trace": {
+    "ref": "available build, test, lint, type-check, and browser-test capabilities",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\" and reads the \"Demo Project\" row of the \"Project Capabilities\" table"
+  },
+  {
+   "given": "the gate preview with its demo data and the owner signed in",
+   "id": "AC5",
+   "priority": "must",
+   "tags": [],
+   "then": "the page still shows the h1 \"System\", the h2 headings \"Backups\", \"Recent executor errors\" and \"Administrative operations (audit log)\", and the tiles labelled \"Build\" and \"Executor jobs\"; the document title is \"System · Agents\"",
+   "trace": {
+    "ref": "do not break existing functionality",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\""
+  },
+  {
+   "given": "the owner signed in on the gate preview and on \"/\"",
+   "id": "AC6",
+   "priority": "must",
+   "tags": [],
+   "then": "the browser is at \"/system\" with HTTP status 200 and the \"Project Capabilities\" heading is visible",
+   "trace": {
+    "ref": "Keep it consistent with the existing System page",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner activates the navigation link \"System\""
+  },
+  {
+   "given": "a configured (active) project whose capability profile has not been detected yet (no profile recorded)",
+   "id": "AC7",
+   "priority": "should",
+   "tags": [],
+   "then": "the \"Project Capabilities\" table still has a row for that project, showing its name and the text \"Not detected yet\", and none of its cells reads \"Available\"",
+   "trace": {
+    "ref": "AC2: every configured project has a row, and a project without a recorded profile cannot show detected values, so its row must state that nothing was detected yet instead of being omitted or showing invented values",
+    "source": "necessary"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\""
+  },
+  {
+   "given": "a configured project whose recorded profile has no framework and no package manager (null) and no languages",
+   "id": "AC8",
+   "priority": "should",
+   "tags": [],
+   "then": "that project's \"Language\", \"Framework\" and \"Package manager\" cells each read \"Not detected\"",
+   "trace": {
+    "ref": "AC3: the detector records null/empty when a value cannot be established, so the cell must say so rather than appear blank or guessed",
+    "source": "necessary"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\""
+  },
+  {
+   "id": "AC9",
+   "priority": "should",
+   "refs": [
+    "/system",
+    "src/app/(app)/system/page.tsx",
+    "src/components/ui.tsx"
+   ],
+   "statement": "The \"Project Capabilities\" card uses the same card, card header, table and muted-text styling as the existing System page cards (e.g. \"Administrative operations (audit log)\"), distinguishes \"Available\" and \"Not available\" visually as well as by text, and stays usable at a 375px-wide viewport (the table may scroll horizontally inside its card, as the audit table does) and on desktop.",
+   "tags": [],
+   "trace": {
+    "ref": "Keep it consistent with the existing System page",
+    "source": "intent"
+   },
+   "type": "experience"
+  }
+ ],
+ "id": "T5",
+ "intent_sha256": "e32a2062dc48bf6bd4db64f759d3f345309a37f0d0fd47c47c2518713abc006a",
+ "interface": {
+  "ui": "Sign-in for the gate preview: GET /auth/preview (redirects to / with an owner session). System page: route \"/system\" (reached from the navigation link \"System\"), page title \"System · Agents\", h1 \"System\". NEW: a card whose heading (h2) is exactly \"Project Capabilities\", placed on /system together with the existing cards. It contains a table with the column headers, in this order: \"Project\", \"Language\", \"Framework\", \"Package manager\", \"Build\", \"Test\", \"Lint\", \"Type-check\", \"Browser tests\"; one body row per configured (active) project, whose \"Project\" cell shows the project name (preview: \"Demo Project\"). Language cell: the detected language(s), comma-separated (preview: \"typescript\"). Framework cell: the detected framework (preview: \"next\"). Package manager cell: the detected package manager (preview: \"npm\"). A language/framework/package manager that was not detected is shown as \"Not detected\". Build, Test, Lint and Type-check cells: visible text starting with \"Available\" (it may be followed by the detected command, e.g. \"Available npm run build\") when the profile records that command, otherwise exactly \"Not available\". Browser tests cell: \"Available\" when the profile records browser tests, otherwise \"Not available\". Preview values for \"Demo Project\": Build \"Available\", Test \"Available\", Lint \"Not available\", Type-check \"Available\", Browser tests \"Not available\". A project whose capability profile has not been detected yet still has its row, showing the text \"Not detected yet\" and no \"Available\" cell. Existing cards stay: \"Backups\", \"Recent executor errors\", \"Administrative operations (audit log)\", plus the heartbeat, \"Build\" and \"Executor jobs\" tiles."
+ },
+ "non_goals": [
+  "Any execution-ledger view (per-run task class, worker, harness, model, provider, route reason, permission envelope, context files, failure class) on the System page or elsewhere - the owner decided the title was a mislabel.",
+  "Changing how capability profiles are detected (src/domain/profile.ts rules), when they are refreshed, or what is stored in projects.capability_profile; triggering a new detection from the UI.",
+  "Editing, overriding or confirming a project's capabilities from the UI; any new form, button or API under /api/v0.",
+  "Showing the other profile fields (database, tooling list, Dockerfile check stage, unknown list, detection commit) - they may be shown but are not required.",
+  "Showing capabilities on other pages (Command page, project pages, task pages).",
+  "Creating, editing or removing projects; changing sign-in, sessions or authorization.",
+  "Changing the existing System page cards (heartbeats, Build, Executor jobs, Backups, Recent executor errors, Administrative operations (audit log)) or its live refresh."
+ ],
+ "open_questions": [],
+ "policies": [
+  "policy.json"
+ ],
+ "scope": {
+  "paths": [
+   "**"
+  ],
+  "summary": "The System page (/system) gains a section headed \"Project Capabilities\" that lists every configured (active) project with its detected Project Capability Profile: the detected language(s), framework and package manager, and whether build, test, lint, type-check and browser-test capabilities are available. The values come from the capability profile the control system already records per project (detected from the project's own repository files); a project whose profile has not been detected yet is still listed and says so. The gate preview's demonstration project \"Demo Project\" carries a demonstration capability profile so the section can be checked black-box. All existing System page sections keep working unchanged. Per the owner's decision, the task title \"Execution ledger on the System page\" was a mislabel: no execution-ledger view is part of this task."
+ },
+ "tier": "standard",
+ "title": "Project Capabilities on the System page",
+ "traces_to": [
+  "OWNER-INTENT-T5"
+ ],
+ "version": 1
+}
