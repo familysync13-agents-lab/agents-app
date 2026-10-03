@@ -1,19 +1,15 @@
 {
  "contract": "T6",
- "contract_version": 1,
- "contract_sha256": "4749f37fc866c4ab03c52ae341d290031d538a9dec3bec3d55a76c766634c951",
- "plan_version": 2,
+ "contract_version": 2,
+ "contract_sha256": "200e1b3f4f5fcced925d5a16a33d6f40cd4fa8ee402c169d727af0b5aa9fa232",
+ "plan_version": 4,
  "tasks": [
   {
    "id": "T6.a",
    "covers": [
     "C3"
    ],
-   "contributes": [
-    "AC2",
-    "AC3",
-    "AC8"
-   ],
+   "contributes": [],
    "depends_on": []
   },
   {
@@ -31,7 +27,8 @@
     "AC12",
     "AC13",
     "C1",
-    "C2"
+    "C2",
+    "C4"
    ],
    "depends_on": [
     "T6.a"
@@ -51,7 +48,8 @@
     "AC12",
     "AC13",
     "C1",
-    "C2"
+    "C2",
+    "C4"
    ],
    "depends_on": [
     "T6.b"
@@ -64,6 +62,7 @@
   "AC12",
   "AC13",
   "C1",
-  "C2"
+  "C2",
+  "C4"
  ]
 }
