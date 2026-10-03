@@ -120,14 +120,29 @@ const checks = {
     const heading = await visible(page.getByRole('heading', { level: 2, name: 'Projects', exact: true }));
     const panel = heading.locator('xpath=ancestor::*[descendant::a][1]');
     await visible(panel.getByText('Demo Project', { exact: true }));
-    // AC5 specifies visible link text; an aria-label may give the link a different accessible name.
+    // AC5 specifies the visible label. Exclude aria-hidden decoration while
+    // retaining the exact label comparison; an aria-label can add project context.
     const links = panel.getByRole('link');
     await visible(links.first());
     let matched = false;
     for (let i = 0; i < await links.count(); i++) {
       const link = links.nth(i);
       const href = await link.getAttribute('href');
-      if (href && new URL(href, page.url()).href === `${baseURL}/projects/demo/new` && await link.isVisible() && (await link.innerText()).trim() === 'New intent') matched = true;
+      if (href && new URL(href, page.url()).href === `${baseURL}/projects/demo/new` && await link.isVisible() && (await link.evaluate(element => {
+        // Read rendered text from a temporary copy, leaving the real link intact.
+        // innerText preserves boundaries and ignores CSS-hidden content.
+        const copy = element.cloneNode(true);
+        copy.querySelectorAll('[aria-hidden="true"]').forEach(node => node.remove());
+        copy.style.setProperty('position', 'fixed', 'important');
+        copy.style.setProperty('left', '-10000px', 'important');
+        copy.style.setProperty('pointer-events', 'none', 'important');
+        element.parentElement.appendChild(copy);
+        try {
+          return copy.innerText;
+        } finally {
+          copy.remove();
+        }
+      })).trim() === 'New intent') matched = true;
     }
     assert.ok(matched, 'Projects panel must include New intent linking to /projects/demo/new');
     await open(page, '/decisions');
