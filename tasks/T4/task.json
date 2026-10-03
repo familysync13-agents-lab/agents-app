@@ -7,7 +7,7 @@
   "by": "FamilySYNC13",
   "contract_sha256": "be7358f9892a7eba605bca5a9e54e9c321c892ebbb08e54c08422fd07c8b4080",
   "at": "2026-10-03",
-  "basis": "owner intent recorded in Agents App task 8; contract v3 approved under the owner's standing V1 escalation policy (within intent) or by the owner in person; hash-bound amendment confirmed by the gate"
+  "basis": "owner intent recorded in Agents App task 8; contract v4 approved under the owner's standing V1 escalation policy (within intent) or by the owner in person; hash-bound amendment confirmed by the gate"
  },
  "checks": {
   "AC1": "oracle:oracle/T4/check.mjs",
@@ -55,6 +55,16 @@
    "reason": "Agents App: the owner-approved contract of T5 (sha256 91a856df8677f163fbf38b08ce45ae6e8fe14a5ed3d89fae535b6cbf371b0924) supersedes part of T4 (AC5): AC5: The check uses getByRole('link', { name: 'New intent', exact: true }). Playwright matches the accessible name, which is New intent for Demo Project because of aria-label, rather than the visible New intent text. The exact-name selector returns zero matches even though the required visible link exists in the correctly selected panel and works. This is a harness selector defect, not an application violation or environment timeout.\n  observed in the application: Reproduced T4:AC5's 15000ms selector timeout with /work/T4-check.mjs. Independently signed in through /auth/preview with Chromium a The contract text of T4 is kept as the historical record; its check now follows the superseding contract for the superseded behaviour and is otherwise unchanged.",
    "files": {
     "oracle/T4/check.mjs": "7a57e635a22271aa865014c1a9fa363e7e3851c9c5707ad55f27ac5826ddce9a"
+   }
+  },
+  {
+   "id": "A5",
+   "at": "2026-10-03T02:16:19Z",
+   "kind": "oracle-repair",
+   "reason": "Agents App: repaired oracle of record (contract unchanged, sha256 be7358f9892a7eba605bca5a9e54e9c321c892ebbb08e54c08422fd07c8b4080); the previous check was defective as a check. Calibrated against main; no criterion weakened.",
+   "files": {
+    "tasks/T4/contract.json": "be7358f9892a7eba605bca5a9e54e9c321c892ebbb08e54c08422fd07c8b4080",
+    "oracle/T4/check.mjs": "b0e6dc4f30b8c8eea7b682ac9ff0590de383374bba812c4302ecb43270c2fac5"
    }
   }
  ]
