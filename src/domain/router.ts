@@ -202,11 +202,20 @@ export function route(i: RouteInput): RouteDecision {
 
 /** Deterministic failure classification of a worker's closing text / executor error. "unknown" = needs semantic triage. */
 export type FailureClass = "quota" | "credential" | "access" | "infrastructure" | "check_defect" | "timeout" | "unknown";
-export function classifyFailure(text: string): { cls: FailureClass; resetAt?: number } {
+export function classifyFailure(text: string, now: number = Date.now()): { cls: FailureClass; resetAt?: number } {
   const t = String(text ?? "");
   if (/usage limit|limit reached|limit will reset|out of (extra )?usage|rate.?limit(ed)?|quota (exceeded|exhausted)|\b429\b|overloaded_error/i.test(t)) {
     const m = /\|(\d{10})\b/.exec(t) ?? /resets? at (\d{10})\b/i.exec(t);
-    return { cls: "quota", ...(m ? { resetAt: Number(m[1]) * 1000 } : {}) };
+    if (m) return { cls: "quota", resetAt: Number(m[1]) * 1000 };
+    // "try again at 6:06 AM" (Codex): a time of day, read as UTC (the worker container's clock); the next occurrence
+    const c = /try again at (\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t);
+    if (c) {
+      const d = new Date(now);
+      d.setUTCHours((Number(c[1]) % 12) + (String(c[3]).toUpperCase() === "PM" ? 12 : 0), Number(c[2]), 0, 0);
+      if (d.getTime() <= now) d.setUTCDate(d.getUTCDate() + 1);
+      return { cls: "quota", resetAt: d.getTime() };
+    }
+    return { cls: "quota" };
   }
   if (/Failed to authenticate|OAuth session expired|Invalid API key|Please run \/login|401 Unauthorized/i.test(t)) return { cls: "credential" };
   if (/ACCESS:|installation does not include|Resource not accessible by integration/i.test(t)) return { cls: "access" };

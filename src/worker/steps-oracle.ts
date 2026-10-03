@@ -75,7 +75,7 @@ export async function oracleStart(ctx: TaskCtx): Promise<void> {
       : `Verifier started (blind: contract v${c.version} only) to author the oracle of record for ${criteria.join(", ")}${attempt > 1 ? ` (attempt ${attempt})` : ""}.`,
     { run: runId },
   );
-  await ctx.goto("oracle_poll", { ...keep(ctx), runId, container, contractId: c.id, tag, attempt });
+  await ctx.goto("oracle_poll", { ...keep(ctx), runId, container, contractId: c.id, tag, attempt, feedback: ctx.data.feedback });
 }
 
 /** Data that travels through the whole oracle pipeline. */

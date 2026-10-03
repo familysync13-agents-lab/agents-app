@@ -128,7 +128,10 @@ const QUOTA_BASE_MIN = 30;
  * The worker's subscription quota is exhausted. This is neither a failure of the work nor an owner matter: the job PAUSES with
  * everything preserved (contract, plan, worktree, evidence, counters, the session itself) and resumes by itself.
  */
-async function quotaPause(ctx: TaskCtx, runId: number, closing: string, resetAt: number | undefined) {
+/** Non-Builder workers (Verifier, arbiter) keep no resumable session: after the pause the step that started them is repeated with the same inputs; no attempt is spent. */
+const RESTART_STEP: Record<string, string> = { oracle_poll: "oracle_start", acceptance_poll: "acceptance_start", attribute_poll: "attribute_start", regress_poll: "regress_start" };
+
+async function quotaPause(ctx: TaskCtx, runId: number, closing: string, resetAt: number | undefined, restartStep?: string) {
   const run = await ctx.run(runId);
   const n = Number(ctx.data.quotaPauses ?? 0) + 1;
   const wait = Math.min(QUOTA_BASE_MIN * n, 120) * 60_000;
@@ -138,12 +141,22 @@ async function quotaPause(ctx: TaskCtx, runId: number, closing: string, resetAt:
   const data = { ...ctx.data };
   delete data.sess;
   delete data.pollAt;
+  if (restartStep) {
+    delete data.runId;
+    delete data.container;
+    delete data.started;
+    return ctx.goto("await_quota", { restartStep, restartData: data, until, quotaPauses: n, runId });
+  }
   await ctx.goto("await_quota", { pollStep: ctx.task.step, pollData: data, purpose: run?.purpose ?? "build", sessionId: run?.sessionId ?? null, runId, until, quotaPauses: n });
 }
 
 /** Step: paused for quota. At the scheduled time the same session is resumed (or, if it never got a session, restarted from its recorded instructions). */
 export async function awaitQuota(ctx: TaskCtx): Promise<void> {
   if (ctx.now().getTime() < Number(ctx.data.until ?? 0) && !("builder" in ctx.data)) return;
+  if (ctx.data.restartStep) {
+    await ctx.log("system", "Quota available again: the paused worker step is repeated with the same inputs; no state was lost and no attempt was spent.", { resumed_from: ctx.data.runId });
+    return ctx.goto(String(ctx.data.restartStep), { ...(ctx.data.restartData as Record<string, unknown>), quotaPauses: ctx.data.quotaPauses });
+  }
   if (await ctx.builderBusy()) return;
   const sessionId = (ctx.data.sessionId as string | null) ?? undefined;
   let prompt = "You were interrupted because the usage limit was reached. Nothing was lost: continue the same task from where you stopped. All instructions and rules given at the start still apply, including the output files you must write.";
@@ -185,12 +198,20 @@ export async function finishSession(ctx: TaskCtx, runId: number, container: stri
     finishedAt: ctx.now(),
   });
   const closing = typeof res?.result === "string" ? res.result : "";
-  const failure = classifyFailure(closing || (typeof r.tail === "string" ? String(r.tail) : ""));
   const erred = res?.is_error === true || Number(res?.num_turns ?? 0) <= 1 || !res;
+  // a worker that printed no result at all (Codex): only its own ERROR lines on stderr are evidence, never the echoed instructions
+  const errLines = !res && typeof r.stderr_tail === "string" ? String(r.stderr_tail).split("\n").filter((l) => /^ERROR:/.test(l)).join("\n") : "";
+  const said = closing || (typeof r.tail === "string" && r.tail ? String(r.tail) : "") || errLines;
+  const failure = classifyFailure(said, ctx.now().getTime());
   if (failure.cls === "quota" && erred) {
     const run = await ctx.run(runId);
     if (run?.role === "builder") {
-      await quotaPause(ctx, runId, closing || String(r.tail ?? ""), failure.resetAt);
+      await quotaPause(ctx, runId, said, failure.resetAt);
+      return "running";
+    }
+    const restart = RESTART_STEP[ctx.task.step];
+    if (restart) {
+      await quotaPause(ctx, runId, said, failure.resetAt, restart);
       return "running";
     }
   }

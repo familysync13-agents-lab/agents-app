@@ -21,7 +21,7 @@ export const CONTRACT = (key: string) => ({
 
 const ORACLE = `import { chromium } from 'playwright';\nconst base = process.argv[2];\nconsole.log(JSON.stringify({ criterion: 'AC1', result: 'pass' }));\n`;
 
-export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: "agree" | "disagree" | "invalid" | "unavailable" } = {}) {
+export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: "agree" | "disagree" | "invalid" | "unavailable" } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -61,6 +61,7 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
     scans: [] as Record<string, unknown>[],
     quotaServed: 0,
     quotaSessions: new Set<string>(),
+    verifierQuotaSessions: new Set<string>(),
   };
   const heads = (pr: number, i: number) => (pr === 102 ? `h${i}` : `h${pr}${"abc"[i - 1]}`);
   const h: Record<string, Handler> = {
@@ -119,6 +120,10 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
       state.verifierPrompts.push(String(p.prompt ?? ""));
       const name = `bko-verifier-${++state.n}`;
       state.sessions.set(name, 0);
+      if (opts.verifierQuota && state.quotaServed < opts.verifierQuota) {
+        state.quotaServed++;
+        state.verifierQuotaSessions.add(name);
+      }
       return { detached: name };
     },
     session: (p) => {
@@ -126,6 +131,7 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
       const k = (state.sessions.get(name) ?? 0) + 1;
       state.sessions.set(name, k);
       if (k < 2) return { running: true };
+      if (state.verifierQuotaSessions.has(name)) return { exit: "1", tail: "", result: null, stderr_tail: "user\nYou are the blind Verifier ... usage limit is not the point\nERROR: You\u2019ve hit your usage limit. Upgrade to Pro, or try again at 6:06 AM.\n" };
       if (state.quotaSessions.has(name)) return { exit: "1", result: { session_id: "sess-q", is_error: true, num_turns: 7, duration_ms: 420000, result: "Claude AI usage limit reached|1790870400" } };
       return name.includes("builder")
         ? { exit: "0", result: { session_id: "sess-1", total_cost_usd: 1.25, num_turns: 12, duration_ms: 60000, result: "DONE" } }

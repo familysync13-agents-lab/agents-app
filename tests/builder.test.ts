@@ -168,6 +168,31 @@ describe("atomic execution with routing, context, profile and ledger", () => {
   });
 });
 
+describe("BT17 Verifier quota", () => {
+  it("classifies the Codex usage-limit error from stderr and reads its reset time", () => {
+    const now = Date.UTC(2026, 9, 3, 4, 55);
+    expect(classifyFailure("ERROR: You\u2019ve hit your usage limit. try again at 6:06 AM.", now)).toEqual({ cls: "quota", resetAt: Date.UTC(2026, 9, 3, 6, 6) });
+    expect(classifyFailure("ERROR: usage limit, try again at 1:30 AM", now).resetAt).toBe(Date.UTC(2026, 9, 4, 1, 30));
+  });
+  it("pauses the oracle authoring without spending an attempt or asking the owner, then repeats the same step", async () => {
+    const { db, clk, ex, id, state } = await start({ verifierQuota: 1 });
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_quota");
+    const t = await taskRow(db, id);
+    expect(await openDecisions(db, id)).toEqual([]);
+    const d = t.stepData as { restartStep: string; until: number; restartData: Record<string, unknown> };
+    expect(d.restartStep).toBe("oracle_start");
+    expect(Number(d.restartData.attempt ?? 1)).toBe(1);
+    const [paused] = (await db.select().from(runs).where(eq(runs.taskId, id))).filter((r) => r.failureClass === "quota");
+    expect(paused).toMatchObject({ role: "verifier", outcome: "aborted" });
+    const before = state.verifierPrompts.length;
+    clk.advance(Math.ceil((d.until - clk.now().getTime()) / 1000) + 5);
+    await runUntil(db, ex, clk, async () => !["await_quota", "oracle_start", "oracle_poll"].includes((await taskRow(db, id)).step));
+    expect(state.verifierPrompts.length).toBe(before + 1);
+    expect(state.verifierPrompts.at(-1)).not.toMatch(/DEFECTIVE|rejected mechanically/); // not treated as a defective check
+    expect((await taskRow(db, id)).state).not.toMatch(/BLOCKED/);
+  });
+});
+
 describe("BT7 quota pause / resume", () => {
   it("pauses with all state kept, asks nobody, and resumes the SAME session without redoing work", async () => {
     const { db, clk, state, ex, id } = await start({ quotaOnBuild: 1 });
