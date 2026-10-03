@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import {
   activity,
@@ -230,6 +230,8 @@ export class TaskCtx {
           ne(tasks.id, this.task.id),
           or(
             inArray(tasks.state, ["IN_PROGRESS", "VERIFYING", "DONE"]),
+            // a BLOCKED task that already has a PR still holds unmerged work (its contract is on main, its code is not)
+            and(inArray(tasks.state, ["BLOCKED_DECISION", "BLOCKED_EVIDENCE"]), isNotNull(tasks.prNumber)),
             // a task that has claimed the build slot but whose session is still starting counts as open work
             and(eq(tasks.step, "build_start"), sql`(${tasks.stepData} ->> 'claimed') = 'true'`),
           ),

@@ -51,6 +51,7 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
     approvedPrs: new Set<number>(),
     closedPrs: [] as number[],
     plansServed: 0,
+    mainAdvanced: false,
     branches: new Map<number, string>(),
     bases: new Map<number, string>(),
     builderCalls: [] as Record<string, unknown>[],
@@ -292,7 +293,7 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
             return { u: { ok: true, head_sha: cpr.head } };
           }
           // a branch that is already current with main cannot be updated (GitHub answers 422)
-          if (opts.regressFail && ![...state.contractPrs.values()].slice(1).some((x) => x.merged)) return { u: { ok: false, status: 422, message: "already up to date" } };
+          if (opts.regressFail && !state.mainAdvanced && ![...state.contractPrs.values()].slice(1).some((x) => x.merged)) return { u: { ok: false, status: 422, message: "already up to date" } };
           const tp = state.taskPrs.get(Number(op.pr))!;
           const old = tp.head;
           tp.head = heads(Number(op.pr), 3);
