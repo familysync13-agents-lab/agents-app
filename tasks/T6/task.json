@@ -5,9 +5,9 @@
  "contract": "tasks/T6/contract.json",
  "approval": {
   "by": "FamilySYNC13",
-  "contract_sha256": "4749f37fc866c4ab03c52ae341d290031d538a9dec3bec3d55a76c766634c951",
+  "contract_sha256": "200e1b3f4f5fcced925d5a16a33d6f40cd4fa8ee402c169d727af0b5aa9fa232",
   "at": "2026-10-03",
-  "basis": "owner intent recorded in Agents App task 10; contract v1 approved under the owner's standing V1 escalation policy (within intent) or by the owner in person; hash-bound amendment confirmed by the gate"
+  "basis": "owner intent recorded in Agents App task 10; contract v2 approved under the owner's standing V1 escalation policy (within intent) or by the owner in person; hash-bound amendment confirmed by the gate"
  },
  "checks": {
   "AC1": "oracle:oracle/T6/check.mjs",
@@ -40,6 +40,16 @@
    "reason": "Agents App: plan v2 for contract v1 (3 tasks; contract unchanged, sha256 4749f37fc866c4ab03c52ae341d290031d538a9dec3bec3d55a76c766634c951).",
    "files": {
     "tasks/T6/plan.json": "d4f385767ea59dc956bc3d387b1e9d5ede6a9e366a15d99c8326f0e2ec26ae53"
+   }
+  },
+  {
+   "id": "A3",
+   "at": "2026-10-03T06:12:47Z",
+   "kind": "contract-amendment+oracle-of-record",
+   "reason": "Agents App: owner-approved contract v2 and its oracle of record (blind Verifier, authored from the contract before implementation).",
+   "files": {
+    "tasks/T6/contract.json": "200e1b3f4f5fcced925d5a16a33d6f40cd4fa8ee402c169d727af0b5aa9fa232",
+    "oracle/T6/check.mjs": "f760fe10a3a156b934d55fe972761a9a2cb0474adbcb2c2e3b54c2727f2f11ca"
    }
   }
  ]
