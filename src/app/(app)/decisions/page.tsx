@@ -4,6 +4,7 @@ import { LiveRefresh } from "@/components/live-refresh";
 import { Ago, Card, CardHeader, Empty } from "@/components/ui";
 import { shortenTitle } from "@/domain/text";
 import { openDecisionsList } from "@/server/queries";
+import { requireOwner } from "@/server/auth";
 
 export const metadata = { title: "Decisions" };
 
@@ -16,6 +17,8 @@ const KIND: Record<string, string> = {
 };
 
 export default async function Decisions() {
+  // checked here too: the layout renders concurrently, so its check alone would let page data stream into the redirect
+  await requireOwner();
   const rows = await openDecisionsList();
   // contracts of one project awaiting review in the same sitting can be approved together (one GitHub PR follows)
   const groups = new Map<number, typeof rows>();

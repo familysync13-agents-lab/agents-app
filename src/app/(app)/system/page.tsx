@@ -4,11 +4,14 @@ import { ProjectCapabilities } from "@/components/project-capabilities";
 import { Ago, Card, CardHeader, Empty, Sha, cx } from "@/components/ui";
 import { currentTime } from "@/domain/time";
 import { systemPage } from "@/server/queries";
+import { requireOwner } from "@/server/auth";
 
 export const metadata = { title: "System" };
 
 /** Health of the control plane itself: heartbeats, executor, backups, project capabilities, and the audit log of administrative operations. */
 export default async function SystemPage() {
+  // checked here too: the layout renders concurrently, so its check alone would let page data stream into the redirect
+  await requireOwner();
   const d = await systemPage();
   const now = currentTime();
   const jobs = Object.fromEntries(d.jobs.map((j) => [j.status, j.n]));
