@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { and, eq } from "drizzle-orm";
 import { decisions, evidence, gateResults, runs, tasks, transitions } from "@/db/schema";
-import { canonicalJson } from "@/domain/contract";
+import { canonicalJson, intentHash } from "@/domain/contract";
 import { createTask, decideBlock } from "@/server/owner";
 import { clock, contractRows, FakeExecutor, contractApproved, openDecisions, policyDecisions, runUntil, setup, taskRow } from "./support/harness";
 import { CONTRACT, fixtureHandlers as scenario } from "./support/fixture-handlers";
@@ -20,7 +20,8 @@ describe("control loop (scripted executor)", () => {
     expect(t1.state).toBe("PROPOSED");
     const [c] = await contractRows(db, id);
     expect(c!.lint.ok).toBe(true);
-    expect(c!.text).toBe(canonicalJson(CONTRACT("T9")));
+    // the drafter's contract plus the lineage the control plane sets itself (intent hash, policy references)
+    expect(c!.text).toBe(canonicalJson({ ...CONTRACT("T9"), intent_sha256: intentHash("Sort lists\nLet owners sort their lists alphabetically on the list index."), policies: ["policy.json", "project:reading-lists"] }));
     expect(c!.oracleJs).toContain("criterion");
     expect(state.builderPrompts[0]).toContain("Sort lists");
     expect(await openDecisions(db, id)).toEqual([]); // a contract within the intent is not an owner decision

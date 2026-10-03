@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import { contracts, tasks } from "@/db/schema";
-import { canonicalJson, lintContract, oracleCriteria, sha256, type Contract } from "@/domain/contract";
+import { canonicalJson, contractIntegrity, intentHash, lintContract, oracleCriteria, sha256, type Contract } from "@/domain/contract";
+import { recordPlan } from "@/server/plans";
 import { draftPrompt, OUTCOME_DIR } from "@/domain/prompts";
 import { TaskCtx } from "./context";
 import { workerOptions } from "./common";
@@ -129,7 +130,15 @@ export async function draftCollect(ctx: TaskCtx): Promise<void> {
   } catch {
     body = null;
   }
-  const lint = lintContract(body, { id: ctx.task.key!, tier: ctx.task.tier });
+  // lineage is set by the control plane, never trusted from the drafter: the hash of the recorded intent and the policy references
+  const intent = intentText(ctx.task);
+  if (body && typeof body === "object") {
+    const b = body as Record<string, unknown>;
+    b.intent_sha256 = intentHash(intent);
+    if (!Array.isArray(b.policies) || b.policies.length === 0) b.policies = ["policy.json", `project:${ctx.project.slug}`];
+  }
+  const earlier = await ctx.db.select({ body: contracts.body }).from(contracts).where(and(eq(contracts.taskId, ctx.task.id), eq(contracts.kind, "contract"), inArray(contracts.status, ["merged", "superseded"]))).orderBy(contracts.version);
+  const lint = lintContract(body, { id: ctx.task.key!, tier: ctx.task.tier }, { intent, previous: earlier.map((e) => e.body) });
   const text = body ? canonicalJson(body) : draft;
   const [{ max } = { max: 0 }] = await ctx.db
     .select({ max: contracts.version })
@@ -165,6 +174,9 @@ export async function draftCollect(ctx: TaskCtx): Promise<void> {
 }
 
 /** Step: wait for the owner's decision in the app (recorded by the UI on the contract row). */
+/** The owner's recorded intent as one text (title + intent): what `intent_sha256` and intent traces refer to. */
+export const intentText = (t: { title: string; intent: string }) => `${t.title}\n${t.intent}`;
+
 export async function awaitOwnerContract(ctx: TaskCtx): Promise<void> {
   const c = await currentContract(ctx);
   if (!c) return;
@@ -253,6 +265,8 @@ export async function batchWait(ctx: TaskCtx): Promise<void> {
 export async function contractPr(ctx: TaskCtx): Promise<void> {
   const c = await currentContract(ctx);
   if (!c || !c.oracleJs) return blockEvidence(ctx, "The approved contract has no oracle.", { contract: c?.id ?? null });
+  const broken = contractIntegrity(c);
+  if (broken.length) return blockEvidence(ctx, `The stored contract does not match its committed bytes (${broken.join("; ")}).`, { contract: c.id }, { auto: false });
   const members = (ctx.data.members as { taskId: number; contractId: number }[] | undefined) ?? [];
   if (members.length > 1) return contractPrBatch(ctx, members);
   const refs = await ctx.once("refs", "pub", () => ({ ls_remote: [ctx.project.repo] }));
@@ -479,6 +493,8 @@ export async function contractMerge(ctx: TaskCtx): Promise<void> {
     return ctx.goto("build_start", { mainSha: mergeCommit });
   }
   await ctx.save({ corrections: 0, extraCorrections: 0, budgetContractId: c.id });
+  // the plan (shape, and later the task graph) belongs to the control plane; it never changes the contract or its version
+  await recordPlan(ctx.db, c, { reason: "Contract merged." });
   await ctx.transition("CONTRACTED", `Contract v${c.version} ${ctx.data.auto ? "confirmed by the gate" : "approved by the owner on GitHub"} and merged (sha256 ${c.sha256.slice(0, 12)})`, {
     contract: c.id,
     contract_sha256: c.sha256,

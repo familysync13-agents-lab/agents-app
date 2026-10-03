@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { and, desc, eq } from "drizzle-orm";
 import { contracts, evidence } from "@/db/schema";
-import { oracleCriteria, sha256, type Contract } from "@/domain/contract";
+import { oracleCriteria, outcomeChanged, sha256, type Contract } from "@/domain/contract";
 import { calibrate, isOracleDefect, loosenedCriteria, staticOracleProblems, type OracleResult } from "@/domain/oracle-check";
 import { contractEscalation } from "@/domain/policy";
 import { oraclePrompt, VERIFIER_SCAFFOLD } from "@/domain/prompts";
@@ -256,6 +256,15 @@ export async function openContractApproval(ctx: TaskCtx, c: ContractRow, js: str
   // A contract that exists is not a reason to ask the owner. It is approved automatically when it mechanically stays within the
   // recorded intent; the owner is asked only for a real owner-level decision (domain/policy.ts).
   const escalate = contractEscalation({ taskTier: ctx.task.tier, body: c.body as unknown as Contract, lintOk: c.lint?.ok === true, oracleProblems: problems, calibrated: cal !== null });
+  // A new version whose REQUIRED OUTCOME is identical to the merged one (an assumption corrected, a trace fixed, wording clarified)
+  // is still a new integer version, but it is approved by policy: the owner already holds the outcome it describes.
+  const merged = await mergedContract(ctx);
+  const sameOutcome = !!merged && merged.id !== c.id && merged.kind === "contract" && c.lint?.ok === true && problems.length === 0 && cal !== null && !outcomeChanged(merged.body as unknown as Contract, c.body as unknown as Contract);
+  if (sameOutcome) {
+    await ctx.db.update(contracts).set({ status: "approved_app" }).where(eq(contracts.id, c.id));
+    await ctx.policyDecision(decision, "approve", `Contract v${c.version} changes no criterion, constraint, scope, non-goal or interface of the merged v${merged!.version}: the required outcome is unchanged.`);
+    return ctx.goto("contract_batch", { contractId: c.id, since: ctx.now().getTime() });
+  }
   if (escalate.length === 0) {
     await ctx.db.update(contracts).set({ status: "approved_app" }).where(eq(contracts.id, c.id));
     await ctx.policyDecision(decision, "approve", `Contract v${c.version} (sha256 ${c.sha256.slice(0, 12)}) is lint-clean, standard tier, touches no trust boundary, and its check passed validation and calibration: within the recorded intent.`);

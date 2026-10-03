@@ -27,6 +27,22 @@ def task_order(base):
     names = git("ls-tree", "-d", "--name-only", base + ":tasks", check=False).decode().split()
     return sorted({n for n in names if re.fullmatch(r"T[0-9]+", n)}, key=lambda n: int(n[1:]))
 
+def plan_scope(t, plan, entry, merged_subjects):
+    """Per-task gating for a DECOMPOSED contract (tasks/<T>/plan.json on the BASE branch; Contract spec v2 section 6.4).
+    Returns the set of criterion ids of contract t that are REQUIRED now, or None when every criterion is required (no plan, an
+    atomic contract, a branch that is not a plan task, or the integrated result has been merged).
+    Required = what the plan tasks already merged into the base cover (they must not regress) + what the task under review covers.
+    Criteria outside that set are still evaluated and reported, but do not decide the verdict before integration."""
+    tasks = (plan or {}).get("tasks") or []
+    if not tasks: return None
+    by = {str(e.get("id", "")).split(".", 1)[-1]: e for e in tasks}
+    if any(("task/%s/integration-" % t) in s for s in merged_subjects): return None
+    if entry is not None and entry not in by: return None
+    req = set()
+    for k in by:
+        if k == entry or any(("task/%s/%s-" % (t, k)) in s for s in merged_subjects): req.update(by[k].get("covers") or [])
+    return req
+
 def match(path, pats):
     for p in pats:
         if p.endswith("/**"):
@@ -302,6 +318,20 @@ def run_preview(head, base, tid, task, contract, reg, policy):
     if canary_hits: finish("FAIL:CANARY", "canary value reached a client-visible surface: %s" % canary_hits[:5])
     if OUT["checks"].get("secret_scan_findings"): finish("FAIL:SECRET", "gitleaks found %d secret(s)" % OUT["checks"]["secret_scan_findings"])
     if not check_ok: finish("FAIL:CHECK", "candidate check stage (lint/types/tests) did not pass")
+    # per-task gating: criteria of a decomposed contract that no merged or current plan task covers yet are reported, not required
+    subjects = git("log", "--first-parent", "--format=%s", base, check=False).decode(errors="replace").splitlines()
+    m_entry = re.match(r"^task/%s/([a-z])-" % re.escape(tid), PR.get("head", {}).get("ref", ""))
+    scopes = {}
+    for t in {c.split(":")[0] for c in list(OUT["criteria"]) + list(OUT["regression"])}:
+        try: pl = json.loads(show(base, "tasks/%s/plan.json" % t) or b"null")
+        except Exception: pl = None
+        scopes[t] = plan_scope(t, pl, (m_entry.group(1) if m_entry else "") if t == tid else None, subjects)
+    OUT["checks"]["plan_scope"] = {t: (sorted(v) if v is not None else None) for t, v in scopes.items()}
+    for bucket in (OUT["criteria"], OUT["regression"]):
+        for crit, rec in bucket.items():
+            t, ac = crit.split(":"); req = scopes.get(t)
+            if req is not None and ac not in req and rec["status"] != "Verified":
+                rec["detail"] = "not yet required at this plan task (was: %s) | %s" % (rec["status"], rec.get("detail")); rec["status"] = "Deferred"
     cur = [v["status"] for v in OUT["criteria"].values()]; old = [v["status"] for v in OUT["regression"].values()]
     if "Not verified" in cur: finish("FAIL:ORACLE", "a must-criterion of %s failed" % tid)
     if "Not verified" in old: finish("FAIL:REGRESSION", "a must-criterion of an earlier task failed")

@@ -12,8 +12,8 @@ export const CONTRACT = (key: string) => ({
   open_questions: [],
   interface: { ui: 'GET /lists: button "Sort A–Z"' },
   criteria: [
-    { id: "AC1", type: "behavior", priority: "must", tags: [], given: "alice with lists B, A", when: "she clicks Sort A–Z", then: "A is listed before B" },
-    { id: "AC2", type: "experience", priority: "should", tags: [], statement: "Feels quick", refs: ["DESIGN"] },
+    { id: "AC1", type: "behavior", priority: "must", tags: [], given: "alice with lists B, A", when: "she clicks Sort A–Z", then: "A is listed before B", verify: "blackbox", trace: { source: "intent", ref: "Let owners" } },
+    { id: "AC2", type: "experience", priority: "should", tags: [], statement: "Feels quick", refs: ["DESIGN"], trace: { source: "necessary", ref: "AC1: sorting must not feel slow" } },
   ],
   canary_routes: ["/"],
   version: 1,
@@ -21,7 +21,7 @@ export const CONTRACT = (key: string) => ({
 
 const ORACLE = `import { chromium } from 'playwright';\nconst base = process.argv[2];\nconsole.log(JSON.stringify({ criterion: 'AC1', result: 'pass' }));\n`;
 
-export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[] } = {}) {
+export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[] } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -103,6 +103,14 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
         else {
           const cj = CONTRACT(state.volKey.get(vol) ?? state.key);
           if (opts.sensitiveTag) (cj.criteria[0]!.tags as string[]).push("security");
+          if (opts.noTrace) delete (cj.criteria[0] as { trace?: unknown }).trace;
+          const sq = opts.draftSequence?.[Math.min(state.drafts, opts.draftSequence.length) - 1];
+          if (sq) {
+            if (sq.tag) (cj.criteria[0]!.tags as string[]).push(sq.tag);
+            if (sq.then) (cj.criteria[0] as { then: string }).then = sq.then;
+            if (sq.assumptions) (cj as Record<string, unknown>).assumptions = [{ id: "A1", question: "Case-sensitive?", chosen: "No", basis: "existing behaviour", reversible: true }];
+            (cj as { version: number }).version = state.drafts;
+          }
           out[".bakeoff/contract.json"] = b64(JSON.stringify(cj));
         }
       }

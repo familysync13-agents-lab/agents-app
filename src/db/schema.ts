@@ -145,6 +145,34 @@ export const contracts = pgTable(
   (t) => [uniqueIndex("contracts_task_version_uq").on(t.taskId, t.version)],
 );
 
+/**
+ * The plan for one contract (Contract spec v2, section 6): shape (atomic / complex), the one-level task graph and its coverage of the
+ * contract's criteria by stable id. A control-plane record: re-planning adds a plan version and never a contract version.
+ */
+export const plans = pgTable(
+  "plans",
+  {
+    id: serial("id").primaryKey(),
+    taskId: integer("task_id")
+      .notNull()
+      .references(() => tasks.id),
+    /** the contract version (row) this plan is bound to */
+    contractId: integer("contract_id")
+      .notNull()
+      .references(() => contracts.id),
+    planVersion: integer("plan_version").notNull(),
+    /** PlanBody (domain/plan.ts): contract id/version/hash, shape + reasons, tasks, integration-only ids */
+    body: jsonb("body").$type<Record<string, unknown>>().notNull(),
+    coverage: jsonb("coverage").$type<{ ok: boolean; problems: string[] }>().notNull(),
+    /** integrated verification against the ORIGINAL contract: required for every decomposed plan */
+    integrated: jsonb("integrated").$type<Record<string, unknown>>().notNull(),
+    status: text("status").$type<"active" | "superseded">().notNull().default("active"),
+    reason: text("reason").notNull(),
+    createdAt: created(),
+  },
+  (t) => [uniqueIndex("plans_task_version_uq").on(t.taskId, t.planVersion)],
+);
+
 /** One worker execution (a Builder or Verifier session in its isolated container). */
 export const runs = pgTable(
   "runs",

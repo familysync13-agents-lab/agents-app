@@ -81,15 +81,41 @@ export const CONTRACT_SCHEMA_DOC = `{
  "scope": {"summary": "<one paragraph>", "paths": ["**"]},
  "non_goals": ["..."],
  "open_questions": [],                        // must be empty; otherwise write BLOCKED.json instead of a contract
+ "policies": ["policy.json"],                 // references only - never copy policy text into the contract
+ "constraints": [                             // ONLY constraints specific to this job (may be empty)
+   {"id": "C1", "kind": "compatibility" | "security" | "privacy" | "interface" | "prohibited" | "regression" | "design",
+    "statement": "...", "verify": "static" | "suite" | "blackbox" | "measure" | "judgment", "trace": {"source": "...", "ref": "..."}}
+ ],
+ "assumptions": [                             // every routine ambiguity you resolved yourself (may be empty)
+   {"id": "A1", "question": "...", "chosen": "...", "basis": "existing behaviour" | "stated intent" | "policy", "reversible": true}
+ ],
  "interface": {"ui": "<exact routes, headings, field labels, button names and messages the implementation must use>"},
  "criteria": [
-   {"id": "AC1", "type": "behavior", "priority": "must", "tags": [], "given": "...", "when": "...", "then": "..."},
-   {"id": "AC2", "type": "threshold", "priority": "must", "tags": [], "metric": "...", "target": "<number + unit>", "conditions": "..."},
-   {"id": "AC3", "type": "experience", "priority": "should", "tags": [], "statement": "...", "refs": ["..."]}
+   {"id": "AC1", "type": "behavior", "priority": "must", "tags": [], "given": "...", "when": "...", "then": "...",
+    "verify": "blackbox", "trace": {"source": "intent", "ref": "<words quoted verbatim from the owner's intent>"}},
+   {"id": "AC2", "type": "threshold", "priority": "must", "tags": [], "metric": "...", "target": "<number + unit>", "conditions": "...",
+    "verify": "measure", "trace": {"source": "necessary", "ref": "AC1: <why AC1 cannot hold without this>"}},
+   {"id": "AC3", "type": "experience", "priority": "should", "tags": [], "statement": "...", "refs": ["..."],
+    "trace": {"source": "intent", "ref": "<verbatim quote>"}}
  ],
  "canary_routes": ["/"],
  "version": 1
 }`;
+
+export const CONTRACT_V2_RULES = `- TRACEABILITY (mechanically checked): every criterion and every constraint has a "trace" to exactly one source:
+  "intent" (ref = words quoted VERBATIM from the owner's intent above, at least 8 characters), "policy" (ref starts with a
+  referenced policy id), "project" (ref names the earlier contract or project constraint it preserves) or "necessary" (ref names
+  the criterion id it is logically required for, and why). You must NOT add product requirements of your own. A requirement that
+  would expand what the owner asked for and fits none of these sources is an owner decision: write BLOCKED.json for it.
+- Every must-criterion has "verify": the CLASS of proof it needs (behavior -> "blackbox", threshold -> "measure" or "blackbox").
+  Never name a tool. Do not relabel ordinary behaviour or a numeric target as "experience".
+- When the intent leaves a routine detail open and one reading is low-risk, reversible and consistent with the existing product or
+  the stated intent, choose it and record it under "assumptions" instead of blocking. More than three assumptions, or one that
+  is not reversible, goes to the owner anyway - so block instead when the open point is really the owner's.
+- Keep criterion ids stable across versions: in a revision, an existing id keeps its requirement; a new requirement gets a new id;
+  a removed id is never reused.
+- Optional planning hints (they never change the outcome): "group": "<deliverable name>" on criteria when the contract contains
+  two or more independent deliverables; tags "migration" and "interface-change" where they apply.`;
 
 export function draftPrompt(
   p: ProjectInfo,
@@ -122,6 +148,7 @@ Rules for the contract
   and put them in "interface". Must-criteria of type experience or structural are not supported by the V0 gate: use "should".
 - Reuse the interface names of earlier contracts (sign-in, seeded users, lists, ...) where the new work touches them.
 - Keep scope to the owner's intent. Anything the intent does not ask for goes to non_goals.
+${CONTRACT_V2_RULES}
 - Tag criteria that touch authorization, data deletion, money or personal data (authz, data-loss, money, pii); tagged criteria
   make the task tier "critical".
 - If the intent is ambiguous or contradictory, or turning it into criteria requires a product, design, security or architecture

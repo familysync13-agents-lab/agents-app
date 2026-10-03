@@ -1,4 +1,5 @@
 import type { Contract } from "./contract";
+import { CALIBRATION } from "./plan";
 
 /*
  * V1 owner-escalation policy. The owner is asked ONLY for:
@@ -33,6 +34,16 @@ export function contractEscalation(f: ContractFacts): string[] {
   if ((f.body.open_questions ?? []).length) why.push("the contract has open questions");
   if (f.oracleProblems.length) why.push("the acceptance check could not be fully validated");
   if (!f.calibrated) why.push("the acceptance check was not calibrated against main");
+  // v2: routine ambiguity is resolved and recorded; too much of it, or anything not reversible, is the owner's (calibration values)
+  const assumptions = f.body.assumptions ?? [];
+  if (assumptions.length > CALIBRATION.maxAssumptions) why.push(`${assumptions.length} assumptions were needed (more than ${CALIBRATION.maxAssumptions})`);
+  const irreversible = assumptions.filter((a) => a.reversible === false).map((a) => a.id);
+  if (irreversible.length) why.push(`assumptions that are not reversible (${irreversible.join(", ")})`);
+  // v2 drafter-inflation guard: requirements the owner did not state ("necessary") may not dominate the contract
+  const must = f.body.criteria.filter((k) => k.priority === "must");
+  const necessary = must.filter((k) => k.trace?.source === "necessary");
+  if (must.length > 0 && necessary.length / must.length > CALIBRATION.maxNecessaryShare)
+    why.push(`${necessary.length} of ${must.length} must-criteria were added by the drafter as "necessary" (more than a third)`);
   return why;
 }
 

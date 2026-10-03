@@ -3,6 +3,7 @@ import { decisions, evidence, gateResults, tasks } from "@/db/schema";
 import { classifyVerdict } from "@/domain/lifecycle";
 import { criteriaFromGate, correctionDetails, oracleDefects, type GateEvidence } from "@/domain/gate";
 import { buildPrompt, correctionPrompt, noOutcomePrompt, OUTCOME_DIR } from "@/domain/prompts";
+import { planBlockers, recordPlan } from "@/server/plans";
 import { TaskCtx } from "./context";
 import { currentContract } from "./steps-contract";
 import { workerOptions, blockEvidence, harnessFailure, latestGate, mainSha, ownerApproved, pollDue, PROTECTED, sub, unb64, vols } from "./common";
@@ -390,6 +391,9 @@ export async function syncBranch(ctx: TaskCtx): Promise<void> {
 /** Automatic correction loop (no owner involvement) up to the project's budget; then a budget decision. */
 export async function correction(ctx: TaskCtx, verdict: string, details: string, fact: Record<string, unknown>): Promise<void> {
   if (ctx.task.corrections >= ctx.project.maxCorrections + ctx.task.extraCorrections) {
+    // shape rule 5: an exhausted atomic attempt re-classifies the PLAN (a new plan version; the contract and its version are untouched)
+    const cur = await currentContract(ctx);
+    if (cur) await recordPlan(ctx.db, cur, { facts: { budgetExhausted: true }, reason: "Correction budget exhausted on the atomic attempt." });
     await ctx.transition("BLOCKED_DECISION", `Correction budget exhausted (${ctx.task.corrections} corrections)`, fact);
     await ctx.openDecision({
       kind: "budget",
@@ -431,6 +435,9 @@ export async function markDone(ctx: TaskCtx): Promise<void> {
     .orderBy(desc(gateResults.id))
     .limit(1);
   if (!g || g.kind !== "pass") return blockEvidence(ctx, "DONE requires a passing gate result for the current head.", { head: ctx.task.headSha });
+  // a decomposed contract is fulfilled only by its integrated result, verified against the ORIGINAL contract - never by tasks alone
+  const blockers = await planBlockers(ctx.db, ctx.task.id);
+  if (blockers.length) return blockEvidence(ctx, `The contract is not fulfilled yet: ${blockers.join("; ")}.`, { head: ctx.task.headSha, plan: true }, { auto: false });
   await ctx.transition("DONE", `All must-criteria verified by the gate for ${g.headSha.slice(0, 8)}${ctx.data.acceptance ? "; independent Verifier check found no blocking defect" : ""}`, {
     gate_result: g.id,
     check_run: g.checkRunId,
