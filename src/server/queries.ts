@@ -100,7 +100,12 @@ export async function systemPage() {
     .from(executorJobs)
     .groupBy(executorJobs.status);
   const recentErrors = await db.select().from(executorJobs).where(eq(executorJobs.status, "error")).orderBy(desc(executorJobs.id)).limit(10);
-  return { heartbeats: hb, backups: bk, audit, jobs, recentErrors, system: await systemStatus() };
+  const capabilities = await db
+    .select({ id: projects.id, name: projects.name, capabilityProfile: projects.capabilityProfile })
+    .from(projects)
+    .where(eq(projects.active, true))
+    .orderBy(projects.name);
+  return { heartbeats: hb, backups: bk, audit, jobs, recentErrors, capabilities, system: await systemStatus() };
 }
 
 export async function overview() {
