@@ -38,6 +38,15 @@
     "tasks/T4/contract.json": "be7358f9892a7eba605bca5a9e54e9c321c892ebbb08e54c08422fd07c8b4080",
     "oracle/T4/check.mjs": "ad52edf2a53a2c3547453ed336e2717cf21f12b885fabc304bbdd8793694ff9f"
    }
+  },
+  {
+   "id": "A3",
+   "at": "2026-10-03T01:43:04Z",
+   "kind": "oracle-update-superseded",
+   "reason": "Agents App: the owner-approved contract of T5 (sha256 91a856df8677f163fbf38b08ce45ae6e8fe14a5ed3d89fae535b6cbf371b0924) supersedes part of T4 (AC1, AC2, AC3, AC4): AC1: The earlier oracle enforces a superseded list structure. Its li-based ancestor selector does not identify the current table card; the current T5 oracle passes AC1 and AC2.\n  observed in the application: /system returns HTTP 200 with the Project Capabilities h2 and a table containing exactly one body row, Demo Project. The old ancestor::*[.//li][1] selector climbs outside this card and finds an ancestor with four h2 headings, reproducing 4 !== 1.\n  required: Authoritative T5:AC1 and AC2 require a table with nine ordered columns and exactly one Demo Project body row, superseding T4’s li/h3  The contract text of T4 is kept as the historical record; its check now follows the superseding contract for the superseded behaviour and is otherwise unchanged.",
+   "files": {
+    "oracle/T4/check.mjs": "6cba30ef3e79935d261ea544f81aeb8946db38745290eef065b3e172aed7f720"
+   }
   }
  ]
 }
