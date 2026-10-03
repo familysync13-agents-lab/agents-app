@@ -41,9 +41,11 @@ export async function harnessFailure(ctx: TaskCtx, job: Job, key: string, what: 
     await ctx.forget(key);
     return;
   }
-  await blockEvidence(ctx, `${what} failed ${n} times in the executor (infrastructure, not the work): ${String(job.error ?? "").slice(0, 200)}`, {
-    job: job.id,
-  });
+  // the step is repeated later WITH its data (minus the failed job), so it continues where it was instead of starting blind
+  const resumeData = { ...ctx.data };
+  delete resumeData[key];
+  delete resumeData.pollAt;
+  await blockEvidence(ctx, `${what} failed ${n} times in the executor (infrastructure, not the work): ${String(job.error ?? "").slice(0, 200)}`, { job: job.id }, { resumeData });
 }
 
 /**
