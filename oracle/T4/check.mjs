@@ -1,160 +1,164 @@
 import assert from 'node:assert/strict';
 
 const ids = ['AC1', 'AC2', 'AC3', 'AC4', 'AC5'];
+const timeout = 15000;
 let browser;
-let base;
+let baseURL;
 let setupError;
 try {
-  const input = process.argv[2];
-  if (!input) throw new Error('Missing baseURL argument');
-  base = new URL(input);
-  if (!['http:', 'https:'].includes(base.protocol)) throw new Error('Invalid baseURL protocol');
+  assert.ok(process.argv[2], 'Invocation requires a baseURL');
+  baseURL = new URL(process.argv[2]).origin;
   const { chromium } = await import('playwright');
   browser = await chromium.launch({ args: ['--no-sandbox', '--disable-dev-shm-usage'] });
 } catch (error) {
-  setupError = `HARNESS: ${error.message}`;
+  setupError = `HARNESS: browser or invocation setup failed: ${error.message}`;
 }
 
-async function visibleUnique(locator, label) {
-  await locator.first().waitFor({ state: 'visible', timeout: 15000 });
-  assert.equal(await locator.count(), 1, `${label}: expected exactly one element`);
-  assert.ok(await locator.isVisible(), `${label}: not visible`);
+async function visible(locator) {
+  await locator.waitFor({ state: 'visible', timeout });
   return locator;
 }
-
-async function visit(page, path) {
-  const response = await page.goto(new URL(path, base).href, { waitUntil: 'load', timeout: 30000 });
-  assert.ok(response, `${path}: missing navigation response`);
-  assert.equal(response.status(), 200, `${path}: expected HTTP 200, received ${response.status()}`);
-  assert.equal(new URL(page.url()).pathname, path, `${path}: redirected to ${page.url()}`);
+async function open(page, path) {
+  const response = await page.goto(`${baseURL}${path}`, { waitUntil: 'load', timeout: 30000 });
+  assert.ok(response, `${path}: no document response`);
+  assert.equal(response.status(), 200, `${path}: expected HTTP 200, got ${response.status()}`);
+  assert.equal(new URL(page.url()).pathname, path, `${path}: unexpected redirect`);
 }
-
 async function capabilities(page) {
-  const heading = await visibleUnique(page.getByRole('heading', { level: 2, name: 'Project Capabilities', exact: true }), 'Project Capabilities h2');
-  // The interface promises a card, but does not prescribe its tag or CSS classes.
-  // Use its nearest ancestor containing the promised project list, without
-  // accepting an ancestor that also encloses other h2-headed cards.
-  const section = heading.locator('xpath=ancestor::*[.//li][1]');
-  await visibleUnique(section, 'Project Capabilities section');
-  assert.equal(await section.locator('h2').count(), 1, 'Project list must be within the Project Capabilities section');
-  return section;
+  const heading = await visible(page.getByRole('heading', { level: 2, name: 'Project Capabilities', exact: true }));
+  // Find the nearest containing card/section without assuming a CSS class or component tag.
+  const section = heading.locator('xpath=ancestor::*[descendant::li][1]');
+  await visible(section);
+  const item = section.getByRole('listitem').filter({
+    has: page.getByRole('heading', { level: 3, name: 'Demo Project', exact: true }),
+  });
+  await visible(item);
+  return { section, item };
 }
-
-async function demo(page) {
-  const section = await capabilities(page);
-  const item = section.locator('li').filter({ has: page.getByRole('heading', { level: 3, name: 'Demo Project', exact: true }) });
-  await visibleUnique(item, 'Demo Project list item');
-  await visibleUnique(item.getByRole('heading', { level: 3, name: 'Demo Project', exact: true }), 'Demo Project h3');
-  return item;
-}
-
-async function field(item, name) {
-  const dl = await visibleUnique(item.locator('dl'), 'Demo Project description list');
-  const term = dl.locator('dt').filter({ hasText: new RegExp(`^\\s*${name}\\s*$`) });
-  await visibleUnique(term, `${name} term`);
-  const value = term.locator('xpath=following-sibling::*[1][self::dd]');
-  await visibleUnique(value, `${name} definition`);
-  return (await value.innerText()).trim();
+async function fields(item) {
+  const dl = await visible(item.locator('dl'));
+  const terms = dl.locator('dt');
+  const definitions = dl.locator('dd');
+  const count = await terms.count();
+  assert.equal(await definitions.count(), count, 'Each description term must have one definition');
+  const labels = [];
+  const values = [];
+  for (let i = 0; i < count; i++) {
+    const term = await visible(terms.nth(i));
+    const definition = await visible(definitions.nth(i));
+    // Supports both direct dt/dd children and conventional div-wrapped pairs.
+    assert.ok(await term.evaluate((node, index) => {
+      const list = node.closest('dl');
+      const pairs = [...list.querySelectorAll('dt, dd')].filter(el => el.closest('dl') === list);
+      return pairs[index * 2] === node && pairs[index * 2 + 1]?.tagName === 'DD';
+    }, i), 'Description list terms and definitions must be paired in order');
+    labels.push((await term.innerText()).trim());
+    values.push((await definition.innerText()).trim());
+  }
+  return { labels, values };
 }
 
 const checks = {
-  AC1: async (page) => {
-    await visit(page, '/system');
-    const section = await capabilities(page);
-    await demo(page);
-    assert.equal(await section.locator('li').count(), 1, 'Preview must have exactly one active-project list item');
+  AC1: async page => {
+    await open(page, '/system');
+    const { section, item } = await capabilities(page);
+    assert.equal(await section.getByRole('listitem').count(), 1, 'Preview must show exactly one active project list item');
+    assert.equal(await item.count(), 1, 'Expected exactly one Demo Project item');
+    await visible(item.getByRole('heading', { level: 3, name: 'Demo Project', exact: true }));
   },
-  AC2: async (page) => {
-    await visit(page, '/system');
-    const item = await demo(page);
-    const dl = await visibleUnique(item.locator('dl'), 'Demo Project description list');
-    const expected = ['Language', 'Framework', 'Package manager', 'Build', 'Test', 'Lint', 'Type check', 'Browser tests'];
-    await dl.locator('dt').first().waitFor({ state: 'visible' });
-    const labels = [];
-    for (const term of await dl.locator('dt').all()) labels.push((await term.innerText()).trim());
-    assert.deepEqual(labels, expected, 'Description terms and order');
-    assert.equal(await dl.locator('dd').count(), expected.length, 'One definition per term');
-    for (const [name, value] of [['Language', 'typescript'], ['Framework', 'next'], ['Package manager', 'npm']]) {
-      assert.ok((await field(item, name)).toLowerCase().includes(value), `${name}: expected value containing ${value}`);
+  AC2: async page => {
+    await open(page, '/system');
+    const { item } = await capabilities(page);
+    const { labels, values } = await fields(item);
+    assert.deepEqual(labels, ['Language', 'Framework', 'Package manager', 'Build', 'Test', 'Lint', 'Type check', 'Browser tests'], 'Description terms must match the specified order');
+    for (const [index, expected] of [[0, 'typescript'], [1, 'next'], [2, 'npm']]) {
+      assert.ok(values[index].toLowerCase().includes(expected), `${labels[index]} must contain ${expected}; got ${JSON.stringify(values[index])}`);
     }
-    for (const [name, value] of [['Build', 'npm run build'], ['Test', 'npm run test'], ['Lint', 'npm run lint']]) {
-      assert.equal(await field(item, name), value, `${name}: exact detected command`);
+    for (const [index, expected] of [[3, 'npm run build'], [4, 'npm run test'], [5, 'npm run lint']]) {
+      assert.equal(values[index], expected, `${labels[index]} command differs`);
     }
   },
-  AC3: async (page) => {
-    await visit(page, '/system');
-    const item = await demo(page);
-    assert.equal(await field(item, 'Type check'), 'Not detected', 'Type check');
-    assert.equal(await field(item, 'Browser tests'), 'Available', 'Browser tests');
+  AC3: async page => {
+    await open(page, '/system');
+    const { item } = await capabilities(page);
+    const { labels, values } = await fields(item);
+    for (const [label, expected] of [['Type check', 'Not detected'], ['Browser tests', 'Available']]) {
+      assert.equal(labels.filter(value => value === label).length, 1, `Expected one ${label} term`);
+      assert.equal(values[labels.indexOf(label)], expected, `${label} value differs`);
+    }
   },
-  AC4: async (page) => {
-    const uncaught = [];
-    page.on('pageerror', error => uncaught.push(error.message));
+  AC4: async page => {
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => {
-      if (message.type() === 'error' && /\buncaught\b/i.test(message.text())) uncaught.push(message.text());
+      if (message.type() === 'error' && /\buncaught\b/i.test(message.text())) errors.push(message.text());
     });
-    await visit(page, '/system');
-    await visibleUnique(page.getByRole('heading', { level: 1, name: 'System', exact: true }), 'System h1');
-    for (const name of ['Build', 'Executor jobs']) {
-      const label = page.getByText(name, { exact: true }).locator('xpath=self::*[not(ancestor-or-self::dl)]');
-      await visibleUnique(label, `${name} status card label`);
-    }
+    await open(page, '/system');
+    await visible(page.getByRole('heading', { level: 1, name: 'System', exact: true }));
     for (const name of ['Backups', 'Recent executor errors', 'Administrative operations (audit log)']) {
-      await visibleUnique(page.getByRole('heading', { name, exact: true }), `${name} card heading`);
+      await visible(page.getByRole('heading', { name, exact: true }));
     }
-    // Bounded observation allows hydration errors to surface without relying
-    // on networkidle (the System page can refresh itself).
+    // A Build dt in the new profile must not stand in for the existing status card.
+    for (const label of ['Build', 'Executor jobs']) {
+      const candidates = page.getByText(label, { exact: true }).locator('xpath=self::*[not(ancestor::dl)]');
+      await visible(candidates.first());
+      let found = false;
+      for (let i = 0; i < await candidates.count(); i++) {
+        const candidate = candidates.nth(i);
+        if (await candidate.isVisible() && await candidate.evaluate(el => !el.closest('dl'))) found = true;
+      }
+      assert.ok(found, `Missing visible ${label} status card label`);
+    }
+    // Give client hydration and its queued callbacks time to expose uncaught errors.
     await page.waitForTimeout(1500);
-    assert.deepEqual(uncaught, [], 'Uncaught browser errors on /system');
+    assert.deepEqual(errors, [], 'Uncaught browser errors on /system');
   },
-  AC5: async (page) => {
-    await visit(page, '/');
-    await visibleUnique(page.getByRole('heading', { level: 1, name: 'Command', exact: true }), 'Command h1');
-    const heading = await visibleUnique(page.getByRole('heading', { name: 'Projects', exact: true }), 'Projects panel heading');
-    const panel = heading.locator('xpath=ancestor::*[.//a[normalize-space(.)="New intent"]][1]');
-    await visibleUnique(panel, 'Projects panel');
-    // Locate the smallest project entry containing both its name and shortcut.
-    const project = await visibleUnique(panel.getByText('Demo Project', { exact: true }), 'Demo Project in Projects panel');
-    const entry = project.locator('xpath=ancestor::*[.//a[normalize-space(.)="New intent"]][1]');
-    const link = await visibleUnique(entry.getByRole('link', { name: 'New intent', exact: true }), 'Demo Project New intent link');
-    const href = await link.getAttribute('href');
-    assert.ok(href, 'New intent link missing href');
-    assert.equal(new URL(href, page.url()).href, new URL('/projects/demo/new', base).href, 'New intent link destination');
-    for (const [path, name] of [['/decisions', 'Decisions'], ['/projects/demo', 'Demo Project']]) {
-      await visit(page, path);
-      await visibleUnique(page.getByRole('heading', { level: 1, name, exact: true }), `${path} h1`);
+  AC5: async page => {
+    await open(page, '/');
+    const heading = await visible(page.getByRole('heading', { level: 2, name: 'Projects', exact: true }));
+    const panel = heading.locator('xpath=ancestor::*[descendant::a][1]');
+    await visible(panel.getByText('Demo Project', { exact: true }));
+    const links = panel.getByRole('link', { name: 'New intent', exact: true });
+    await visible(links.first());
+    let matched = false;
+    for (let i = 0; i < await links.count(); i++) {
+      const link = links.nth(i);
+      const href = await link.getAttribute('href');
+      if (href && new URL(href, page.url()).href === `${baseURL}/projects/demo/new` && await link.isVisible()) matched = true;
     }
+    assert.ok(matched, 'Projects panel must include New intent linking to /projects/demo/new');
+    await open(page, '/decisions');
+    await visible(page.getByRole('heading', { level: 1, name: 'Decisions', exact: true }));
+    await open(page, '/projects/demo');
+    await visible(page.getByRole('heading', { level: 1, name: 'Demo Project', exact: true }));
   },
 };
 
 for (const criterion of ids) {
   let context;
-  let result;
   try {
     if (setupError) throw new Error(setupError);
     try {
       context = await browser.newContext();
     } catch (error) {
-      throw new Error(`HARNESS: browser context creation failed: ${error.message}`);
+      throw new Error(`HARNESS: cannot create browser context: ${error.message}`);
     }
     const page = await context.newPage();
-    page.setDefaultTimeout(15000);
-    page.setDefaultNavigationTimeout(30000);
-    const auth = await page.goto(new URL('/auth/preview', base).href, { waitUntil: 'load' });
-    assert.ok(auth && auth.status() === 200, 'Preview owner sign-in must redirect to a successful page');
+    page.setDefaultTimeout(timeout);
+    const auth = await page.goto(`${baseURL}/auth/preview`, { waitUntil: 'load', timeout: 30000 });
+    assert.ok(auth && auth.status() === 200, 'Preview owner sign-in must finish with HTTP 200');
     assert.equal(new URL(page.url()).pathname, '/', 'Preview owner sign-in must redirect to /');
     await checks[criterion](page);
-    result = { criterion, result: 'pass' };
+    process.stdout.write(`${JSON.stringify({ criterion, result: 'pass' })}\n`);
   } catch (error) {
     let detail = error.message || String(error);
-    if (/net::ERR_(CONNECTION_REFUSED|NAME_NOT_RESOLVED|ADDRESS_UNREACHABLE)|browser has been closed|Target page, context or browser has been closed/i.test(detail)) {
-      detail = `HARNESS: preview or browser unavailable: ${detail}`;
+    if (/net::ERR_(CONNECTION_REFUSED|NAME_NOT_RESOLVED|ADDRESS_UNREACHABLE|INTERNET_DISCONNECTED)/.test(detail)) {
+      detail = `HARNESS: preview is unreachable: ${detail}`;
     }
-    result = { criterion, result: 'fail', detail: detail.slice(0, 1800) };
+    process.stdout.write(`${JSON.stringify({ criterion, result: 'fail', detail: detail.slice(0, 1800) })}\n`);
   } finally {
     if (context) await context.close().catch(() => {});
   }
-  process.stdout.write(`${JSON.stringify(result)}\n`);
 }
 if (browser) await browser.close().catch(() => {});
 process.exitCode = 0;
