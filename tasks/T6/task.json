@@ -51,6 +51,15 @@
     "tasks/T6/contract.json": "200e1b3f4f5fcced925d5a16a33d6f40cd4fa8ee402c169d727af0b5aa9fa232",
     "oracle/T6/check.mjs": "f760fe10a3a156b934d55fe972761a9a2cb0474adbcb2c2e3b54c2727f2f11ca"
    }
+  },
+  {
+   "id": "A4",
+   "at": "2026-10-03T06:15:24Z",
+   "kind": "plan",
+   "reason": "Agents App: plan v4 for contract v2 (3 tasks; contract unchanged, sha256 200e1b3f4f5fcced925d5a16a33d6f40cd4fa8ee402c169d727af0b5aa9fa232).",
+   "files": {
+    "tasks/T6/plan.json": "e3edbcbe9699d207192e4f834e4186a00c20ad64f43a43f96005ccf7f3a4dd6e"
+   }
   }
  ]
 }
