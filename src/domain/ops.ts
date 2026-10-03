@@ -69,6 +69,7 @@ const STEP_NODE: Record<string, FlowNode> = {
   await_access: "owner",
   self_recover: "gate",
   await_quota: "builder",
+  await_dependency: "gate",
   plan_start: "contract",
   plan_poll: "contract",
   plan_collect: "contract",

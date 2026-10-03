@@ -378,3 +378,54 @@ describe("BT14 a PR that fell behind main is updated and merged without the owne
     expect(await openDecisions(db, id).then((d) => d.map((x) => x.kind))).toEqual(["acceptance"]);
   });
 });
+
+describe("BT15 a 'regression' on an earlier task whose work is not merged yet (found in the first decomposed run)", () => {
+  it("waits for that work, then re-gates on top of it: no arbiter verdict is applied, no check is rewritten, nobody is asked, nothing is charged", async () => {
+    const { db, clk, state, ex, id } = await start({ failFirstGate: true, regressFail: true });
+    const [me] = await db.select().from(tasks).where(eq(tasks.id, id));
+    // T2: an earlier task of the same project whose contract is on main but whose work is still awaiting acceptance
+    const [dep] = await db.insert(tasks).values({ projectId: me!.projectId, key: "T2", title: "earlier", intent: "earlier work, not merged yet", tier: "standard", state: "DONE", step: "await_acceptance", stepData: {} }).returning();
+    const seen = new Set<string>();
+    await runUntil(db, ex, clk, async () => {
+      for (const d of await openDecisions(db, id)) seen.add(d.kind);
+      return (await taskRow(db, id)).step === "await_dependency";
+    });
+    const t = await taskRow(db, id);
+    expect([t.state, t.corrections, (t.stepData as { keys: string[] }).keys]).toEqual(["VERIFYING", 0, ["T2"]]);
+    expect(ex.log.some((l) => l.op === "transport" && String((l.params.ops as { branch?: string }[])[0]!.branch ?? "").includes("regress"))).toBe(false); // T2's check untouched
+    expect(ex.log.filter((l) => l.op === "builder" && String(l.params.prompt_text).includes("VERDICT")).length).toBe(0); // not sent to the Builder
+    // it really waits
+    await expect(runUntil(db, ex, clk, async () => (await taskRow(db, id)).step !== "await_dependency", 8)).rejects.toThrow();
+    // the earlier work is accepted and merged: this branch takes main in and is gated again
+    await db.update(tasks).set({ state: "ACCEPTED", step: "done" }).where(eq(tasks.id, dep!.id));
+    state.mainAdvanced = true;
+    const before = state.updatedBranch;
+    await runUntil(db, ex, clk, async () => {
+      for (const d of await openDecisions(db, id)) seen.add(d.kind);
+      return (await taskRow(db, id)).step === "await_acceptance";
+    });
+    expect(state.updatedBranch).toBe(before + 1);
+    expect([...seen]).toEqual(["acceptance"]);
+    expect((await taskRow(db, id)).corrections).toBe(0);
+  }, 60000);
+});
+
+describe("BT16 an accepted PR that fell behind main (found live on T4)", () => {
+  it("is not retried blindly and not escalated as an infrastructure failure: update, verify the new head, accept that head, merge", async () => {
+    const { db, clk, state, ex, id } = await start({ taskBehindOnce: true });
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_acceptance");
+    state.approvedPrs.add(102);
+    const states = new Set<string>();
+    await runUntil(db, ex, clk, async () => {
+      states.add((await taskRow(db, id)).state);
+      return (await taskRow(db, id)).state === "ACCEPTED";
+    });
+    expect([...states].some((s) => s.startsWith("BLOCKED"))).toBe(false);
+    expect(ex.log.filter((l) => l.op === "transport" && (l.params.ops as { op: string }[])[0]!.op === "merge_approved").length).toBe(2); // one refusal, one merge - no retry storm
+    expect(state.updatedBranch).toBe(1);
+    const t = await taskRow(db, id);
+    expect(t.headSha).toBe("h3"); // the updated head was verified and is the one accepted
+    const tr = (await db.select().from(transitions).where(eq(transitions.taskId, id)).orderBy(transitions.id)).map((x) => x.toState);
+    expect(tr.slice(-4)).toEqual(["DONE", "VERIFYING", "DONE", "ACCEPTED"]);
+  }, 60000);
+});

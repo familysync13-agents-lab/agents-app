@@ -64,6 +64,7 @@ export const STEPS: Record<string, Step> = {
   await_access: awaitAccess,
   self_recover: selfRecover,
   await_quota: awaitQuota,
+  await_dependency: B.awaitDependency,
   plan_start: P.planStart,
   plan_poll: P.planPoll,
   plan_collect: P.planCollect,
