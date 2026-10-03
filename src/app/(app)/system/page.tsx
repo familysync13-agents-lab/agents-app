@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { LiveRefresh } from "@/components/live-refresh";
+import { ProjectCapabilities } from "@/components/project-capabilities";
 import { Ago, Card, CardHeader, Empty, Sha, cx } from "@/components/ui";
 import { currentTime } from "@/domain/time";
 import { systemPage } from "@/server/queries";
 
 export const metadata = { title: "System" };
 
-/** Health of the control plane itself: heartbeats, executor, backups, and the audit log of administrative operations. */
+/** Health of the control plane itself: heartbeats, executor, backups, project capabilities, and the audit log of administrative operations. */
 export default async function SystemPage() {
   const d = await systemPage();
   const now = currentTime();
@@ -110,6 +111,8 @@ export default async function SystemPage() {
           )}
         </Card>
       </div>
+
+      <ProjectCapabilities projects={d.capabilities} />
 
       <Card>
         <CardHeader title="Administrative operations (audit log)" meta="typed, validated, recorded - raw database repair is not an operation" />

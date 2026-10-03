@@ -353,3 +353,28 @@ describe("BT13 defects found in the first real runs (regression)", () => {
     expect(ex.log.filter((l) => l.op === "verifier").length).toBe(2); // check author + acceptance check only
   }, 60000);
 });
+
+describe("BT14 a PR that fell behind main is updated and merged without the owner (found in the first real runs)", () => {
+  it("'required status check is expected' is not a review question: update the branch, let the gate judge the new head, merge", async () => {
+    const { db, clk, state, ex, id } = await start({ mainMovedOnce: true });
+    const seen = new Set<string>();
+    await runUntil(db, ex, clk, async () => {
+      for (const d of await openDecisions(db, id)) seen.add(d.kind);
+      return (await taskRow(db, id)).step === "await_acceptance";
+    });
+    expect([...seen]).toEqual(["acceptance"]); // no "approve on GitHub" request
+    expect([state.systemMerges, state.ownerMerges, state.updatedBranch]).toEqual([2, 0, 1]);
+    const [c] = await contractRows(db, id);
+    expect([c!.status, c!.prHead]).toEqual(["merged", "hc101u"]);
+  });
+  it("an executor failure that outlasts the immediate retries is repeated later WITH the step's data", async () => {
+    const { db, clk, ex, id } = await start();
+    const ok = ex.handlers.transport!;
+    let fail = 4;
+    ex.handlers.transport = (p, j) => ((p.ops as { op: string }[])[0]!.op === "merge_system" && fail-- > 0 ? new Error("docker: connection refused") : ok(p, j));
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "self_recover");
+    expect(((await taskRow(db, id)).stepData as { resumeData: { pr: number; auto: boolean } }).resumeData).toMatchObject({ pr: 101, auto: true });
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_acceptance");
+    expect(await openDecisions(db, id).then((d) => d.map((x) => x.kind))).toEqual(["acceptance"]);
+  });
+});

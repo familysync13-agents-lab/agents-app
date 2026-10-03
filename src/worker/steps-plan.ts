@@ -6,7 +6,7 @@ import { OUTCOME_DIR, planPrompt } from "@/domain/prompts";
 import { activePlan, recordPlan } from "@/server/plans";
 import type { TaskCtx } from "./context";
 import { b64, blockEvidence, harnessFailure, latestGate, mainSha, ownerApproved, pollDue, sub, unb64, vols } from "./common";
-import { currentContract, escalateGithub } from "./steps-contract";
+import { currentContract, escalateGithub, isBehind } from "./steps-contract";
 import { finishSession, startSession } from "./sessions";
 
 /*
@@ -180,6 +180,15 @@ export async function planMerge(ctx: TaskCtx): Promise<void> {
   if (!m) return;
   const mr = m.status === "done" ? sub(m, "m") : undefined;
   if (m.status === "error" || !mr?.ok) {
+    if (isBehind(mr)) {
+      const u = await ctx.once("upd", "transport", () => ({ repo: ctx.project.repo, ops: [{ op: "update_branch", id: "u", pr: prNo }] }));
+      if (!u) return;
+      const ur = u.status === "done" ? sub(u, "u") : undefined;
+      if (ur?.ok && ur.head_sha) {
+        await ctx.log("system", `Plan PR #${prNo} was behind main; brought up to date. The gate judges the new head, then it is merged.`, { pr: prNo });
+        return ctx.goto("plan_merge", { prNo, prHead: String(ur.head_sha) });
+      }
+    }
     await ctx.forget("merge");
     if (mr && [405, 409, 422].includes(Number(mr.status))) return escalateGithub(ctx, prNo, String(ctx.data.prHead), "The repository's ruleset requires your review to merge this plan file.");
     return harnessFailure(ctx, { ...m, error: m.error ?? JSON.stringify(mr ?? {}).slice(0, 300) }, "merge", "merging the plan PR");

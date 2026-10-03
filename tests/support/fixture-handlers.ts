@@ -21,7 +21,7 @@ export const CONTRACT = (key: string) => ({
 
 const ORACLE = `import { chromium } from 'playwright';\nconst base = process.argv[2];\nconsole.log(JSON.stringify({ criterion: 'AC1', result: 'pass' }));\n`;
 
-export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; localLlm?: "agree" | "disagree" | "invalid" | "unavailable" } = {}) {
+export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; mainMovedOnce?: boolean; localLlm?: "agree" | "disagree" | "invalid" | "unavailable" } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -247,6 +247,7 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
         }
         case "merge_system": {
           state.systemMerges++;
+          if (opts.mainMovedOnce && state.systemMerges === 1) return { m: { ok: false, status: 405, message: 'Repository rule violations found\n\nRequired status check "gate" is expected.\n\n' } };
           if (opts.rulesetRefusesMerge) {
             state.forceOwner = true;
             return { m: { ok: false, status: 405, message: "Repository rule violations found" } };
@@ -284,6 +285,12 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
           return { pr: { ok: true, head_sha: tp.head } };
         }
         case "update_branch": {
+          const cpr = state.contractPrs.get(Number(op.pr));
+          if (cpr) {
+            cpr.head = `${cpr.head}u`;
+            state.updatedBranch++;
+            return { u: { ok: true, head_sha: cpr.head } };
+          }
           // a branch that is already current with main cannot be updated (GitHub answers 422)
           if (opts.regressFail && ![...state.contractPrs.values()].slice(1).some((x) => x.merged)) return { u: { ok: false, status: 422, message: "already up to date" } };
           const tp = state.taskPrs.get(Number(op.pr))!;
