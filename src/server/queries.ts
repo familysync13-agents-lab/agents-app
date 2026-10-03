@@ -1,6 +1,6 @@
 import "server-only";
 import { and, desc, eq, gt, inArray, like, notInArray, sql } from "drizzle-orm";
-import { getDb } from "@/db/client";
+import { getDb, type Db } from "@/db/client";
 import {
   activity,
   adminActions,
@@ -105,7 +105,28 @@ export async function systemPage() {
     .from(projects)
     .where(eq(projects.active, true))
     .orderBy(projects.name);
-  return { heartbeats: hb, backups: bk, audit, jobs, recentErrors, capabilities, system: await systemStatus() };
+  const workerRuns = await recentWorkerRuns(db);
+  return { heartbeats: hb, backups: bk, audit, jobs, recentErrors, capabilities, workerRuns, system: await systemStatus() };
+}
+
+/** The 20 most recently started worker runs (newest first) with their task key - the System page's execution ledger. Read-only. */
+export async function recentWorkerRuns(db?: Db) {
+  const d = db ?? (await getDb());
+  return d
+    .select({
+      id: runs.id,
+      taskId: runs.taskId,
+      key: tasks.key,
+      purpose: runs.purpose,
+      worker: runs.worker,
+      taskClass: runs.taskClass,
+      routeReason: runs.routeReason,
+      contextBytes: runs.contextBytes,
+    })
+    .from(runs)
+    .innerJoin(tasks, eq(tasks.id, runs.taskId))
+    .orderBy(desc(runs.startedAt), desc(runs.id))
+    .limit(20);
 }
 
 export async function overview() {
