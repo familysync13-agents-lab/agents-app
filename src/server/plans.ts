@@ -23,7 +23,8 @@ export async function recordPlan(
   c: ContractRow,
   input: { tasks?: unknown[]; integration?: string[]; facts?: ShapeFacts; reason: string },
 ): Promise<{ ok: true; plan: PlanRow } | { ok: false; problems: string[] }> {
-  const body = c.body as unknown as Contract;
+  // the contract row version is THE version (bodies written before the control plane set it may carry a stale number)
+  const body = { ...(c.body as unknown as Contract), version: c.version };
   const cls = classifyShape(body, input.facts ?? {});
   const [last] = await db.select().from(plans).where(eq(plans.taskId, c.taskId)).orderBy(desc(plans.planVersion)).limit(1);
   const decomposed = (input.tasks?.length ?? 0) > 0;

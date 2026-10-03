@@ -2,7 +2,9 @@
  * Operator entry point for the audited admin operations (used by the host daemon's `app_admin` op via `docker exec` on the worker
  * container, request JSON on stdin). Same validation and audit trail as the owner UI; the actor is recorded as "operator".
  */
+import { eq } from "drizzle-orm";
 import { createDb } from "@/db/client";
+import { qualificationRecords } from "@/db/schema";
 import { runAdmin } from "@/server/admin";
 import { proposeIntent } from "@/server/proposals";
 import { qualifyReplay, routeTable } from "@/worker/shadow";
@@ -24,6 +26,14 @@ async function main() {
   }
   if ((req as { op?: string }).op === "qualify_replay") {
     process.stdout.write(JSON.stringify({ ok: true, ...(await qualifyReplay(db, Number((req as { limit?: number }).limit ?? 30))) }) + "\n");
+    process.exit(0);
+  }
+  if ((req as { op?: string }).op === "qualify_void") {
+    // records produced by a model that cannot answer at all (an embedding-only model) say nothing about quality: close them without a verdict
+    const rows = await db.select().from(qualificationRecords);
+    const bad = rows.filter((r) => /embed|bge-|minilm|e5-|rerank/i.test(String(r.note ?? "")) && r.agree !== null);
+    for (const r of bad) await db.update(qualificationRecords).set({ valid: false, agree: null, note: `voided (not a generative model): ${r.note}` }).where(eq(qualificationRecords.id, r.id));
+    process.stdout.write(JSON.stringify({ ok: true, voided: bad.length }) + "\n");
     process.exit(0);
   }
   const r = await runAdmin(db, "operator", req);

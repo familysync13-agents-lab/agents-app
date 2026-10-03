@@ -156,11 +156,13 @@ export async function oracleCalibrate(ctx: TaskCtx): Promise<void> {
     if (mode === "repair") return oracleAmend(ctx, c, js, cal);
     return openContractApproval(ctx, c, js, (ctx.data.notes as string | null) ?? null, ctx.data.runId as number, cal, problems);
   };
+  // Calibration could not RUN (infrastructure, not the check): that is never the owner's question and never a reason to offer an
+  // uncalibrated check. The step is repeated automatically (self-recovery) with its inputs kept; only if that is exhausted does the
+  // task block as a genuine blocker.
   const skip = async (why: string) => {
     await ctx.submit("preview", { candidate: pv, action: "down" });
     await ctx.evidence({ subject: `oracle-calibration:${ctx.task.key}`, status: "unknown", oracle: "deterministic", persistence: "point_in_time", source: "oracle-calibration", detail: `Calibration against main not completed (${why}).` });
-    await ctx.log("system", `Oracle calibration not completed (${why}); recorded as Unknown.`, {});
-    return done(null, []);
+    return blockEvidence(ctx, `The check could not be calibrated against main (${why}): infrastructure, not the check.`, { stage: "calibration", why }, { resumeData: { ...keep(ctx), js, notes: ctx.data.notes ?? null, runId: ctx.data.runId, attempt: ctx.data.attempt ?? 1 } });
   };
   const refs = await ctx.once("refs", "pub", () => ({ ls_remote: [ctx.project.repo] }));
   if (!refs) return;

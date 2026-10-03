@@ -137,6 +137,10 @@ export async function draftCollect(ctx: TaskCtx): Promise<void> {
     b.intent_sha256 = intentHash(intent);
     if (!Array.isArray(b.policies) || b.policies.length === 0) b.policies = ["policy.json", `project:${ctx.project.slug}`];
   }
+  const [{ max: lastVersion } = { max: 0 }] = await ctx.db.select({ max: contracts.version }).from(contracts).where(eq(contracts.taskId, ctx.task.id)).orderBy(desc(contracts.version)).limit(1);
+  // the version number is the control plane's too: it is the contract row's version (found in the first real runs: the drafter
+  // kept writing 1 into a second draft, so the plan could not be bound to the contract version)
+  if (body && typeof body === "object") (body as Record<string, unknown>).version = (lastVersion ?? 0) + 1;
   const earlier = await ctx.db.select({ body: contracts.body }).from(contracts).where(and(eq(contracts.taskId, ctx.task.id), eq(contracts.kind, "contract"), inArray(contracts.status, ["merged", "superseded"]))).orderBy(contracts.version);
   const lint = lintContract(body, { id: ctx.task.key!, tier: ctx.task.tier }, { intent, previous: earlier.map((e) => e.body) });
   const text = body ? canonicalJson(body) : draft;
@@ -496,6 +500,7 @@ export async function contractMerge(ctx: TaskCtx): Promise<void> {
   // the plan (shape, and later the task graph) belongs to the control plane; it never changes the contract or its version
   const planned = await recordPlan(ctx.db, c, { reason: "Contract merged." });
   const complex = planned.ok && (planned.plan.body as { shape?: string }).shape === "complex";
+  if (!planned.ok) await ctx.log("system", `No plan could be recorded for contract v${c.version} (${planned.problems.slice(0, 3).join("; ")}); it is built as one job.`, { contract: c.id });
   await ctx.transition("CONTRACTED", `Contract v${c.version} ${ctx.data.auto ? "confirmed by the gate" : "approved by the owner on GitHub"} and merged (sha256 ${c.sha256.slice(0, 12)})`, {
     contract: c.id,
     contract_sha256: c.sha256,

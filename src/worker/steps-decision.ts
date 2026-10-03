@@ -33,9 +33,9 @@ export async function awaitDecision(ctx: TaskCtx): Promise<void> {
     return;
   }
   if (stage === "evidence") {
-    const c = pick.context as { resumeStep?: string; resumeState?: TaskState };
+    const c = pick.context as { resumeStep?: string; resumeState?: TaskState; resumeData?: Record<string, unknown> };
     await ctx.transition((c.resumeState ?? ctx.task.resumeState ?? "PROPOSED") as TaskState, `Retry after missing evidence (${who})`, fact);
-    return ctx.goto(c.resumeStep ?? "draft_start", {});
+    return ctx.goto(c.resumeStep ?? "draft_start", c.resumeData ?? {});
   }
   if (stage === "tamper") {
     await ctx.goto("fix_start", {
