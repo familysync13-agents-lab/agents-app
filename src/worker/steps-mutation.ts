@@ -51,7 +51,7 @@ export async function mutationStart(ctx: TaskCtx): Promise<void> {
   );
   const s = await startSession(ctx, "correction", "", prompt, { freshWorktree: false });
   if (s === "wait") return;
-  await ctx.updateRun(s.runId, { purpose: "mutants" });
+  await ctx.updateRun(s.runId, { purpose: "mutants", taskClass: "mutants" });
   await ctx.goto("mutation_poll", { runId: s.runId, container: s.container, acceptance: ctx.data.acceptance ?? null });
 }
 

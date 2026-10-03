@@ -68,6 +68,13 @@ const STEP_NODE: Record<string, FlowNode> = {
   await_stack: "owner",
   await_access: "owner",
   self_recover: "gate",
+  await_quota: "builder",
+  plan_start: "contract",
+  plan_poll: "contract",
+  plan_collect: "contract",
+  plan_pr: "contract",
+  plan_merge: "gate",
+  plan_task_done: "gate",
   restack: "gate",
   contract_batch: "contract",
   batch_wait: "contract",
@@ -154,6 +161,7 @@ const PURPOSE_NODE: Record<string, FlowNode> = {
   acceptance_check: "verifier",
   attribution: "verifier",
   mutants: "verifier",
+  plan: "contract",
 };
 
 export interface FlowInputs {

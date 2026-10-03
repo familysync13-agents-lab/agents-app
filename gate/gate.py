@@ -31,16 +31,22 @@ def plan_scope(t, plan, entry, merged_subjects):
     """Per-task gating for a DECOMPOSED contract (tasks/<T>/plan.json on the BASE branch; Contract spec v2 section 6.4).
     Returns the set of criterion ids of contract t that are REQUIRED now, or None when every criterion is required (no plan, an
     atomic contract, a branch that is not a plan task, or the integrated result has been merged).
-    Required = what the plan tasks already merged into the base cover (they must not regress) + what the task under review covers.
+    Required = what the plan tasks already merged into the base cover (they must not regress) + what the task under review and the
+    tasks it depends on cover.
     Criteria outside that set are still evaluated and reported, but do not decide the verdict before integration."""
     tasks = (plan or {}).get("tasks") or []
     if not tasks: return None
     by = {str(e.get("id", "")).split(".", 1)[-1]: e for e in tasks}
     if any(("task/%s/integration-" % t) in s for s in merged_subjects): return None
     if entry is not None and entry not in by: return None
+    need = set(); todo = [entry] if entry is not None else []
+    while todo:   # the task under review is built on the tasks it depends on (stacked): they must not regress either
+        k = todo.pop()
+        if k in need or k not in by: continue
+        need.add(k); todo += [str(d).split(".", 1)[-1] for d in (by[k].get("depends_on") or [])]
     req = set()
     for k in by:
-        if k == entry or any(("task/%s/%s-" % (t, k)) in s for s in merged_subjects): req.update(by[k].get("covers") or [])
+        if k in need or any(("task/%s/%s-" % (t, k)) in s for s in merged_subjects): req.update(by[k].get("covers") or [])
     return req
 
 def match(path, pats):

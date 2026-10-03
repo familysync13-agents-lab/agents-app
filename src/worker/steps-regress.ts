@@ -6,7 +6,7 @@ import type { TaskCtx } from "./context";
 import { currentContract } from "./steps-contract";
 import { checkSyntax } from "./steps-oracle";
 import { b64, blockEvidence, harnessFailure, latestGate, mainSha, ownerApproved, pollDue, sub, unb64, vols } from "./common";
-import { finishSession } from "./sessions";
+import { finishSession, ledger, routeFor } from "./sessions";
 
 /*
  * Repair of an EARLIER task's oracle (a regression check) that rejects the current task's work although the work follows the
@@ -69,7 +69,7 @@ export async function regressStart(ctx: TaskCtx): Promise<void> {
   if (!job) return;
   if (job.status === "error") return harnessFailure(ctx, job, "verifier", "starting the Verifier");
   const container = String(job.result?.detached ?? "");
-  const runId = await ctx.startRun({ role: "verifier", purpose: "repair_oracle", container, status: "running" });
+  const runId = await ctx.startRun({ role: "verifier", purpose: "repair_oracle", container, status: "running", ...ledger("check_author", await routeFor(ctx, "check_author")) });
   await ctx.log("verifier", `Verifier updating the regression check of ${t.key} (${t.criteria.join(", ")}) that the approved contract of ${ctx.task.key} supersedes (attempt ${attempt}).`, { run: runId });
   await ctx.goto("regress_poll", { ...ctx.data, refs: undefined, show: undefined, verifier: undefined, runId, container, tag, taskJson, main, attempt });
 }

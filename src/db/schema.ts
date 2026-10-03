@@ -49,6 +49,8 @@ export const projects = pgTable(
      * DONE head of the previous one; both are verified together and accepted with one owner approval). */
     workMode: text("work_mode").$type<"serialized" | "stacked">().notNull().default("serialized"),
     active: boolean("active").notNull().default(true),
+    /** Project Capability Profile (domain/profile.ts): detected from the repository's own files, with the commit it was read at. */
+    capabilityProfile: jsonb("capability_profile").$type<Record<string, unknown>>(),
     createdAt: created(),
   },
   (t) => [uniqueIndex("projects_slug_uq").on(t.slug)],
@@ -183,7 +185,7 @@ export const runs = pgTable(
       .references(() => tasks.id),
     role: text("role").$type<"builder" | "verifier">().notNull(),
     purpose: text("purpose")
-      .$type<"draft_contract" | "author_oracle" | "build" | "correction" | "acceptance_check" | "mutants" | "repair_oracle" | "attribution">()
+      .$type<"draft_contract" | "author_oracle" | "build" | "correction" | "acceptance_check" | "mutants" | "repair_oracle" | "attribution" | "plan">()
       .notNull(),
     container: text("container"),
     sessionId: text("session_id"),
@@ -196,6 +198,22 @@ export const runs = pgTable(
     durationMs: bigint("duration_ms", { mode: "number" }),
     /** The worker's own final message: kept for debugging, shown as untrusted, never used for state. */
     closingText: text("closing_text"),
+    // ---- execution ledger (Builder phase): why this worker ran, with what context, and what kind of failure ended it ----
+    taskClass: text("task_class"),
+    worker: text("worker"),
+    harness: text("harness"),
+    model: text("model"),
+    provider: text("provider"),
+    routeReason: text("route_reason"),
+    /** the permission envelope the worker ran in (filesystem, network, tools, repository access) */
+    envelope: jsonb("envelope").$type<Record<string, unknown>>(),
+    /** plan task this run worked on (decomposed contracts), e.g. "T12.a" */
+    planTask: text("plan_task"),
+    contextBytes: integer("context_bytes"),
+    contextFiles: jsonb("context_files").$type<string[]>(),
+    /** files the worker changed that the context package had not supplied (observable under-selection) */
+    extraFiles: jsonb("extra_files").$type<string[]>(),
+    failureClass: text("failure_class"),
     startedAt: created(),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
   },
@@ -420,6 +438,34 @@ export const backups = pgTable("backups", {
   detail: jsonb("detail").$type<Record<string, unknown>>(),
   at: created(),
 });
+
+/**
+ * Qualification evidence for execution paths other than the trusted one (domain/router.ts). mode "shadow": the candidate received
+ * the same bounded input as the trusted path in production and its output was only recorded and compared - it controlled nothing.
+ * mode "harness": a replay of a historical, commit-pinned case. The Router reads its rule table from these rows.
+ */
+export const qualificationRecords = pgTable(
+  "qualification_records",
+  {
+    id: serial("id").primaryKey(),
+    worker: text("worker").notNull(),
+    taskClass: text("task_class").notNull(),
+    mode: text("mode").$type<"shadow" | "harness">().notNull(),
+    taskId: integer("task_id").references(() => tasks.id),
+    inputSha256: text("input_sha256").notNull(),
+    /** what the trusted path decided for the same input */
+    expected: text("expected"),
+    output: jsonb("output").$type<Record<string, unknown>>(),
+    /** schema-valid output (an invalid output never counts as agreement) */
+    valid: boolean("valid"),
+    agree: boolean("agree"),
+    durationMs: integer("duration_ms"),
+    jobId: integer("job_id"),
+    note: text("note"),
+    createdAt: created(),
+  },
+  (t) => [index("qualification_worker_class_idx").on(t.worker, t.taskClass)],
+);
 
 export const heartbeats = pgTable("heartbeats", {
   name: text("name").primaryKey(),

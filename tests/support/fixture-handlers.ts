@@ -21,7 +21,7 @@ export const CONTRACT = (key: string) => ({
 
 const ORACLE = `import { chromium } from 'playwright';\nconst base = process.argv[2];\nconsole.log(JSON.stringify({ criterion: 'AC1', result: 'pass' }));\n`;
 
-export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[] } = {}) {
+export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; localLlm?: "agree" | "disagree" | "invalid" | "unavailable" } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -50,6 +50,15 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
     runPr: new Map<number, number>(),
     approvedPrs: new Set<number>(),
     closedPrs: [] as number[],
+    plansServed: 0,
+    branches: new Map<number, string>(),
+    bases: new Map<number, string>(),
+    builderCalls: [] as Record<string, unknown>[],
+    buildSessions: 0,
+    worktrees: 0,
+    scans: [] as Record<string, unknown>[],
+    quotaServed: 0,
+    quotaSessions: new Set<string>(),
   };
   const heads = (pr: number, i: number) => (pr === 102 ? `h${i}` : `h${pr}${"abc"[i - 1]}`);
   const h: Record<string, Handler> = {
@@ -58,12 +67,35 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
       if (p.tree) return { tree: { "tasks/T0/contract.json": "x", "tasks/T8/task.json": "y", "README.md": "z" } };
       const out: Record<string, unknown> = {};
       for (const path of p.paths as string[])
-        out[path] = path.includes("T2/contract") ? b64('{"id":"T2"}') : path === "tasks/T2/task.json" ? b64(JSON.stringify({ id: "T2", checks: { AC1: "oracle:oracle/T2/check.mjs" }, amendments: [{ id: "A1" }] })) : path === "oracle/T2/check.mjs" ? b64(ORACLE) : null;
+        out[path] = opts.complex && path === "tasks/T9/task.json" && state.mainN > 0 ? b64(JSON.stringify({ id: "T9", checks: { AC1: "oracle:oracle/T9/check.mjs" }, amendments: [{ id: "A1", files: {} }] })) : path.includes("T2/contract") ? b64('{"id":"T2"}') : path === "tasks/T2/task.json" ? b64(JSON.stringify({ id: "T2", checks: { AC1: "oracle:oracle/T2/check.mjs" }, amendments: [{ id: "A1" }] })) : path === "oracle/T2/check.mjs" ? b64(ORACLE) : null;
       return out;
     },
-    worktree: () => ({ base_sha: state.main, files: 10 }),
+    worktree: () => {
+      state.worktrees++;
+      return { base_sha: state.main, files: 10 };
+    },
+    context_scan: (p) => {
+      state.scans.push(p);
+      const files = (p.files as string[] | undefined) ?? [];
+      if (files.length) return { ok: true, commit: "c0ffee00", files: Object.fromEntries(files.map((f) => [f, { imports: ["@/db/schema"], importedBy: ["src/app/lists/page.tsx"], tests: ["tests/lists.test.ts"], log: ["abc1234 2026-09-30 earlier change"] }])) };
+      const terms = (p.terms as string[]) ?? [];
+      return {
+        ok: true,
+        commit: "c0ffee00",
+        files_total: 120,
+        file_list: ["package.json", "tsconfig.json", "Dockerfile", "package-lock.json", "src/app/lists/page.tsx", "src/lib/sort.ts"],
+        profile_files: { "package.json": JSON.stringify({ scripts: { build: "next build", test: "vitest run", lint: "eslint ." }, dependencies: { next: "16", "drizzle-orm": "1" }, devDependencies: { typescript: "5", vitest: "3", playwright: "1" } }), "tsconfig.json": "{}", Dockerfile: "FROM node AS check\nRUN npm test" },
+        hits: Object.fromEntries(terms.map((t, i) => [t, i % 2 === 0 ? [{ file: "src/app/lists/page.tsx", line: 10 + i, text: `… ${t} …` }, { file: "src/lib/sort.ts", line: 3, text: t }] : []])),
+      };
+    },
+    local_llm: () => {
+      if (opts.localLlm === "unavailable" || !opts.localLlm) return { ok: false, available: false, reason: "connection refused" };
+      if (opts.localLlm === "invalid") return { ok: false, available: true, model: "qwen-test", output: null, raw: "not json", ms: 900 };
+      return { ok: true, available: true, model: "qwen-test", output: { parties: [opts.localLlm === "agree" ? (opts.arbiter ?? "implementation") : "environment"] }, ms: 1200 };
+    },
     builder: (p) => {
       state.builderPrompts.push(String(p.prompt_text));
+      state.builderCalls.push(p);
       const k = /\b(T[0-9]+)\b/.exec(String(p.prompt_text));
       if (k) {
         state.key = k[1]!;
@@ -72,6 +104,13 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
       if ("prompt" in p) return new Error("prompt must not be passed as argv");
       const name = `bko-builder-v0-${++state.n}`;
       state.sessions.set(name, 0);
+      if (/You are the Builder/.test(String(p.prompt_text)) && !p.resume) {
+        state.buildSessions++;
+        if (opts.quotaOnBuild && state.quotaServed < opts.quotaOnBuild) {
+          state.quotaServed++;
+          state.quotaSessions.add(name);
+        }
+      }
       return { detached: name };
     },
     verifier: (p) => {
@@ -85,6 +124,7 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
       const k = (state.sessions.get(name) ?? 0) + 1;
       state.sessions.set(name, k);
       if (k < 2) return { running: true };
+      if (state.quotaSessions.has(name)) return { exit: "1", result: { session_id: "sess-q", is_error: true, num_turns: 7, duration_ms: 420000, result: "Claude AI usage limit reached|1790870400" } };
       return name.includes("builder")
         ? { exit: "0", result: { session_id: "sess-1", total_cost_usd: 1.25, num_turns: 12, duration_ms: 60000, result: "DONE" } }
         : { exit: "0", result: null, tail: "VERIFIER-DONE" };
@@ -102,6 +142,11 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
           );
         else {
           const cj = CONTRACT(state.volKey.get(vol) ?? state.key);
+          if (opts.complex) {
+            // two independent deliverables (rule 2): three must-criteria in two groups
+            const c0 = cj.criteria[0] as Record<string, unknown>;
+            (cj as { criteria: unknown[] }).criteria = [{ ...c0, group: "sorting" }, { ...c0, id: "AC2", then: "the choice is remembered", group: "sorting" }, { ...c0, id: "AC3", then: "a filter box narrows the lists", group: "filtering" }, { ...(cj.criteria[1] as Record<string, unknown>), id: "AC4" }];
+          }
           if (opts.sensitiveTag) (cj.criteria[0]!.tags as string[]).push("security");
           if (opts.noTrace) delete (cj.criteria[0] as { trace?: unknown }).trace;
           const sq = opts.draftSequence?.[Math.min(state.drafts, opts.draftSequence.length) - 1];
@@ -117,6 +162,11 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
       if (paths.includes("out/check.mjs")) {
         state.oraclesAuthored++;
         out["out/check.mjs"] = b64(opts.badImport && state.oraclesAuthored === 1 ? `import _ from 'lodash';\n${ORACLE}` : ORACLE);
+      }
+      if (paths.includes(".bakeoff/plan.json") && opts.complex) {
+        const pl = opts.complex.plans[Math.min(state.plansServed, opts.complex.plans.length - 1)];
+        state.plansServed++;
+        if (pl !== null) out[".bakeoff/plan.json"] = b64(JSON.stringify(pl));
       }
       if (paths.includes(".bakeoff/REPORT.md")) out[".bakeoff/REPORT.md"] = b64("# Report\nImplemented sorting.");
       if (paths.includes("out/findings.json")) {
@@ -175,7 +225,8 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
           }
           state.gateCalls++;
           const tp = state.taskPrs.get(Number(op.pr))!; if (!tp) return new Error(`unknown pr ${String(op.pr)} known ${[...state.taskPrs.keys()].join(",")} contract ${[...state.contractPrs.keys()].join(",")}`);
-          const failing = opts.failFirstGate && tp.head === "h1";
+          const entryFail = !!opts.complex?.failFirstHeadOf && (state.branches.get(Number(op.pr)) ?? "").includes(`/${opts.complex.failFirstHeadOf}-`) && tp.n === 1;
+          const failing = (opts.failFirstGate && tp.head === "h1") || entryFail;
           state.runPr.set(1000 + state.gateCalls, Number(op.pr));
           const approved = state.approvedPrs.has(Number(op.pr)) || (state.ownerApprovedTask && Number(op.pr) === 102);
           return {
@@ -220,11 +271,13 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
           const key = /task\/(T[0-9]+)\//.exec(String(op.branch))![1]!;
           const pr = state.taskPrs.size === 0 ? 102 : 102 + 2 * state.taskPrs.size;
           state.taskPrs.set(pr, { key, head: heads(pr, 1), n: 1 });
+          state.branches.set(pr, String(op.branch));
+          state.bases.set(pr, String(op.base_sha));
           if (pr === 102) state.taskPrHead = "h1";
           return { pr: { ok: true, pr, head_sha: heads(pr, 1), base: op.base_sha } };
         }
         case "update_pr_from_worktree": {
-          const [pr, tp] = [...state.taskPrs.entries()].find(([, v]) => String(op.branch).startsWith(`task/${v.key}/`))!;
+          const [pr, tp] = [...state.taskPrs.entries()].find(([n, v]) => (state.branches.get(n) ? state.branches.get(n) === String(op.branch) : String(op.branch).startsWith(`task/${v.key}/`)))!;
           tp.n = 2;
           tp.head = heads(pr, 2);
           if (pr === 102) state.taskPrHead = tp.head;
@@ -250,7 +303,28 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
     gate_evidence: (p) => {
       const pr = state.runPr.get(Number(p.check_run)) ?? 102;
       const tp = state.taskPrs.get(pr)!;
-      const failing = opts.failFirstGate && tp.head === "h1";
+      const branch = state.branches.get(pr) ?? "";
+      const entry = /^task\/T[0-9]+\/([a-z])-/.exec(branch)?.[1] ?? null;
+      const failing = (opts.failFirstGate && tp.head === "h1") || (!!opts.complex?.failFirstHeadOf && branch.includes(`/${opts.complex.failFirstHeadOf}-`) && tp.n === 1);
+      if (opts.complex) {
+        // the real gate: a plan task (single-letter branch) is judged on the criteria it covers; anything else on the whole contract
+        const plan = opts.complex.plans.find((x) => x && typeof x === "object" && Array.isArray((x as { tasks?: unknown[] }).tasks) && ((x as { tasks: { covers?: string[] }[] }).tasks.length ?? 0) > 1) as { tasks: { id: string; covers?: string[]; depends_on?: string[] }[] } | undefined;
+        const by = new Map((plan?.tasks ?? []).map((t) => [t.id.split(".")[1]!, t]));
+        const need = new Set<string>();
+        const walk = (k: string) => {
+          if (need.has(k) || !by.has(k)) return;
+          need.add(k);
+          for (const d of by.get(k)!.depends_on ?? []) walk(d.split(".")[1]!);
+        };
+        if (entry) walk(entry);
+        const required = entry && by.has(entry) ? new Set([...need].flatMap((k) => by.get(k)!.covers ?? [])) : null;
+        const criteria = Object.fromEntries(["AC1", "AC2", "AC3"].map((ac) => {
+          const req = required === null || required.has(ac);
+          return [`${tp.key}:${ac}`, { status: req ? (failing ? "Not verified" : "Verified") : "Deferred", check: `oracle:oracle/${tp.key}/check.mjs`, detail: req ? (failing ? "expected behaviour missing" : "") : "not yet required at this plan task (was: Not verified)" }];
+        }));
+        const verdict = failing ? "FAIL:ORACLE" : "DONE";
+        return { verdict, evidence: { verdict, head_sha: tp.head, reasons: failing ? [`a must-criterion of ${tp.key} failed`] : [], criteria, regression: {}, checks: { plan_scope: { [tp.key]: required ? [...required].sort() : null } } }, check_run: p.check_run };
+      }
       return {
         verdict: failing ? (opts.regressFail ? "FAIL:REGRESSION" : "FAIL:ORACLE") : "DONE",
         evidence: {
@@ -281,6 +355,7 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
         // smoke run against main (feature absent): a correct check fails AC1; a defective one crashes
         state.smokeRuns++;
         const crash = opts.smokeDefectOnce && state.smokeRuns === 1;
+        if (opts.complex) return { results: ["AC1", "AC2", "AC3"].map((criterion) => ({ criterion, result: "fail", detail: "feature absent" })) };
         return { results: [{ criterion: "AC1", result: "fail", detail: crash ? "ReferenceError: text is not defined" : "no Sort control" }] };
       }
       return { results: [{ criterion: "T9:AC1", result: String(p.preview).endsWith("m0") ? "fail" : "pass" }] };

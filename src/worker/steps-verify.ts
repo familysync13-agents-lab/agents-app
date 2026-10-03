@@ -4,7 +4,7 @@ import type { TaskCtx } from "./context";
 import { currentContract } from "./steps-contract";
 import { correction, markDone } from "./steps-build";
 import { b64, blockEvidence, mainSha, unb64, vols } from "./common";
-import { finishSession } from "./sessions";
+import { finishSession, ledger, routeFor } from "./sessions";
 
 interface Finding {
   severity?: string;
@@ -75,7 +75,7 @@ export async function acceptanceStart(ctx: TaskCtx): Promise<void> {
   if (!job) return;
   if (job.status === "error") return fail("verifier", job.error);
   const container = String(job.result?.detached ?? "");
-  const runId = await ctx.startRun({ role: "verifier", purpose: "acceptance_check", container, status: "running" });
+  const runId = await ctx.startRun({ role: "verifier", purpose: "acceptance_check", container, status: "running", ...ledger("acceptance_check", await routeFor(ctx, "acceptance_check")) });
   await ctx.log("verifier", `Independent Verifier started against a local preview of ${head.slice(0, 8)} (blind to code).`, { run: runId });
   await ctx.goto("acceptance_poll", { head, runId, container, started: ctx.now().getTime() });
 }

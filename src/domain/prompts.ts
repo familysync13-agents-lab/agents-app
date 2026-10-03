@@ -341,3 +341,49 @@ check - see /work/SCAFFOLD.md). Rules:
 Test environment notes: ${docFiles.map((f) => `/work/${f}`).join(", ") || "(none)"}. No preview and no source code are available.
 Check syntax with \`node --check /work/out/check.mjs\`. Finish with the single line VERIFIER-DONE.`;
 }
+
+/** Planner (Builder slot): split a COMPLEX contract into a one-level task graph. It plans; it implements nothing. */
+export function planPrompt(p: ProjectInfo, t: { key: string; title: string }, reasons: string[], feedback?: string): string {
+  return `You are the planner for the project "${p.name}", controlled by Agents App. You do NOT implement anything and you must not
+change any file of the repository in /work except the output file below.
+
+The approved contract of ${t.key} ("${t.title}") is tasks/${t.key}/contract.json. Read it completely. It is the ONLY definition of
+the required outcome and you may not change, reword, add or drop any of its requirements.
+It was classified as complex (${reasons.join("; ") || "by rule"}), so it is built as several small tasks, one after the other.
+
+Write the plan to /work/${OUTCOME_DIR}/plan.json in exactly this shape:
+{
+ "tasks": [
+  {"id": "${t.key}.a", "purpose": "<what this task builds, one or two sentences>", "depends_on": [],
+   "covers": ["AC1"], "contributes": [], "scope_paths": ["src/..."], "requires": []},
+  {"id": "${t.key}.b", "purpose": "...", "depends_on": ["${t.key}.a"], "covers": ["AC2", "AC3"], "contributes": ["AC5"], "scope_paths": []}
+ ],
+ "integration": ["AC5"]
+}
+
+Rules (checked mechanically; a plan that breaks one is refused)
+- Two to six tasks, ids ${t.key}.a, ${t.key}.b, ... One level only: a task has no sub-tasks and no criteria of its own.
+- Tasks reference the contract's criterion and constraint ids (AC…, C…) - never copy or rephrase their text.
+- "covers": the ids that are completely satisfied once THIS task (and the tasks it depends on) is done.
+- A requirement that only holds when several tasks are finished goes into "integration" and into the "contributes" of every task
+  that works towards it. It is then judged only on the complete result.
+- Every must-criterion and every constraint of the contract must be in some task's "covers", or in "integration" with at least one
+  contributing task. Nothing may be left out.
+- Tasks run strictly one after the other, each on top of the previous one. Order them so that the product still builds and every
+  earlier accepted behaviour still works after each task. "depends_on" must not form a cycle.
+- The last task finishes everything: after it the whole contract must hold.
+Your chat reply is not read: only the file counts.${feedback ? `\n\nYour previous plan was refused for these reasons - fix exactly these:\n${feedback}` : ""}`;
+}
+
+/** Builder instructions for ONE plan task of a decomposed contract. */
+export function planTaskPrompt(p: ProjectInfo, task: { key: string; title: string }, e: { id: string; purpose: string; covers: string[]; contributes: string[]; scope_paths: string[] }, pos: { index: number; total: number; done: string[] }): string {
+  return `${buildPrompt(p, task)}
+
+THIS SESSION IS ONE STEP OF A PLAN (${e.id}, step ${pos.index + 1} of ${pos.total})
+The contract above is built in ${pos.total} steps, one after the other. ${pos.done.length ? `Already built and verified in this workspace: ${pos.done.join(", ")}. Keep all of it working.` : "This is the first step."}
+Your step: ${e.purpose}
+- Deliver completely, now: ${e.covers.join(", ") || "(nothing is fully finished by this step alone)"}.
+${e.contributes.length ? `- Work towards (finished by a later step, judged on the complete result): ${e.contributes.join(", ")}.\n` : ""}${e.scope_paths.length ? `- Expected area of change: ${e.scope_paths.join(", ")}.\n` : ""}- Do NOT implement the other criteria of the contract in this step: later steps build them.${pos.index + 1 === pos.total ? "\n- This is the LAST step: when you finish, EVERY criterion of the contract must hold on the complete result." : ""}
+- The gate checks this step on the criteria listed under "Deliver completely" plus everything earlier steps delivered.
+All rules above still apply (protected paths, the check stage, the REPORT.md / BLOCKED.json outcome files).`;
+}

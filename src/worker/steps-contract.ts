@@ -494,7 +494,8 @@ export async function contractMerge(ctx: TaskCtx): Promise<void> {
   }
   await ctx.save({ corrections: 0, extraCorrections: 0, budgetContractId: c.id });
   // the plan (shape, and later the task graph) belongs to the control plane; it never changes the contract or its version
-  await recordPlan(ctx.db, c, { reason: "Contract merged." });
+  const planned = await recordPlan(ctx.db, c, { reason: "Contract merged." });
+  const complex = planned.ok && (planned.plan.body as { shape?: string }).shape === "complex";
   await ctx.transition("CONTRACTED", `Contract v${c.version} ${ctx.data.auto ? "confirmed by the gate" : "approved by the owner on GitHub"} and merged (sha256 ${c.sha256.slice(0, 12)})`, {
     contract: c.id,
     contract_sha256: c.sha256,
@@ -504,5 +505,6 @@ export async function contractMerge(ctx: TaskCtx): Promise<void> {
     gate_run: ctx.data.gateRun ?? null,
     owner_approved_at: ctx.data.approvedAt ?? null,
   });
-  await ctx.goto("build_start", { mainSha: mergeCommit });
+  // a complex contract is first split into a one-level task graph by the planner; an atomic one is built as one job
+  await ctx.goto(complex ? "plan_start" : "build_start", { mainSha: mergeCommit });
 }

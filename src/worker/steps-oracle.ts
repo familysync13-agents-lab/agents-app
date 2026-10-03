@@ -11,7 +11,7 @@ import { oraclePrompt, VERIFIER_SCAFFOLD } from "@/domain/prompts";
 import type { TaskCtx } from "./context";
 import { currentContract, type ContractRow } from "./steps-contract";
 import { b64, blockEvidence, harnessFailure, mainSha, sub, unb64, vols } from "./common";
-import { finishSession } from "./sessions";
+import { finishSession, ledger, routeFor } from "./sessions";
 
 /*
  * The oracle lifecycle. An oracle (the Verifier's black-box check of record) becomes authoritative only after it has passed, in order:
@@ -67,7 +67,7 @@ export async function oracleStart(ctx: TaskCtx): Promise<void> {
   if (!job) return;
   if (job.status === "error") return harnessFailure(ctx, job, "verifier", "starting the Verifier");
   const container = String(job.result?.detached ?? "");
-  const runId = await ctx.startRun({ role: "verifier", purpose: mode === "repair" ? "repair_oracle" : "author_oracle", container, status: "running" });
+  const runId = await ctx.startRun({ role: "verifier", purpose: mode === "repair" ? "repair_oracle" : "author_oracle", container, status: "running", ...ledger("check_author", await routeFor(ctx, "check_author")) });
   await ctx.log(
     "verifier",
     mode === "repair"

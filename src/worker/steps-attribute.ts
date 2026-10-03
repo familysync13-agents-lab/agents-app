@@ -1,11 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { runs } from "@/db/schema";
 import { arbiterPrompt, VERIFIER_SCAFFOLD } from "@/domain/prompts";
+import { submitCandidate } from "./shadow";
 import type { TaskCtx } from "./context";
 import { currentContract } from "./steps-contract";
 import { correction } from "./steps-build";
 import { b64, blockEvidence, unb64, vols } from "./common";
-import { finishSession } from "./sessions";
+import { finishSession, ledger, routeFor } from "./sessions";
 
 /*
  * WORK -> CHECK -> ATTRIBUTE FAILURE -> CORRECT THE RESPONSIBLE PARTY -> RECHECK.
@@ -88,7 +89,7 @@ export async function attributeStart(ctx: TaskCtx): Promise<void> {
   if (!job) return;
   if (job.status === "error") return fallback("arbiter session");
   const container = String(job.result?.detached ?? "");
-  const runId = await ctx.startRun({ role: "verifier", purpose: "attribution", container, status: "running" });
+  const runId = await ctx.startRun({ role: "verifier", purpose: "attribution", container, status: "running", ...ledger("attribution", await routeFor(ctx, "attribution")) });
   await ctx.log("verifier", `Independent arbiter started: who owns the failure of ${f.head.slice(0, 8)} (${f.failing.map((x) => x.subject).join(", ").slice(0, 160)})?`, { run: runId });
   await ctx.goto("attribute_poll", { failure: f as unknown as Record<string, unknown>, n, runId, container, started: ctx.now().getTime(), envRetried: ctx.data.envRetried ?? false });
 }
@@ -141,6 +142,12 @@ export async function attributeCollect(ctx: TaskCtx): Promise<void> {
   const summary = rows.map((x) => `${String(x.criterion)}=${x.party}`).join(", ");
   await ctx.log("verifier", `Arbiter: ${summary}. ${String(a?.summary ?? "").slice(0, 300)}`, { run: runId, artifact: art });
   const fact = { ...f.fact, attribution: summary, arbiter_run: runId, artifact: art };
+  // SHADOW MODE: a not-yet-qualified candidate gets the same bounded findings; its answer is recorded and compared, never used
+  try {
+    await submitCandidate(ctx.db, { taskId: ctx.task.id, risk: ctx.task.tier, details: f.details, expected: [...new Set(rows.map((x) => String(x.party)))].sort().join("+"), mode: "shadow" });
+  } catch {
+    /* shadow bookkeeping never affects the task */
+  }
 
   if (by("ambiguity").length) {
     await ctx.transition("BLOCKED_DECISION", `Product ambiguity found while attributing the failure of ${f.head.slice(0, 8)}`, fact, { resumeState: "VERIFYING" });

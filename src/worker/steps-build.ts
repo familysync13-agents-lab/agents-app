@@ -1,9 +1,14 @@
 import { and, desc, eq, inArray, like, ne, notInArray, sql } from "drizzle-orm";
-import { decisions, evidence, gateResults, tasks } from "@/db/schema";
+import { decisions, evidence, gateResults, runs, tasks } from "@/db/schema";
+import type { Contract } from "@/domain/contract";
 import { classifyVerdict } from "@/domain/lifecycle";
 import { criteriaFromGate, correctionDetails, oracleDefects, type GateEvidence } from "@/domain/gate";
 import { buildPrompt, correctionPrompt, noOutcomePrompt, OUTCOME_DIR } from "@/domain/prompts";
-import { planBlockers, recordPlan } from "@/server/plans";
+import { extraFiles } from "@/domain/context";
+import { PlanBody } from "@/domain/plan";
+import { planTaskPrompt } from "@/domain/prompts";
+import { activePlan, planBlockers, recordPlan } from "@/server/plans";
+import { planBranch, planCursor, savePlan } from "./steps-plan";
 import { TaskCtx } from "./context";
 import { currentContract } from "./steps-contract";
 import { workerOptions, blockEvidence, harnessFailure, latestGate, mainSha, ownerApproved, pollDue, PROTECTED, sub, unb64, vols } from "./common";
@@ -54,12 +59,20 @@ export async function buildStart(ctx: TaskCtx): Promise<void> {
     const m = refs.status === "done" ? mainSha(refs, ctx.project.repo) : undefined;
     if (m) await ctx.setData({ mainSha: m });
   }
-  const base = String(ctx.data.mainSha ?? c?.mergeCommit ?? "");
+  // a decomposed contract is built task by task: the first task on main, every later task on the verified head of the previous one
+  const cur = await planCursor(ctx);
+  const base = String((cur && cur.index > 0 ? ctx.data.stackBase ?? ctx.task.headSha : null) ?? ctx.data.mainSha ?? c?.mergeCommit ?? "");
   if (!base) return blockEvidence(ctx, "No merged contract commit to build on.", { contract: c?.id ?? null });
-  const prompt = buildPrompt({ name: ctx.project.name, description: ctx.project.description, stack: ctx.project.stack }, { key: ctx.task.key!, title: ctx.task.title });
-  const s = await startSession(ctx, "build", base, prompt);
+  const info = { name: ctx.project.name, description: ctx.project.description, stack: ctx.project.stack };
+  const prompt = cur?.current
+    ? planTaskPrompt(info, { key: ctx.task.key!, title: ctx.task.title }, cur.current, { index: cur.index, total: cur.order.length, done: cur.order.slice(0, cur.index).map((t) => t.id) })
+    : buildPrompt(info, { key: ctx.task.key!, title: ctx.task.title });
+  const s = await startSession(ctx, "build", base, prompt, c ? { context: { contract: c.body as unknown as Contract, task: cur?.current ?? null } } : {});
   if (s === "wait") return;
-  await ctx.transition("IN_PROGRESS", "Builder started on the approved contract", { run: s.runId, container: s.container, base_sha: base, contract: c?.id ?? null });
+  if (cur?.current) await savePlan(ctx, cur, (t) => ({ ...t, status: "running" }));
+  const fact = { run: s.runId, container: s.container, base_sha: base, contract: c?.id ?? null, plan_task: cur?.current?.id ?? null };
+  if (ctx.task.state === "IN_PROGRESS") await ctx.log("system", `Builder started on plan task ${cur?.current?.id ?? ""} (on ${base.slice(0, 8)}).`, fact);
+  else await ctx.transition("IN_PROGRESS", cur?.current ? `Builder started on plan task ${cur.current.id} of the approved contract` : "Builder started on the approved contract", fact);
   await ctx.goto("build_poll", { runId: s.runId, container: s.container, baseSha: base });
 }
 
@@ -165,7 +178,9 @@ export async function ship(ctx: TaskCtx): Promise<void> {
     }
     return harnessFailure(ctx, ex, "export", "exporting the Builder's work");
   }
-  const title = `${ctx.task.key}: ${ctx.task.title}`;
+  const cur = await planCursor(ctx);
+  const newBranch = cur?.current ? planBranch(ctx.task.key!, cur, ctx.task.id) : `task/${ctx.task.key}/agents-${ctx.task.id}`;
+  const title = `${ctx.task.key}${cur?.current ? ` [${cur.current.id}${cur.isLast ? ", integrated result" : ""}]` : ""}: ${ctx.task.title}`;
   const isUpdate = !!ctx.task.prNumber;
   const job = await ctx.once("pr", "transport", () => ({
     repo: ctx.project.repo,
@@ -177,7 +192,7 @@ export async function ship(ctx: TaskCtx): Promise<void> {
             op: "pr_from_worktree",
             id: "pr",
             base_sha: ctx.data.baseSha,
-            branch: `task/${ctx.task.key}/agents-${ctx.task.id}`,
+            branch: newBranch,
             scope: ["**"],
             refuse: PROTECTED,
             title,
@@ -209,7 +224,10 @@ export async function ship(ctx: TaskCtx): Promise<void> {
   }
   const head = String(pr.head_sha);
   const prNumber = isUpdate ? ctx.task.prNumber! : Number(pr.pr);
-  const branch = isUpdate ? ctx.task.branch! : `task/${ctx.task.key}/agents-${ctx.task.id}`;
+  const branch = isUpdate ? ctx.task.branch! : newBranch;
+  // ledger: what the worker changed beyond what the context package pointed to (observable under-selection of the package)
+  const [run] = await ctx.db.select({ id: runs.id, files: runs.contextFiles }).from(runs).where(eq(runs.id, Number(ctx.data.runId ?? 0)));
+  if (run?.files) await ctx.updateRun(run.id, { extraFiles: extraFiles(run.files, ((pr.changed as [string, string][] | undefined) ?? []).map((x) => x[0])) });
   await ctx.transition("VERIFYING", `Work submitted as ${isUpdate ? "a correction to " : ""}PR #${prNumber} (head ${head.slice(0, 8)}); gate evaluation started`, {
     pr: prNumber,
     head,
@@ -283,6 +301,10 @@ export async function gateCollect(ctx: TaskCtx): Promise<void> {
     const c = await currentContract(ctx);
     if (c && ev.contract_sha256 && ev.contract_sha256 !== c.sha256)
       return blockEvidence(ctx, "The gate evaluated a different contract version than the approved one.", { ...fact, gate_contract: ev.contract_sha256, approved: c.sha256 }, { auto: false });
+    // a plan task that is not the last one was judged on the criteria it covers: record it and build the next task. The LAST task
+    // is the integrated result (gated against the complete contract) and continues to independent verification like any work.
+    const cur = await planCursor(ctx);
+    if (cur?.current && !cur.isLast) return ctx.goto("plan_task_done", { head, checkRun });
     return ctx.goto("acceptance_start", { head, checkRun });
   }
   if (kind === "candidate_failure") return routeFailure(ctx, verdict, ev, fact);
@@ -435,6 +457,23 @@ export async function markDone(ctx: TaskCtx): Promise<void> {
     .orderBy(desc(gateResults.id))
     .limit(1);
   if (!g || g.kind !== "pass") return blockEvidence(ctx, "DONE requires a passing gate result for the current head.", { head: ctx.task.headSha });
+  const cur = await planCursor(ctx);
+  if (cur?.current && cur.isLast) {
+    // the integrated result passed the gate against the COMPLETE original contract (its branch is not a plan task). Integrated
+    // verification additionally needs the independent Verifier to have actually judged this head: an Unknown never counts.
+    const acc = ctx.data.acceptance as { run?: number; findings?: number } | string | null | undefined;
+    const verified = !!acc && typeof acc === "object" && typeof acc.run === "number";
+    if (!verified && Number(ctx.data.ivRetry ?? 0) < 2) {
+      await ctx.log("system", "Integrated verification needs the independent Verifier; it did not produce a result - running it again.", {});
+      return ctx.goto("acceptance_start", { head: ctx.task.headSha, ivRetry: Number(ctx.data.ivRetry ?? 0) + 1 });
+    }
+    await savePlan(
+      ctx,
+      cur,
+      (t) => (verified ? { ...t, status: "done", evidence: [...t.evidence, `gate_result:${g.id}`, `pr:${ctx.task.prNumber}`, `head:${g.headSha}`] } : t),
+      verified ? { required: true, status: "passed", head: g.headSha, contract_version: cur.body.contract_version, contract_sha256: cur.body.contract_sha256 } : undefined,
+    );
+  }
   // a decomposed contract is fulfilled only by its integrated result, verified against the ORIGINAL contract - never by tasks alone
   const blockers = await planBlockers(ctx.db, ctx.task.id);
   if (blockers.length) return blockEvidence(ctx, `The contract is not fulfilled yet: ${blockers.join("; ")}.`, { head: ctx.task.headSha, plan: true }, { auto: false });
@@ -538,6 +577,15 @@ async function finishAccepted(ctx: TaskCtx, mergeCommit: string, approvedAt: str
 
 export async function cleanup(ctx: TaskCtx): Promise<void> {
   const v = vols(ctx.task.id);
+  // the per-task PRs of a decomposed contract were never merged on their own: the integrated PR carried them. Close them.
+  const row = await activePlan(ctx.db, ctx.task.id);
+  const ev = row ? PlanBody.parse(row.body).tasks.flatMap((t) => t.evidence) : [];
+  const prs = [...new Set(ev.filter((e) => e.startsWith("pr:")).map((e) => Number(e.slice(3))))].filter((n) => n && n !== ctx.task.prNumber);
+  const branches = [...new Set(ev.filter((e) => e.startsWith("branch:")).map((e) => e.slice(7)))].filter((b) => b !== ctx.task.branch);
+  if (prs.length && !("planPrs" in ctx.data)) {
+    await ctx.setData({ planPrs: await ctx.submit("transport", { repo: ctx.project.repo, ops: [{ op: "cleanup", id: "c", close: prs, delete_branches: branches }] }) });
+    return;
+  }
   const j = await ctx.once("rm", "vol_rm", () => ({ names: [v.worktree, v.export, v.final] }));
   if (!j) return;
   await ctx.goto("done", {});

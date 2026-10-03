@@ -5,6 +5,7 @@
 import { createDb } from "@/db/client";
 import { runAdmin } from "@/server/admin";
 import { proposeIntent } from "@/server/proposals";
+import { qualifyReplay, routeTable } from "@/worker/shadow";
 
 async function main() {
   const chunks: Buffer[] = [];
@@ -14,6 +15,15 @@ async function main() {
   if ((req as { op?: string }).op === "propose_intent") {
     const row = await proposeIntent(db, "operator", (req as { proposal: unknown }).proposal);
     process.stdout.write(JSON.stringify({ ok: true, proposal: row.id }) + "\n");
+    process.exit(0);
+  }
+  // Builder phase: the Router's rule table (read-only) and the qualification harness (replays recorded cases through the candidate)
+  if ((req as { op?: string }).op === "route_table") {
+    process.stdout.write(JSON.stringify({ ok: true, routes: await routeTable(db) }) + "\n");
+    process.exit(0);
+  }
+  if ((req as { op?: string }).op === "qualify_replay") {
+    process.stdout.write(JSON.stringify({ ok: true, ...(await qualifyReplay(db, Number((req as { limit?: number }).limit ?? 30))) }) + "\n");
     process.exit(0);
   }
   const r = await runAdmin(db, "operator", req);

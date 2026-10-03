@@ -11,6 +11,9 @@ import * as O from "./steps-oracle";
 import * as A from "./steps-attribute";
 import * as R from "./steps-regress";
 import { awaitAccess, selfRecover } from "./common";
+import { awaitQuota } from "./sessions";
+import * as P from "./steps-plan";
+import { collectCandidates } from "./shadow";
 
 type Step = (ctx: TaskCtx) => Promise<void>;
 
@@ -60,6 +63,13 @@ export const STEPS: Record<string, Step> = {
   await_decision: D.awaitDecision,
   await_access: awaitAccess,
   self_recover: selfRecover,
+  await_quota: awaitQuota,
+  plan_start: P.planStart,
+  plan_poll: P.planPoll,
+  plan_collect: P.planCollect,
+  plan_pr: P.planPr,
+  plan_merge: P.planMerge,
+  plan_task_done: P.planTaskDone,
   done: async () => {},
 };
 
@@ -73,6 +83,11 @@ export async function tick(db: Db, now: () => Date = () => new Date()): Promise<
     .orderBy(tasks.id);
   let advanced = 0;
   let errors = 0;
+  try {
+    await collectCandidates(db); // shadow / harness results are only recorded; they never affect a task
+  } catch {
+    /* qualification bookkeeping must never disturb the control loop */
+  }
   for (const row of active) {
     // re-read the task: an earlier task in this tick may have changed it (a batch leader assigning its members, a stack child
     // accepting its parent) - never act on a stale snapshot
