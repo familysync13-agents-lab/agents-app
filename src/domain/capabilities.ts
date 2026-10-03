@@ -17,6 +17,8 @@ export interface CapabilityRow {
 }
 
 export const NOT_DETECTED = "Not detected";
+export const NOT_AVAILABLE = "Not available";
+export const NOT_DETECTED_YET = "Not detected yet";
 
 const text = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 const command = (v: unknown): CapabilityCell => {
@@ -24,7 +26,7 @@ const command = (v: unknown): CapabilityCell => {
   return c ? { available: true, command: c } : { available: false };
 };
 
-/** null when no profile has been recorded yet; otherwise the values of a "Project Capabilities" list item. */
+/** null when no profile has been recorded yet; otherwise the values of a "Project Capabilities" table row. */
 export function capabilityRow(profile: unknown): CapabilityRow | null {
   if (!profile || typeof profile !== "object" || Array.isArray(profile)) return null;
   const p = profile as Record<string, unknown>;

@@ -18,50 +18,45 @@ const strip = (h: string) =>
     .replace(/\s+/g, " ")
     .trim();
 const render = (ps: CapabilityProject[]) => renderToStaticMarkup(createElement(ProjectCapabilities, { projects: ps }));
-const items = (h: string) =>
-  [...h.matchAll(/<li\b[^>]*>(.*?)<\/li>/g)].map((m) => {
-    const li = m[1]!;
-    const dl = /<dl\b[^>]*>(.*?)<\/dl>/.exec(li)?.[1];
-    return {
-      name: strip(/<h3\b[^>]*>(.*?)<\/h3>/.exec(li)?.[1] ?? ""),
-      terms: dl ? [...dl.matchAll(/<dt\b[^>]*>(.*?)<\/dt>/g)].map((x) => strip(x[1]!)) : null,
-      values: dl ? [...dl.matchAll(/<dd\b[^>]*>(.*?)<\/dd>/g)].map((x) => strip(x[1]!)) : null,
-      text: strip(li),
-    };
-  });
-const LABELS = ["Language", "Framework", "Package manager", "Build", "Test", "Lint", "Type check", "Browser tests"];
+const headers = (h: string) => [...(/<thead\b[^>]*>(.*?)<\/thead>/.exec(h)?.[1] ?? "").matchAll(/<th\b[^>]*>(.*?)<\/th>/g)].map((m) => strip(m[1]!));
+const rows = (h: string) =>
+  [...(/<tbody\b[^>]*>(.*?)<\/tbody>/.exec(h)?.[1] ?? "").matchAll(/<tr\b[^>]*>(.*?)<\/tr>/g)].map((m) => [...m[1]!.matchAll(/<td\b[^>]*>(.*?)<\/td>/g)].map((x) => strip(x[1]!)));
+const HEADERS = ["Project", "Language", "Framework", "Package manager", "Build", "Test", "Lint", "Type-check", "Browser tests"];
 
 describe("Project Capabilities (System page)", () => {
-  it("renders the heading and one list item with the preview demo profile in label order", () => {
+  it("renders the heading and a table with one row for the preview demo profile", () => {
     const html = render([{ id: 1, name: "Demo Project", capabilityProfile: PREVIEW_CAPABILITY_PROFILE }]);
     expect(html).toMatch(/<h2\b[^>]*>Project Capabilities<\/h2>/);
-    const list = items(html);
-    expect(list).toHaveLength(1);
-    expect(list[0]!.name).toBe("Demo Project");
-    expect(list[0]!.terms).toEqual(LABELS);
-    expect(list[0]!.values).toEqual(["typescript", "next", "npm", "npm run build", "npm run test", "npm run lint", "Not detected", "Available"]);
-    expect(html).not.toContain("<table");
+    expect(headers(html)).toEqual(HEADERS);
+    const body = rows(html);
+    expect(body).toHaveLength(1);
+    const [name, lang, fw, pm, build, test, lint, tc, bt] = body[0]!;
+    expect([name, lang, fw, pm]).toEqual(["Demo Project", "typescript", "next", "npm"]);
+    for (const c of [build, test, tc]) expect(c!.startsWith("Available")).toBe(true);
+    expect(build).toBe("Available npm run build");
+    expect([lint, bt]).toEqual(["Not available", "Not available"]);
   });
 
-  it("lists a project without a recorded profile with its name and the no-profile message", () => {
+  it("keeps a row for a project without a recorded profile, saying Not detected yet and nothing Available", () => {
     const html = render([
       { id: 1, name: "Alpha", capabilityProfile: null },
       { id: 2, name: "Beta", capabilityProfile: detectProfile("abc", { "package.json": JSON.stringify({ devDependencies: { "@playwright/test": "1" } }) }) },
     ]);
-    const [alpha, beta] = items(html);
-    expect(alpha).toEqual({ name: "Alpha", terms: null, values: null, text: "Alpha No capability profile detected yet." });
-    expect(beta!.name).toBe("Beta");
-    expect(beta!.values![7]).toBe("Available");
+    const [alpha, beta] = rows(html);
+    expect(alpha).toEqual(["Alpha", "Not detected yet"]);
+    expect(alpha!.some((c) => c.includes("Available"))).toBe(false);
+    expect(beta![0]).toBe("Beta");
+    expect(beta![8]).toBe("Available");
   });
 
-  it("shows Not detected for every value of an empty profile", () => {
+  it("shows Not detected for missing values and Not available for missing capabilities of an empty profile", () => {
     const profile = detectProfile("abc", {});
     expect(profile.languages).toEqual([]);
     const r = capabilityRow(profile)!;
     expect([r.language, r.framework, r.packageManager]).toEqual(["Not detected", "Not detected", "Not detected"]);
     expect([r.build, r.test, r.lint, r.typecheck, r.browserTests].every((c) => !c.available)).toBe(true);
-    const [item] = items(render([{ id: 1, name: "Empty", capabilityProfile: profile }]));
-    expect(item!.values).toEqual(LABELS.map(() => "Not detected"));
+    const [row] = rows(render([{ id: 1, name: "Empty", capabilityProfile: profile }]));
+    expect(row).toEqual(["Empty", "Not detected", "Not detected", "Not detected", ...Array(5).fill("Not available")]);
   });
 
   it("says so when no project is configured", () => {
@@ -99,7 +94,7 @@ describe("Project Capabilities (System page)", () => {
     await migrate(db, "pglite://memory");
     await seedProjects(db, JSON.stringify(PREVIEW_PROJECTS));
     const [p] = await db.select().from(projects).where(eq(projects.slug, "demo"));
-    await db.update(projects).set({ capabilityProfile: { ...PREVIEW_CAPABILITY_PROFILE, browserTests: false } }).where(eq(projects.id, p!.id));
+    await db.update(projects).set({ capabilityProfile: { ...PREVIEW_CAPABILITY_PROFILE, browserTests: true } }).where(eq(projects.id, p!.id));
     await seedPreviewDemo(db);
     const [q] = await db.select().from(projects).where(eq(projects.slug, "demo"));
     expect(q!.capabilityProfile).toEqual(PREVIEW_CAPABILITY_PROFILE);
@@ -110,8 +105,8 @@ describe("Project Capabilities (System page)", () => {
       languages: ["typescript"],
       framework: "next",
       packageManager: "npm",
-      commands: { build: "npm run build", test: "npm run test", lint: "npm run lint", typecheck: null },
-      browserTests: true,
+      commands: { build: "npm run build", test: "npm run test", lint: null, typecheck: "npm run typecheck" },
+      browserTests: false,
     });
   });
 });

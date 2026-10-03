@@ -10,12 +10,12 @@ export const PREVIEW_CAPABILITY_PROFILE: CapabilityProfile = {
   languages: ["typescript"],
   framework: "next",
   packageManager: "npm",
-  commands: { build: "npm run build", test: "npm run test", lint: "npm run lint", typecheck: null },
+  commands: { build: "npm run build", test: "npm run test", lint: null, typecheck: "npm run typecheck" },
   checkStage: true,
-  browserTests: true,
+  browserTests: false,
   database: "postgresql",
   tooling: [],
-  unknown: ["typecheck command"],
+  unknown: ["lint command"],
 };
 
 /**
