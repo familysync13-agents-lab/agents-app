@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LiveRefresh } from "@/components/live-refresh";
+import { ProjectCapabilities } from "@/components/project-capabilities";
 import { Ago, Card, CardHeader, Empty, Sha, cx } from "@/components/ui";
 import { currentTime } from "@/domain/time";
 import { systemPage } from "@/server/queries";
@@ -53,6 +54,8 @@ export default async function SystemPage() {
           </div>
         </Card>
       </div>
+
+      <ProjectCapabilities projects={d.capabilities} />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>

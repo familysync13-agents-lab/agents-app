@@ -1,15 +1,31 @@
 import { eq } from "drizzle-orm";
+import type { CapabilityProfile } from "@/domain/profile";
 import type { Db } from "./client";
 import { contracts, decisions, projects, tasks, transitions } from "./schema";
 
+/** Demonstration capability profile of the preview's Demo Project (no repository is ever contacted from a preview). */
+export const PREVIEW_DEMO_PROFILE: CapabilityProfile = {
+  commit: "0000000000000000000000000000000000000000",
+  languages: ["typescript"],
+  framework: "next",
+  packageManager: "npm",
+  commands: { build: "npm run build", test: "npm run test", lint: "npm run lint", typecheck: null },
+  checkStage: true,
+  browserTests: true,
+  database: "postgresql",
+  tooling: [],
+  unknown: ["typecheck command"],
+};
+
 /**
- * GATE PREVIEW ONLY (APP_ENV=preview): demonstration tasks in representative states so black-box checks can exercise the owner
+ * GATE PREVIEW ONLY (APP_ENV=preview): the demo capability profile and demonstration tasks in representative states so black-box checks can exercise the owner
  * screens that a preview without a control loop could never reach (open decisions, contract review, acceptance). Every row is
  * plainly demo data in the demo project; nothing here runs in production.
  */
 export async function seedPreviewDemo(db: Db) {
   const [p] = await db.select().from(projects).where(eq(projects.slug, "demo"));
   if (!p) return;
+  if (!p.capabilityProfile) await db.update(projects).set({ capabilityProfile: PREVIEW_DEMO_PROFILE as unknown as Record<string, unknown> }).where(eq(projects.id, p.id));
   const existing = await db.select({ id: tasks.id }).from(tasks).where(eq(tasks.projectId, p.id)).limit(1);
   if (existing.length) return;
   const body = {
