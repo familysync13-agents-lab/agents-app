@@ -24,68 +24,58 @@ async function open(page, path) {
   assert.equal(response.status(), 200, `${path}: expected HTTP 200, got ${response.status()}`);
   assert.equal(new URL(page.url()).pathname, path, `${path}: unexpected redirect`);
 }
+const columns = ['Project', 'Language', 'Framework', 'Package manager', 'Build', 'Test', 'Lint', 'Type-check', 'Browser tests'];
 async function capabilities(page) {
   const heading = await visible(page.getByRole('heading', { level: 2, name: 'Project Capabilities', exact: true }));
-  // Find the nearest containing card/section without assuming a CSS class or component tag.
-  const section = heading.locator('xpath=ancestor::*[descendant::li][1]');
+  // The nearest table-containing ancestor is the capabilities card, not an
+  // ancestor selected through unrelated lists elsewhere on the page.
+  const section = heading.locator('xpath=ancestor::*[descendant::table][1]');
   await visible(section);
-  const item = section.getByRole('listitem').filter({
-    has: page.getByRole('heading', { level: 3, name: 'Demo Project', exact: true }),
-  });
-  await visible(item);
-  return { section, item };
-}
-async function fields(item) {
-  const dl = await visible(item.locator('dl'));
-  const terms = dl.locator('dt');
-  const definitions = dl.locator('dd');
-  const count = await terms.count();
-  assert.equal(await definitions.count(), count, 'Each description term must have one definition');
+  const table = await visible(section.getByRole('table'));
+  const headers = table.getByRole('columnheader');
+  assert.equal(await headers.count(), columns.length, 'Expected exactly nine column headers');
   const labels = [];
-  const values = [];
-  for (let i = 0; i < count; i++) {
-    const term = await visible(terms.nth(i));
-    const definition = await visible(definitions.nth(i));
-    // Supports both direct dt/dd children and conventional div-wrapped pairs.
-    assert.ok(await term.evaluate((node, index) => {
-      const list = node.closest('dl');
-      const pairs = [...list.querySelectorAll('dt, dd')].filter(el => el.closest('dl') === list);
-      return pairs[index * 2] === node && pairs[index * 2 + 1]?.tagName === 'DD';
-    }, i), 'Description list terms and definitions must be paired in order');
-    labels.push((await term.innerText()).trim());
-    values.push((await definition.innerText()).trim());
+  for (let i = 0; i < columns.length; i++) {
+    labels.push((await (await visible(headers.nth(i))).innerText()).trim());
   }
-  return { labels, values };
+  assert.deepEqual(labels, columns, 'Table columns must match the specified order');
+  const rows = table.locator(':scope > tbody > tr');
+  assert.equal(await rows.count(), 1, 'Preview must show exactly one project body row');
+  const row = await visible(rows.first());
+  const cells = row.locator(':scope > td, :scope > th');
+  assert.equal(await cells.count(), columns.length, 'Project row must contain nine cells');
+  const values = [];
+  for (let i = 0; i < columns.length; i++) {
+    const cell = await visible(cells.nth(i));
+    assert.equal(await cell.evaluate(el => el.colSpan), 1, 'Each project field must occupy its own column');
+    // Read each visible cell independently, preserving boundaries between fields.
+    values.push((await cell.innerText()).trim());
+  }
+  assert.equal(values[0], 'Demo Project', 'Project cell must identify Demo Project');
+  return { values };
 }
 
 const checks = {
   AC1: async page => {
     await open(page, '/system');
-    const { section, item } = await capabilities(page);
-    assert.equal(await section.getByRole('listitem').count(), 1, 'Preview must show exactly one active project list item');
-    assert.equal(await item.count(), 1, 'Expected exactly one Demo Project item');
-    await visible(item.getByRole('heading', { level: 3, name: 'Demo Project', exact: true }));
+    await capabilities(page);
   },
   AC2: async page => {
     await open(page, '/system');
-    const { item } = await capabilities(page);
-    const { labels, values } = await fields(item);
-    assert.deepEqual(labels, ['Language', 'Framework', 'Package manager', 'Build', 'Test', 'Lint', 'Type check', 'Browser tests'], 'Description terms must match the specified order');
-    for (const [index, expected] of [[0, 'typescript'], [1, 'next'], [2, 'npm']]) {
-      assert.ok(values[index].toLowerCase().includes(expected), `${labels[index]} must contain ${expected}; got ${JSON.stringify(values[index])}`);
+    const { values } = await capabilities(page);
+    for (const [index, expected] of [[1, 'typescript'], [2, 'next'], [3, 'npm']]) {
+      assert.equal(values[index].toLowerCase(), expected, `${columns[index]} value differs`);
     }
-    for (const [index, expected] of [[3, 'npm run build'], [4, 'npm run test'], [5, 'npm run lint']]) {
-      assert.equal(values[index], expected, `${labels[index]} command differs`);
+    for (const index of [4, 5]) {
+      assert.ok(values[index].startsWith('Available'), `${columns[index]} must start with Available; got ${JSON.stringify(values[index])}`);
     }
+    assert.equal(values[6], 'Not available', 'Lint value differs');
   },
   AC3: async page => {
     await open(page, '/system');
-    const { item } = await capabilities(page);
-    const { labels, values } = await fields(item);
-    for (const [label, expected] of [['Type check', 'Not detected'], ['Browser tests', 'Available']]) {
-      assert.equal(labels.filter(value => value === label).length, 1, `Expected one ${label} term`);
-      assert.equal(values[labels.indexOf(label)], expected, `${label} value differs`);
-    }
+    const { values } = await capabilities(page);
+    assert.ok(values[7].startsWith('Available'), `Type-check must start with Available; got ${JSON.stringify(values[7])}`);
+    assert.equal(values[8], 'Not available', 'Browser tests value differs');
   },
   AC4: async page => {
     const errors = [];
@@ -98,14 +88,14 @@ const checks = {
     for (const name of ['Backups', 'Recent executor errors', 'Administrative operations (audit log)']) {
       await visible(page.getByRole('heading', { name, exact: true }));
     }
-    // A Build dt in the new profile must not stand in for the existing status card.
+    // Capability table headers must not stand in for existing status card labels.
     for (const label of ['Build', 'Executor jobs']) {
-      const candidates = page.getByText(label, { exact: true }).locator('xpath=self::*[not(ancestor::dl)]');
+      const candidates = page.getByText(label, { exact: true }).locator('xpath=self::*[not(ancestor::dl) and not(ancestor::table)]');
       await visible(candidates.first());
       let found = false;
       for (let i = 0; i < await candidates.count(); i++) {
         const candidate = candidates.nth(i);
-        if (await candidate.isVisible() && await candidate.evaluate(el => !el.closest('dl'))) found = true;
+        if (await candidate.isVisible() && await candidate.evaluate(el => !el.closest('dl, table'))) found = true;
       }
       assert.ok(found, `Missing visible ${label} status card label`);
     }
