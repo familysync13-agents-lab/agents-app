@@ -324,3 +324,32 @@ describe("BT12 schema and boundaries", () => {
     expect((await db.select().from(tasks)).length).toBe(0);
   });
 });
+
+describe("BT13 defects found in the first real runs (regression)", () => {
+  it("the plan is recorded even when the drafter wrote a stale version number; the control plane sets the version", async () => {
+    const { db, clk, ex, id } = await start({ draftSequence: [{ tag: "security" }, {}] });
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_owner_contract");
+    const { decideContract } = await import("@/server/owner");
+    const [c1] = await contractRows(db, id);
+    await decideContract(db, { taskId: id, contractId: c1!.id, choice: "changes", note: "drop the security tag", sha256: c1!.sha256 });
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "IN_PROGRESS");
+    const rows = await contractRows(db, id);
+    expect(rows.map((r) => [r.version, (r.body as { version: number }).version])).toEqual([[1, 1], [2, 2]]);
+    expect(PlanBody.parse((await activePlan(db, id))!.body)).toMatchObject({ contract_version: 2, shape: "atomic" });
+  });
+  it("a calibration that cannot RUN is repeated automatically with its inputs kept - never offered to the owner as an uncalibrated contract", async () => {
+    const { db, clk, ex, id } = await start();
+    const ok = ex.handlers.preview!;
+    let fails = 2;
+    ex.handlers.preview = (p, j) => (p.action === "up" && fails-- > 0 ? new Error("JobError: network bko-pv-t1 could not be created: all predefined address pools have been fully subnetted") : ok(p, j));
+    const seen = new Set<string>();
+    await runUntil(db, ex, clk, async () => {
+      for (const d of await openDecisions(db, id)) seen.add(d.kind);
+      return (await taskRow(db, id)).step === "await_acceptance";
+    }, 900);
+    expect([...seen]).toEqual(["acceptance"]);
+    const [c] = await contractRows(db, id);
+    expect(c!.calibration?.failsOnMain).toEqual(["AC1"]); // calibrated in the end, with the SAME authored check (no second Verifier session)
+    expect(ex.log.filter((l) => l.op === "verifier").length).toBe(2); // check author + acceptance check only
+  }, 60000);
+});

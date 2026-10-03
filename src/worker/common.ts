@@ -91,7 +91,7 @@ export async function awaitAccess(ctx: TaskCtx): Promise<void> {
  * decisions) - the owner is not a Retry button. Only when that is exhausted, or when repeating cannot help (`auto: false`: a
  * credential, a security stop, a fact that will not change), the task blocks and the owner is asked.
  */
-export async function blockEvidence(ctx: TaskCtx, reason: string, fact: Record<string, unknown>, opts: { auto?: boolean } = {}) {
+export async function blockEvidence(ctx: TaskCtx, reason: string, fact: Record<string, unknown>, opts: { auto?: boolean; resumeData?: Record<string, unknown> } = {}) {
   const resumeState = ctx.task.state;
   const resumeStep = ctx.task.step;
   if (opts.auto !== false && !(BLOCKED as readonly string[]).includes(resumeState) && resumeStep !== "self_recover") {
@@ -105,7 +105,7 @@ export async function blockEvidence(ctx: TaskCtx, reason: string, fact: Record<s
         `Automatic retry ${used + 1} of 2 in ${Math.round(delay / 60)} min (retryable failure; reversible; no owner decision involved).`,
       );
       await ctx.save({ infraRetries: 0 });
-      return ctx.goto("self_recover", { resumeStep, at: ctx.now().getTime() + delay * 1000, reason: reason.slice(0, 500) });
+      return ctx.goto("self_recover", { resumeStep, resumeData: opts.resumeData ?? {}, at: ctx.now().getTime() + delay * 1000, reason: reason.slice(0, 500) });
     }
   }
   // state first: a decision is only ever opened for a task that is actually blocked
@@ -119,7 +119,7 @@ export async function blockEvidence(ctx: TaskCtx, reason: string, fact: Record<s
       { id: "abandon", label: "Abandon the task", consequence: "The task ends; nothing is merged." },
     ],
     recommendation: "retry",
-    context: { stage: "evidence", resumeStep, resumeState },
+    context: { stage: "evidence", resumeStep, resumeState, resumeData: opts.resumeData ?? {} },
   });
   await ctx.goto("await_decision", {});
 }
@@ -128,7 +128,7 @@ export async function blockEvidence(ctx: TaskCtx, reason: string, fact: Record<s
 export async function selfRecover(ctx: TaskCtx): Promise<void> {
   if (ctx.now().getTime() < Number(ctx.data.at ?? 0)) return;
   await ctx.log("system", `Self-recovery: repeating "${String(ctx.data.resumeStep)}".`, {});
-  await ctx.goto(String(ctx.data.resumeStep), {});
+  await ctx.goto(String(ctx.data.resumeStep), (ctx.data.resumeData as Record<string, unknown> | undefined) ?? {});
 }
 
 /** Result of a transport job: the named sub-operation's result. */
