@@ -1,0 +1,69 @@
+{
+ "contract": "T6",
+ "contract_version": 1,
+ "contract_sha256": "4749f37fc866c4ab03c52ae341d290031d538a9dec3bec3d55a76c766634c951",
+ "plan_version": 2,
+ "tasks": [
+  {
+   "id": "T6.a",
+   "covers": [
+    "C3"
+   ],
+   "contributes": [
+    "AC2",
+    "AC3",
+    "AC8"
+   ],
+   "depends_on": []
+  },
+  {
+   "id": "T6.b",
+   "covers": [
+    "AC1",
+    "AC2",
+    "AC3",
+    "AC4",
+    "AC5"
+   ],
+   "contributes": [
+    "AC10",
+    "AC11",
+    "AC12",
+    "AC13",
+    "C1",
+    "C2"
+   ],
+   "depends_on": [
+    "T6.a"
+   ]
+  },
+  {
+   "id": "T6.c",
+   "covers": [
+    "AC6",
+    "AC7",
+    "AC8",
+    "AC9"
+   ],
+   "contributes": [
+    "AC10",
+    "AC11",
+    "AC12",
+    "AC13",
+    "C1",
+    "C2"
+   ],
+   "depends_on": [
+    "T6.b"
+   ]
+  }
+ ],
+ "integration": [
+  "AC10",
+  "AC11",
+  "AC12",
+  "AC13",
+  "C1",
+  "C2"
+ ]
+}
