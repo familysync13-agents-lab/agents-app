@@ -24,7 +24,7 @@ const command = (v: unknown): CapabilityCell => {
   return c ? { available: true, command: c } : { available: false };
 };
 
-/** null when no profile has been recorded yet; otherwise the cells of the "Project Capabilities" table. */
+/** null when no profile has been recorded yet; otherwise the values of a "Project Capabilities" list item. */
 export function capabilityRow(profile: unknown): CapabilityRow | null {
   if (!profile || typeof profile !== "object" || Array.isArray(profile)) return null;
   const p = profile as Record<string, unknown>;

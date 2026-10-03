@@ -1,5 +1,6 @@
-import { capabilityRow, type CapabilityCell } from "@/domain/capabilities";
-import { Card, CardHeader, Empty, cx } from "./ui";
+import { Fragment, type ReactNode } from "react";
+import { capabilityRow, NOT_DETECTED, type CapabilityCell } from "@/domain/capabilities";
+import { Card, CardHeader, Empty } from "./ui";
 
 export interface CapabilityProject {
   id: number;
@@ -7,28 +8,30 @@ export interface CapabilityProject {
   capabilityProfile: unknown;
 }
 
-const COLUMNS = ["Project", "Language", "Framework", "Package manager", "Build", "Test", "Lint", "Type-check", "Browser tests"] as const;
+export const NO_PROFILE = "No capability profile detected yet.";
 
-function Capability({ cell }: { cell: CapabilityCell }) {
-  if (!cell.available)
-    return (
-      <span className="inline-flex items-center gap-1.5 text-mute">
-        <span aria-hidden className="size-1.5 rounded-full border border-current" />
-        Not available
-      </span>
-    );
+function Muted() {
   return (
-    <span className="inline-flex flex-wrap items-center gap-x-1.5 text-ok">
-      <span aria-hidden className="size-1.5 rounded-full bg-current" />
-      Available
-      {cell.command ? (
-        <>
-          {" "}
-          <code className="font-mono text-xs text-ink-2">{cell.command}</code>
-        </>
-      ) : null}
+    <span className="inline-flex items-center gap-1.5 text-mute">
+      <span aria-hidden className="size-1.5 shrink-0 rounded-full border border-current" />
+      {NOT_DETECTED}
     </span>
   );
+}
+
+function Capability({ cell }: { cell: CapabilityCell }) {
+  if (!cell.available) return <Muted />;
+  if (cell.command) return <code className="font-mono text-xs break-all text-ok">{cell.command}</code>;
+  return (
+    <span className="inline-flex items-center gap-1.5 text-ok">
+      <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-current" />
+      Available
+    </span>
+  );
+}
+
+function Value({ text }: { text: string }) {
+  return text === NOT_DETECTED ? <Muted /> : <span className="text-ink-2">{text}</span>;
 }
 
 /** System page card: the recorded capability profile of every configured (active) project. Read-only. */
@@ -39,55 +42,40 @@ export function ProjectCapabilities({ projects }: { projects: CapabilityProject[
       {projects.length === 0 ? (
         <Empty>No project is configured.</Empty>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] text-sm">
-            <thead className="text-left text-xs text-mute">
-              <tr>
-                {COLUMNS.map((c, i) => (
-                  <th key={c} className={cx("py-2 font-medium whitespace-nowrap", i === 0 ? "px-5" : i === COLUMNS.length - 1 ? "pr-5 pl-2" : "px-2")}>
-                    {c}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {projects.map((p) => {
-                const row = capabilityRow(p.capabilityProfile);
-                return (
-                  <tr key={p.id} className="align-top">
-                    <td className="px-5 py-2 font-medium">{p.name}</td>
-                    {row ? (
-                      <>
-                        <td className="px-2 py-2 text-ink-2">{row.language}</td>
-                        <td className="px-2 py-2 text-ink-2">{row.framework}</td>
-                        <td className="px-2 py-2 text-ink-2">{row.packageManager}</td>
-                        <td className="px-2 py-2">
-                          <Capability cell={row.build} />
-                        </td>
-                        <td className="px-2 py-2">
-                          <Capability cell={row.test} />
-                        </td>
-                        <td className="px-2 py-2">
-                          <Capability cell={row.lint} />
-                        </td>
-                        <td className="px-2 py-2">
-                          <Capability cell={row.typecheck} />
-                        </td>
-                        <td className="py-2 pr-5 pl-2">
-                          <Capability cell={row.browserTests} />
-                        </td>
-                      </>
-                    ) : (
-                      <td colSpan={COLUMNS.length - 1} className="py-2 pr-5 pl-2 text-mute">
-                        Not detected yet
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ul className="divide-y divide-line text-sm">
+          {projects.map((p) => {
+            const row = capabilityRow(p.capabilityProfile);
+            const items: [string, ReactNode][] = row
+              ? [
+                  ["Language", <Value key="l" text={row.language} />],
+                  ["Framework", <Value key="f" text={row.framework} />],
+                  ["Package manager", <Value key="p" text={row.packageManager} />],
+                  ["Build", <Capability key="b" cell={row.build} />],
+                  ["Test", <Capability key="t" cell={row.test} />],
+                  ["Lint", <Capability key="li" cell={row.lint} />],
+                  ["Type check", <Capability key="tc" cell={row.typecheck} />],
+                  ["Browser tests", <Capability key="bt" cell={row.browserTests} />],
+                ]
+              : [];
+            return (
+              <li key={p.id} className="px-5 py-3">
+                <h3 className="font-medium">{p.name}</h3>
+                {row ? (
+                  <dl className="mt-2 grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-4 gap-y-1 sm:grid-cols-[repeat(2,minmax(0,auto)_minmax(0,1fr))] xl:grid-cols-[repeat(4,minmax(0,auto)_minmax(0,1fr))]">
+                    {items.map(([label, value]) => (
+                      <Fragment key={label}>
+                        <dt className="text-xs leading-5 text-mute">{label}</dt>
+                        <dd className="min-w-0 leading-5">{value}</dd>
+                      </Fragment>
+                    ))}
+                  </dl>
+                ) : (
+                  <p className="mt-1 text-mute">{NO_PROFILE}</p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </Card>
   );

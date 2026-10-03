@@ -18,45 +18,54 @@ const strip = (h: string) =>
     .replace(/\s+/g, " ")
     .trim();
 const render = (ps: CapabilityProject[]) => renderToStaticMarkup(createElement(ProjectCapabilities, { projects: ps }));
-const headers = (h: string) => [...h.matchAll(/<th\b[^>]*>(.*?)<\/th>/g)].map((m) => strip(m[1]!));
-const rows = (h: string) => [...(/<tbody\b[^>]*>(.*)<\/tbody>/.exec(h)?.[1] ?? "").matchAll(/<tr\b[^>]*>(.*?)<\/tr>/g)].map((m) => [...m[1]!.matchAll(/<td\b[^>]*>(.*?)<\/td>/g)].map((c) => strip(c[1]!)));
+const items = (h: string) =>
+  [...h.matchAll(/<li\b[^>]*>(.*?)<\/li>/g)].map((m) => {
+    const li = m[1]!;
+    const dl = /<dl\b[^>]*>(.*?)<\/dl>/.exec(li)?.[1];
+    return {
+      name: strip(/<h3\b[^>]*>(.*?)<\/h3>/.exec(li)?.[1] ?? ""),
+      terms: dl ? [...dl.matchAll(/<dt\b[^>]*>(.*?)<\/dt>/g)].map((x) => strip(x[1]!)) : null,
+      values: dl ? [...dl.matchAll(/<dd\b[^>]*>(.*?)<\/dd>/g)].map((x) => strip(x[1]!)) : null,
+      text: strip(li),
+    };
+  });
+const LABELS = ["Language", "Framework", "Package manager", "Build", "Test", "Lint", "Type check", "Browser tests"];
 
 describe("Project Capabilities (System page)", () => {
-  it("renders the heading, the columns in order and the preview demo row", () => {
+  it("renders the heading and one list item with the preview demo profile in label order", () => {
     const html = render([{ id: 1, name: "Demo Project", capabilityProfile: PREVIEW_CAPABILITY_PROFILE }]);
     expect(html).toMatch(/<h2\b[^>]*>Project Capabilities<\/h2>/);
-    expect(headers(html)).toEqual(["Project", "Language", "Framework", "Package manager", "Build", "Test", "Lint", "Type-check", "Browser tests"]);
-    const body = rows(html);
-    expect(body).toHaveLength(1);
-    const [name, lang, fw, pm, build, test, lint, tc, bt] = body[0]!;
-    expect([name, lang, fw, pm]).toEqual(["Demo Project", "typescript", "next", "npm"]);
-    for (const c of [build, test, tc]) expect(c).toMatch(/^Available/);
-    expect(build).toBe("Available npm run build");
-    expect(lint).toBe("Not available");
-    expect(bt).toBe("Not available");
-    expect(html).toContain("overflow-x-auto");
+    const list = items(html);
+    expect(list).toHaveLength(1);
+    expect(list[0]!.name).toBe("Demo Project");
+    expect(list[0]!.terms).toEqual(LABELS);
+    expect(list[0]!.values).toEqual(["typescript", "next", "npm", "npm run build", "npm run test", "npm run lint", "Not detected", "Available"]);
+    expect(html).not.toContain("<table");
   });
 
-  it("lists a project without a recorded profile as not detected yet, without any Available cell", () => {
+  it("lists a project without a recorded profile with its name and the no-profile message", () => {
     const html = render([
       { id: 1, name: "Alpha", capabilityProfile: null },
       { id: 2, name: "Beta", capabilityProfile: detectProfile("abc", { "package.json": JSON.stringify({ devDependencies: { "@playwright/test": "1" } }) }) },
     ]);
-    const [alpha, beta] = rows(html);
-    expect(alpha).toEqual(["Alpha", "Not detected yet"]);
-    expect(beta![0]).toBe("Beta");
-    expect(beta![8]).toBe("Available");
+    const [alpha, beta] = items(html);
+    expect(alpha).toEqual({ name: "Alpha", terms: null, values: null, text: "Alpha No capability profile detected yet." });
+    expect(beta!.name).toBe("Beta");
+    expect(beta!.values![7]).toBe("Available");
   });
 
-  it("shows Not detected for missing language, framework and package manager", () => {
+  it("shows Not detected for every value of an empty profile", () => {
     const profile = detectProfile("abc", {});
     expect(profile.languages).toEqual([]);
     const r = capabilityRow(profile)!;
     expect([r.language, r.framework, r.packageManager]).toEqual(["Not detected", "Not detected", "Not detected"]);
     expect([r.build, r.test, r.lint, r.typecheck, r.browserTests].every((c) => !c.available)).toBe(true);
-    const [row] = rows(render([{ id: 1, name: "Empty", capabilityProfile: profile }]));
-    expect(row!.slice(1, 4)).toEqual(["Not detected", "Not detected", "Not detected"]);
-    expect(row!.slice(4).every((c) => c === "Not available")).toBe(true);
+    const [item] = items(render([{ id: 1, name: "Empty", capabilityProfile: profile }]));
+    expect(item!.values).toEqual(LABELS.map(() => "Not detected"));
+  });
+
+  it("says so when no project is configured", () => {
+    expect(strip(render([]))).toContain("No project is configured.");
   });
 
   it("joins several languages and tolerates malformed stored values", () => {
@@ -77,11 +86,32 @@ describe("Project Capabilities (System page)", () => {
     await seedPreviewDemo(db);
     const [p] = await db.select().from(projects).where(eq(projects.slug, "demo"));
     expect(p!.capabilityProfile).toEqual(PREVIEW_CAPABILITY_PROFILE);
-    const other = { ...PREVIEW_CAPABILITY_PROFILE, framework: "vite" };
+    const other = { ...PREVIEW_CAPABILITY_PROFILE, commit: "a".repeat(40), framework: "vite" };
     await db.update(projects).set({ capabilityProfile: other }).where(eq(projects.id, p!.id));
     await seedProjects(db, JSON.stringify(PREVIEW_PROJECTS));
     await seedPreviewDemo(db);
     const [q] = await db.select().from(projects).where(eq(projects.slug, "demo"));
     expect(q!.capabilityProfile).toEqual(other);
+  });
+
+  it("the preview brings an earlier demonstration profile up to date", async () => {
+    const db = await createDb("pglite://memory");
+    await migrate(db, "pglite://memory");
+    await seedProjects(db, JSON.stringify(PREVIEW_PROJECTS));
+    const [p] = await db.select().from(projects).where(eq(projects.slug, "demo"));
+    await db.update(projects).set({ capabilityProfile: { ...PREVIEW_CAPABILITY_PROFILE, browserTests: false } }).where(eq(projects.id, p!.id));
+    await seedPreviewDemo(db);
+    const [q] = await db.select().from(projects).where(eq(projects.slug, "demo"));
+    expect(q!.capabilityProfile).toEqual(PREVIEW_CAPABILITY_PROFILE);
+  });
+
+  it("the demonstration profile has the values the contract states", () => {
+    expect(PREVIEW_CAPABILITY_PROFILE).toMatchObject({
+      languages: ["typescript"],
+      framework: "next",
+      packageManager: "npm",
+      commands: { build: "npm run build", test: "npm run test", lint: "npm run lint", typecheck: null },
+      browserTests: true,
+    });
   });
 });
