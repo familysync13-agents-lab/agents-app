@@ -1,5 +1,7 @@
-import { and, eq } from "drizzle-orm";
-import { decisions, type TaskState } from "@/db/schema";
+import { and, desc, eq } from "drizzle-orm";
+import { activity, decisions, type TaskState } from "@/db/schema";
+import { classifyFailure } from "@/domain/router";
+import { submitSemantic } from "./qualify";
 import { recoveryDelay } from "@/domain/policy";
 import { BLOCKED } from "@/domain/lifecycle";
 import type { Job, TaskCtx } from "./context";
@@ -123,7 +125,23 @@ export async function blockEvidence(ctx: TaskCtx, reason: string, fact: Record<s
     recommendation: "retry",
     context: { stage: "evidence", resumeStep, resumeState, resumeData: opts.resumeData ?? {} },
   });
+  await localAdvice(ctx, reason);
   await ctx.goto("await_decision", {});
+}
+
+/**
+ * When a task stops for the owner, a QUALIFIED local model may add two advisory notes: what kind of failure this is (only when the
+ * deterministic classifier has no answer) and a short account of what happened. Bounded input, gated output, attached as artifacts.
+ * Nothing waits for it, nothing depends on it, and nothing is started when no local worker has qualified for the class.
+ */
+async function localAdvice(ctx: TaskCtx, reason: string) {
+  try {
+    if (classifyFailure(reason).cls === "unknown") await submitSemantic(ctx.db, { taskId: ctx.task.id, cls: "failure_triage", input: reason, risk: ctx.task.tier });
+    const last = await ctx.db.select({ message: activity.message }).from(activity).where(eq(activity.taskId, ctx.task.id)).orderBy(desc(activity.id)).limit(16);
+    await submitSemantic(ctx.db, { taskId: ctx.task.id, cls: "summarization", input: `Task ${ctx.task.key}\n${last.reverse().map((m) => `- ${m.message.replace(/\s+/g, " ").slice(0, 300)}`).join("\n")}`, risk: ctx.task.tier });
+  } catch {
+    /* advisory only: never disturbs the task */
+  }
 }
 
 /** Step: wait out the recovery delay, then repeat the step that failed (fresh step data). */

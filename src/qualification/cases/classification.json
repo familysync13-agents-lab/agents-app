@@ -1,0 +1,185 @@
+{
+ "class": "classification",
+ "version": 1,
+ "statement": "Classify one acceptance criterion by the sensitive areas (authz, data-loss, money, pii) it touches.",
+ "cases": [
+  {
+   "id": "cl-01",
+   "source": "historical",
+   "input": "Given the gate preview with its demo data and the owner signed in via /auth/preview, when the owner opens \"/system\", then the response is HTTP 200 and the page shows exactly one h2 heading whose text is exactly \"Recent worker runs\"; within that section there is a table whose column headers are, in order, \"Task\", \"Purpose\", \"Worker\", \"Task class\", \"Reason\", \"Context bytes\".",
+   "expect": {
+    "tags": []
+   }
+  },
+  {
+   "id": "cl-02",
+   "source": "historical",
+   "input": "Both new sections use the existing System page look (Card with CardHeader, the same table and muted-text styling as \"Administrative operations (audit log)\", monospace for identifiers such as worker ids and task classes), show no animation, spinner or progress indicator, and stay usable at a 375px-wide viewport (the tables may scroll horizontally inside their cards, as the audit table does) and on desktop.",
+   "expect": {
+    "tags": []
+   }
+  },
+  {
+   "id": "cl-03",
+   "source": "historical",
+   "input": "The \"Project Capabilities\" section uses the existing System page look (Card with CardHeader, muted labels, monospace for commands, ok/muted tones for available/not-detected), is readable without horizontal page scrolling at a 375px-wide viewport and on desktop, and stays consistent with the page's live refresh.",
+   "expect": {
+    "tags": []
+   }
+  },
+  {
+   "id": "cl-04",
+   "source": "historical",
+   "input": "maximum length, in Unicode code points including the ellipsis, of any decision title as displayed in the \"Open\" list of /decisions and in the \"Trust boundary - your decision is required\" section of /: target 100 characters; conditions: gate preview with its demo data, owner signed in via /auth/preview; measured on the visible text of the title element of every open-decision list item on both pages",
+   "expect": {
+    "tags": []
+   }
+  },
+  {
+   "id": "cl-05",
+   "source": "historical",
+   "input": "A shortened title breaks at a word boundary where one exists in the allowed length (no cut-off half words before the \"…\"), and hovering the shortened entry shows the full title as a tooltip.",
+   "expect": {
+    "tags": []
+   }
+  },
+  {
+   "id": "cl-06",
+   "source": "historical",
+   "input": "The \"New intent\" link is visibly identifiable as an action within each project row (consistent with the app's existing link/button styling), has a visible focus indicator, is not nested inside another link (no <a> inside <a>), and the Projects panel remains readable without horizontal scrolling at a 375px-wide viewport and on desktop.",
+   "expect": {
+    "tags": []
+   }
+  },
+  {
+   "id": "cl-07",
+   "source": "historical",
+   "input": "Given alice signed in with the fixture list, when /lists/{id}?sort=title is rendered at 375, 768 and 1280 px viewport width, then at each width the \"Sort by\" select and the \"Sort\" button are displayed below the bottom edge of the \"Books\" heading and above the top edge of the first book item (\"Animal Farm\"), they do not overlap the heading or any book item, every book item is displayed below them, and the page has no horizontal overflow (document scroll width <= viewport width).",
+   "expect": {
+    "tags": []
+   }
+  },
+  {
+   "id": "cl-08",
+   "source": "historical",
+   "input": "axe-core violations with impact serious or critical (WCAG 2.1 A/AA rule tags): target 0; conditions: alice signed in; GET /lists/{id} and /lists/{id}?sort=title for the fixture list, at 375, 768 and 1280 px width; measured with the pinned, unmodified axe-core bundle loaded from /node_modules/axe-core/axe.min.js (present in the gate and Verifier environments) and injected into the rendered page by the check, run on the whole document with rule tags wcag2a, wcag2aa, wcag21a, wcag21aa; the application does not ship or expose axe-core, and no substitute accessibility approximation is used (if the bundle cannot be loaded the result is \"not verified\", not a pass)",
+   "expect": {
+    "tags": []
+   }
+  },
+  {
+   "id": "cl-09",
+   "source": "historical",
+   "input": "The \"Sort by\" control fits the existing look of the list page, visually sits right after the \"Books\" heading (before the book items), is usable by keyboard, and does not cause horizontal overflow at phone, tablet and desktop widths.",
+   "expect": {
+    "tags": []
+   }
+  },
+  {
+   "id": "cl-10",
+   "source": "controlled",
+   "input": "Given bob is signed in and the list \"Classics\" belongs to alice and has not been shared with him, when bob opens the page of that list, then the response is HTTP 404 and no book title of the list appears.",
+   "expect": {
+    "tags": [
+     "authz"
+    ]
+   }
+  },
+  {
+   "id": "cl-11",
+   "source": "controlled",
+   "input": "Given nobody is signed in, when a request is sent to GET /api/decisions, then the response is HTTP 401 and contains no decision data.",
+   "expect": {
+    "tags": [
+     "authz"
+    ]
+   }
+  },
+  {
+   "id": "cl-12",
+   "source": "controlled",
+   "input": "Given alice is signed in and her list \"Summer\" contains three books, when she activates \"Delete list\" and confirms, then the list and its three books are permanently removed and /lists no longer shows \"Summer\".",
+   "expect": {
+    "tags": [
+     "data-loss"
+    ]
+   }
+  },
+  {
+   "id": "cl-13",
+   "source": "controlled",
+   "input": "Given a project with recorded runs, when the owner runs \"Reset project\" and confirms, then all recorded runs and evidence of that project are irreversibly deleted.",
+   "expect": {
+    "tags": [
+     "data-loss"
+    ]
+   }
+  },
+  {
+   "id": "cl-14",
+   "source": "controlled",
+   "input": "Given a customer on the Pro plan, when the monthly renewal runs, then the card on file is charged 12.00 EUR exactly once and an invoice with that amount is created.",
+   "expect": {
+    "tags": [
+     "money"
+    ]
+   }
+  },
+  {
+   "id": "cl-15",
+   "source": "controlled",
+   "input": "Given a cart with two books priced 9.99 and 5.01, when the customer opens the checkout page, then the displayed total price is 15.00 and the button \"Pay 15.00\" is shown.",
+   "expect": {
+    "tags": [
+     "money"
+    ]
+   }
+  },
+  {
+   "id": "cl-16",
+   "source": "controlled",
+   "input": "Rounding error of an invoice total compared with the sum of its lines: target at most 0.01 EUR per invoice; conditions: 1,000 generated invoices with mixed tax rates.",
+   "expect": {
+    "tags": [
+     "money"
+    ]
+   }
+  },
+  {
+   "id": "cl-17",
+   "source": "controlled",
+   "input": "Given a user opens \"Export my data\", when the export finishes, then the downloaded file contains the user's full name, e-mail address and postal address.",
+   "expect": {
+    "tags": [
+     "pii"
+    ]
+   }
+  },
+  {
+   "id": "cl-18",
+   "source": "controlled",
+   "input": "Given the support form, when a visitor submits it with their name, e-mail address and phone number, then these three values are stored with the request and appear in the staff inbox entry.",
+   "expect": {
+    "tags": [
+     "pii"
+    ]
+   }
+  },
+  {
+   "id": "cl-19",
+   "source": "controlled",
+   "input": "Time to first byte of /system: target at most 300 ms at the 95th percentile; conditions: 50 sequential requests against the preview with its demo data.",
+   "expect": {
+    "tags": []
+   }
+  },
+  {
+   "id": "cl-20",
+   "source": "controlled",
+   "input": "Given the owner is signed in on the gate preview, when the owner opens /projects, then every project row shows its name and the number of open tasks.",
+   "expect": {
+    "tags": []
+   }
+  }
+ ]
+}

@@ -13,6 +13,7 @@ import * as R from "./steps-regress";
 import { awaitAccess, selfRecover } from "./common";
 import { awaitQuota } from "./sessions";
 import * as P from "./steps-plan";
+import * as L from "./steps-local";
 import { collectCandidates } from "./shadow";
 
 type Step = (ctx: TaskCtx) => Promise<void>;
@@ -40,6 +41,8 @@ export const STEPS: Record<string, Step> = {
   await_gate: B.awaitGate,
   gate_collect: B.gateCollect,
   fix_start: B.fixStart,
+  local_build: L.localBuild,
+  local_fix: L.localFix,
   acceptance_start: V.acceptanceStart,
   acceptance_poll: V.acceptancePoll,
   acceptance_collect: V.acceptanceCollect,
@@ -85,7 +88,7 @@ export async function tick(db: Db, now: () => Date = () => new Date()): Promise<
   let advanced = 0;
   let errors = 0;
   try {
-    await collectCandidates(db); // shadow / harness results are only recorded; they never affect a task
+    await collectCandidates(db, now); // shadow / harness results are only recorded; they never affect a task
   } catch {
     /* qualification bookkeeping must never disturb the control loop */
   }

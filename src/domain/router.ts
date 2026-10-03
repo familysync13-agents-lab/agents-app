@@ -20,6 +20,29 @@ export const TASK_CLASSES = [
 ] as const;
 export type TaskClass = (typeof TASK_CLASSES)[number];
 
+/*
+ * Local-worker extension. These classes exist only as work a LOCAL model may qualify for; the trusted worker for all of them is
+ * Claude Code. They are routed by the same rule as every other class (NO QUALIFIED LOCAL PATH = TRUSTED WORKER) but are not part of
+ * the ten primary classes above (the System page's routing table lists exactly those).
+ */
+export const EXT_TASK_CLASSES = [
+  "classification", // bounded text -> labels from a fixed vocabulary
+  "summarization", // bounded record of events -> grounded summary
+  "structured_extraction", // bounded text -> fixed fields
+  "small_code", // a plan task confined to a few named files
+  "bounded_repair", // repair of a failed check confined to a few named files
+] as const;
+export type ExtTaskClass = (typeof EXT_TASK_CLASSES)[number];
+export type AnyTaskClass = TaskClass | ExtTaskClass;
+export const ALL_TASK_CLASSES: readonly AnyTaskClass[] = [...TASK_CLASSES, ...EXT_TASK_CLASSES];
+/** Bounded semantic classes a local general model may qualify for; coding classes a local coding model may qualify for. */
+export const SEMANTIC_CLASSES = ["failure_triage", "log_summary", "classification", "summarization", "structured_extraction"] as const;
+export type SemanticClass = (typeof SEMANTIC_CLASSES)[number];
+export const CODE_CLASSES = ["small_code", "bounded_repair"] as const;
+export type CodeClass = (typeof CODE_CLASSES)[number];
+/** Installed on the host but embedding-only: never a worker, never selected for generative work (the executor refuses it too). */
+export const EMBEDDING_ONLY_MODELS = ["bge-m3"];
+
 export type Risk = "standard" | "critical";
 
 /** What a worker may touch. The executor enforces these; the Router records which envelope a run had. */
@@ -78,11 +101,12 @@ export const WORKERS: Record<string, WorkerDef> = {
       credentials: "verifier-only vendor login in an isolated volume",
     },
   },
+  // The general local model: bounded semantic work only (one structured request, no tools).
   "local-llm": {
     id: "local-llm",
     harness: "local-provider",
     provider: "ollama-host",
-    model: "configured-on-host",
+    model: "qwen3:14b",
     privateCode: true,
     meteredCost: false,
     enabled: true,
@@ -91,6 +115,25 @@ export const WORKERS: Record<string, WorkerDef> = {
       network: "none (the executor calls the model on the host loopback)",
       repository: "none",
       tools: "none: one bounded structured request, schema-validated output",
+      credentials: "none",
+    },
+  },
+  // The local coding model: small, file-scoped changes only. It has no agent harness: the executor reads the files in scope from
+  // the controlled worktree, the model returns complete replacement files, the executor writes only in-scope paths and runs the
+  // project's own checks. Everything after that is the normal path (transport, gate, independent Verifier).
+  "local-coder": {
+    id: "local-coder",
+    harness: "local-provider",
+    provider: "ollama-host",
+    model: "qwen3-coder:30b",
+    privateCode: true,
+    meteredCost: false,
+    enabled: true,
+    envelope: {
+      filesystem: "none for the model; the executor reads and writes only the files named in the task scope on the worktree volume",
+      network: "none (the executor calls the model on the host loopback); the check container reaches the package registry only",
+      repository: "no GitHub access; changes leave only through the transport (protected paths refused)",
+      tools: "none: one bounded structured request returning complete files, schema-validated",
       credentials: "none",
     },
   },
@@ -122,7 +165,12 @@ export const WORKERS: Record<string, WorkerDef> = {
 };
 
 /** The trusted path per class, and which alternatives may be considered for it (in order). */
-export const ROUTES: Record<TaskClass, { trusted: string; alternatives: string[] }> = {
+export const ROUTES: Record<AnyTaskClass, { trusted: string; alternatives: string[] }> = {
+  classification: { trusted: "claude-code", alternatives: ["local-llm"] },
+  summarization: { trusted: "claude-code", alternatives: ["local-llm"] },
+  structured_extraction: { trusted: "claude-code", alternatives: ["local-llm"] },
+  small_code: { trusted: "claude-code", alternatives: ["local-coder"] },
+  bounded_repair: { trusted: "claude-code", alternatives: ["local-coder"] },
   contract_draft: { trusted: "claude-code", alternatives: [] },
   plan: { trusted: "claude-code", alternatives: [] },
   build: { trusted: "claude-code", alternatives: ["codex-builder", "opencode-local"] },
@@ -143,12 +191,18 @@ export interface QualRecord {
   taskClass: string;
   valid: boolean | null;
   agree: boolean | null;
+  /** the exact model that produced the record; evidence counts only for the model the worker runs now */
+  model?: string | null;
+  /** a record kept for audit but excluded from qualification (e.g. produced by a model that cannot generate) */
+  voided?: boolean | null;
+  mode?: string | null;
 }
 export type QualStatus = { status: "unqualified" | "shadow" | "qualified" | "rejected"; samples: number; agreement: number | null };
 
 /** Qualification of one worker for one task class, from recorded evidence only (never from reputation). */
 export function qualification(records: QualRecord[], worker: string, taskClass: string): QualStatus {
-  const rs = records.filter((r) => r.worker === worker && r.taskClass === taskClass && r.agree !== null);
+  const model = WORKERS[worker]?.model;
+  const rs = records.filter((r) => r.worker === worker && r.taskClass === taskClass && r.agree !== null && !r.voided && r.mode !== "production" && (r.model == null || r.model === model));
   if (rs.length === 0) return { status: "unqualified", samples: 0, agreement: null };
   const agreement = rs.filter((r) => r.agree === true && r.valid === true).length / rs.length;
   if (rs.length < QUALIFY.minSamples) return { status: "shadow", samples: rs.length, agreement };
@@ -158,7 +212,7 @@ export function qualification(records: QualRecord[], worker: string, taskClass: 
 }
 
 export interface RouteInput {
-  taskClass: TaskClass;
+  taskClass: AnyTaskClass;
   risk: Risk;
   records: QualRecord[];
   /** workers that can run right now (e.g. the local model answers) */

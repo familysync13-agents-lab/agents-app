@@ -1,0 +1,268 @@
+{
+ "class": "summarization",
+ "version": 1,
+ "statement": "Summarise a recorded task timeline for the owner: the final state, a grounded summary, and the distinct incidents.",
+ "cases": [
+  {
+   "id": "su-01",
+   "source": "historical",
+   "input": "Task T9\n- Oracle of record written (17260 bytes, sha 7f87febf9024); contract v3 is ready for your approval.\n- Contract v3 approved in Agents App (sha256 33f9201a79c4).\n- Contract PR #36 opened (amend/T9/contract-v3-1); waiting for your approval on GitHub.\n- Contract PR #36 approved on GitHub.\n- PROPOSED → CONTRACTED: Contract v3 approved by the owner on GitHub and merged (sha256 33f9201a79c4)\n- Builder started on T9 (isolated container; repository 9edbefce).\n- CONTRACTED → IN_PROGRESS: Builder started on the approved contract\n- IN_PROGRESS → VERIFYING: Work submitted as PR #37 (head 71caea91); gate evaluation started\n- Gate verdict for 71caea91: FAIL:ORACLE (a must-criterion of T9 failed)\n- Correction 3 of 3: returning the gate findings (FAIL:ORACLE) to the Builder automatically.\n- Builder resumed for a correction.\n- VERIFYING → IN_PROGRESS: Correction 3: Builder resumed with the verification findings\n- IN_PROGRESS → BLOCKED_EVIDENCE: The Builder blocked (evidence): Whether the implementation meets these criteria cannot be verified: the oracle of record (oracle/T9/check.\n- Correction budget reset (F-V0-2 applied retroactively): all 3 corrections on T9 were caused by defects of the acceptance check or its instructions, not by the work (lesso\n- Decision: Amend the oracle to pass `text` as the evaluate argument (one-line fix) and re-run the gate on the unchanged implementation.\n- BLOCKED_EVIDENCE → PROPOSED: Owner decided; the contract is being revised with the decision",
+   "expect": {
+    "final_state": "PROPOSED",
+    "must_mention": [
+     [
+      "fail"
+     ]
+    ],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-02",
+   "source": "historical",
+   "input": "Task T9\n- Contract draft v4 written (11 criteria, lint clean).\n- Verifier started (blind: contract v4 only) to author the oracle of record for AC1, AC2, AC3, AC4, AC5, AC6, AC7, AC8.\n- Oracle smoke run clean against main 9edbefce: every criterion produced a verdict and the check did not crash.\n- Oracle of record written (18499 bytes, sha b9e30d970967); contract v4 is ready for your approval.\n- Contract v4 approved in Agents App (sha256 33f9201a79c4).\n- Contract PR #38 opened (amend/T9/contract-v4-1); waiting for your approval on GitHub.\n- Contract PR #38 approved on GitHub.\n- PROPOSED → CONTRACTED: Contract v4 approved by the owner on GitHub and merged (sha256 33f9201a79c4)\n- Builder started on T9 (isolated container; repository 6a3c3e7d).\n- CONTRACTED → IN_PROGRESS: Builder started on the approved contract\n- IN_PROGRESS → VERIFYING: Work submitted as PR #39 (head ef6c6173); gate evaluation started\n- Gate verdict for ef6c6173: FAIL:ORACLE (a must-criterion of T9 failed)\n- Correction 1 of 3: returning the gate findings (FAIL:ORACLE) to the Builder automatically.\n- Builder resumed for a correction.\n- VERIFYING → IN_PROGRESS: Correction 1: Builder resumed with the verification findings\n- IN_PROGRESS → VERIFYING: Work submitted as a correction to PR #39 (head a4566474); gate evaluation started",
+   "expect": {
+    "final_state": "VERIFYING",
+    "must_mention": [
+     [
+      "fail"
+     ]
+    ],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-03",
+   "source": "historical",
+   "input": "Task T9\n- CONTRACTED → IN_PROGRESS: Builder started on the approved contract\n- IN_PROGRESS → VERIFYING: Work submitted as PR #39 (head ef6c6173); gate evaluation started\n- Gate verdict for ef6c6173: FAIL:ORACLE (a must-criterion of T9 failed)\n- Correction 1 of 3: returning the gate findings (FAIL:ORACLE) to the Builder automatically.\n- Builder resumed for a correction.\n- VERIFYING → IN_PROGRESS: Correction 1: Builder resumed with the verification findings\n- IN_PROGRESS → VERIFYING: Work submitted as a correction to PR #39 (head a4566474); gate evaluation started\n- Gate verdict for a4566474: DONE\n- Independent Verifier started against a local preview of a4566474 (blind to code).\n- Independent Verifier: 0 finding(s).\n- Builder resumed for a correction.\n- Mutant author wrote 3 mutant(s): AC2 (Title sort compares titles in reverse, so ?sort=title lists The Hobbit, Dune, Animal Farm); AC3 (Author sort compares first authors \n- Oracle mutation test: 3 killed, 0 survived, 0 not evaluable.\n- VERIFYING → DONE: All must-criteria verified by the gate for a4566474; independent Verifier check found no blocking defect\n- PR #39 approved on GitHub (head a4566474).\n- DONE → ACCEPTED: Accepted by the owner on GitHub and merged (9ed081aa)",
+   "expect": {
+    "final_state": "ACCEPTED",
+    "must_mention": [
+     [
+      "accept"
+     ],
+     [
+      "fail"
+     ]
+    ],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-04",
+   "source": "historical",
+   "input": "Task T10\n- Contract drafter started (Builder slot, isolated container, no GitHub access).\n- PROPOSED → BLOCKED_DECISION: The intent needs an owner decision before it can become a contract\n- Decision: A: control inside the Books section, between heading and books\n- BLOCKED_DECISION → PROPOSED: Owner decided; the contract is being revised with the decision\n- Contract drafter started (Builder slot, isolated container, no GitHub access).\n- Contract draft v1 written (10 criteria, lint clean).\n- Verifier started (blind: contract v1 only) to author the oracle of record for AC1, AC2, AC3, AC4, AC5, AC6, AC7, AC8.\n- Oracle calibrated against main 9ed081aa: every criterion produced a verdict, no harness defect.\n- Oracle of record written and validated (15083 bytes, sha 44b5e4292768); contract v1 is ready for your approval.\n- Contract v1 approved in Agents App (sha256 535938a51e56).\n- Contract PR #40 opened (amend/T10/contract-v1-2); waiting for your approval on GitHub.\n- Contract PR #40 approved on GitHub.\n- PROPOSED → CONTRACTED: Contract v1 approved by the owner on GitHub and merged (sha256 535938a51e56)\n- Builder started on T10 (isolated container; repository ea1cb68f).\n- CONTRACTED → IN_PROGRESS: Builder started on the approved contract\n- IN_PROGRESS → VERIFYING: Work submitted as PR #41 (head d49772b7); gate evaluation started",
+   "expect": {
+    "final_state": "VERIFYING",
+    "must_mention": [],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-05",
+   "source": "historical",
+   "input": "Task T10\n- The arbiter attributes the regression failures to the checks of T4, T9 (stale against the approved contract of T10); the Verifier updates them. Nothing is charged to the \n- Verifier updating the regression check of T4 (AC1, AC3) that the approved contract of T10 supersedes (attempt 1).\n- Verifier updating the regression check of T9 (AC1, AC7) that the approved contract of T10 supersedes (attempt 1).\n- Regression-check amendment PR #43 opened (amend/multi/regress-T4-T9-2-r2); waiting for your approval on GitHub.\n- Regression-check PR #43 approved on GitHub.\n- Updated regression checks merged (a4e2316c); the Builder's work is kept and re-checked.\n- Task branch updated with the repaired oracle (Builder work kept; head 3d0fb570); gate re-evaluation started\n- Gate verdict for 3d0fb570: DONE\n- Independent Verifier started against a local preview of 3d0fb570 (blind to code).\n- Independent Verifier: 0 finding(s).\n- Builder resumed for a correction.\n- Mutant author wrote 3 mutant(s): AC1 (Sort by form is rendered above and outside the Books section instead of inside it after the heading); AC2 (Sort controls moved after\n- Oracle mutation test: 3 killed, 0 survived, 0 not evaluable.\n- VERIFYING → DONE: All must-criteria verified by the gate for 3d0fb570; independent Verifier check found no blocking defect\n- PR #41 approved on GitHub (head 3d0fb570).\n- DONE → ACCEPTED: Accepted by the owner on GitHub and merged (8cb690ff)",
+   "expect": {
+    "final_state": "ACCEPTED",
+    "must_mention": [
+     [
+      "accept"
+     ]
+    ],
+    "clean": true
+   }
+  },
+  {
+   "id": "su-06",
+   "source": "historical",
+   "input": "Task T11\n- Intent recorded: “Optional description for a list” (standard tier).\n- Task key T11 assigned (repository main 9ed081aa).\n- Contract drafter started (Builder slot, isolated container, no GitHub access).\n- PROPOSED → BLOCKED_DECISION: The intent needs an owner decision before it can become a contract\n- Decision: Close T11 as already delivered by T6\n- BLOCKED_DECISION → PROPOSED: Owner decided; the contract is being revised with the decision\n- Contract drafter started (Builder slot, isolated container, no GitHub access).\n- Contract draft v1 written (6 criteria, lint clean).\n- Verifier started (blind: contract v1 only) to author the oracle of record for AC1, AC2, AC3, AC4, AC5.\n- Oracle calibrated against main ea1cb68f: every criterion produced a verdict, no harness defect.\n- Oracle of record written and validated (11719 bytes, sha 96f2238a3923); contract v1 is ready for your approval.\n- Contract v1 approved in Agents App (sha256 09f34b51ac1f).\n- Contract PR #42 opened (amend/T11/contract-v1-3); waiting for your approval on GitHub.\n- Contract PR #42 approved on GitHub.\n- PROPOSED → CONTRACTED: Contract v1 approved by the owner on GitHub and merged (sha256 09f34b51ac1f)",
+   "expect": {
+    "final_state": "CONTRACTED",
+    "must_mention": [],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-07",
+   "source": "historical",
+   "input": "Task T11\n- Oracle of record written and validated (11719 bytes, sha 96f2238a3923); contract v1 is ready for your approval.\n- Contract v1 approved in Agents App (sha256 09f34b51ac1f).\n- Contract PR #42 opened (amend/T11/contract-v1-3); waiting for your approval on GitHub.\n- Contract PR #42 approved on GitHub.\n- PROPOSED → CONTRACTED: Contract v1 approved by the owner on GitHub and merged (sha256 09f34b51ac1f)\n- Queued: another task of this project is being built or awaits acceptance (this project serializes its work).\n- Builder started on T11 (isolated container; repository 6f275359).\n- CONTRACTED → IN_PROGRESS: Builder started on the approved contract\n- IN_PROGRESS → VERIFYING: Work submitted as PR #44 (head 37448062); gate evaluation started\n- Gate verdict for 37448062: FAIL:REGRESSION (a must-criterion of an earlier task failed)\n- Independent arbiter started: who owns the failure of 37448062 (T9:AC1, T10:AC1, T10:AC2)?\n- Arbiter: T9:AC1=implementation, T10:AC1=implementation, T10:AC2=implementation. All three gate-listed failures are implementation-owned manifestations of the sort control\n- Correction 1 of 3: returning the gate findings (FAIL:REGRESSION) to the Builder automatically.\n- Builder resumed for a correction.\n- VERIFYING → IN_PROGRESS: Correction 1: Builder resumed with the verification findings\n- IN_PROGRESS → BLOCKED_DECISION: The Builder blocked (decision): The gate fails T11 only on regressions of T9:AC1 (amended), T10:AC1 and T10:AC2: the Books section must co",
+   "expect": {
+    "final_state": "BLOCKED_DECISION",
+    "must_mention": [
+     [
+      "block"
+     ],
+     [
+      "fail"
+     ]
+    ],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-08",
+   "source": "historical",
+   "input": "Task T11\n- VERIFYING → IN_PROGRESS: Correction 1: Builder resumed with the verification findings\n- IN_PROGRESS → BLOCKED_DECISION: The Builder blocked (decision): The gate fails T11 only on regressions of T9:AC1 (amended), T10:AC1 and T10:AC2: the Books section must co\n- Admin (operator): Pause the task - branch was built before T10 merged; sync with main before judging the regression failure\n- Admin (operator): Re-evaluate the latest gate result - T11 branch was built before T10 merged; the regression failure and the Builder block are artifacts of the stale bra\n- Admin (operator): Reset the correction budget - T11 branch was built before T10 merged; the regression failure and the Builder block are artifacts of the stale branch - s\n- Admin (operator): Resume the task - T11 branch was built before T10 merged; the regression failure and the Builder block are artifacts of the stale branch - sync with mai\n- The branch was behind main; updated (head fdd710c5) and re-gated before judging the regression failure\n- Gate verdict for fdd710c5: DONE\n- Independent Verifier started against a local preview of fdd710c5 (blind to code).\n- Independent Verifier: 0 finding(s).\n- Builder resumed for a correction.\n- Mutant author wrote 3 mutant(s): AC1 (Creating a list silently truncates the description to 255 characters, so a 280-char description is not shown in full); AC2 (Edit for\n- Oracle mutation test: 3 killed, 0 survived, 0 not evaluable.\n- VERIFYING → DONE: All must-criteria verified by the gate for fdd710c5; independent Verifier check found no blocking defect\n- PR #44 approved on GitHub (head fdd710c5).\n- DONE → ACCEPTED: Accepted by the owner on GitHub and merged (97a4126b)",
+   "expect": {
+    "final_state": "ACCEPTED",
+    "must_mention": [
+     [
+      "accept"
+     ]
+    ],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-09",
+   "source": "historical",
+   "input": "Task T0\n- Batching 2 owner-approved contracts (T0, T1) into one GitHub approval.\n- Combined contract PR #1 opened for T1, T0 (amend/multi/T1-T0-4); one GitHub approval confirms all.\n- Contract PR #1 approved on GitHub.\n- PROPOSED → CONTRACTED: Contract v1 approved by the owner on GitHub and merged (sha256 ef49e49787b4)\n- Builder started on T0 (isolated container; repository 3779e2e0).\n- CONTRACTED → IN_PROGRESS: Builder started on the approved contract\n- IN_PROGRESS → VERIFYING: Work submitted as PR #2 (head 3cc51291); gate evaluation started\n- Gate verdict for 3cc51291: FAIL:BUILD (docker build failed; the repository Dockerfile does not build)\n- Correction 1 of 3: returning the gate findings (FAIL:BUILD) to the Builder automatically.\n- Builder resumed for a correction.\n- VERIFYING → IN_PROGRESS: Correction 1: Builder resumed with the verification findings\n- IN_PROGRESS → VERIFYING: Work submitted as a correction to PR #2 (head ef2aaee6); gate evaluation started",
+   "expect": {
+    "final_state": "VERIFYING",
+    "must_mention": [
+     [
+      "fail"
+     ]
+    ],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-10",
+   "source": "historical",
+   "input": "Task T0\n- Verifier repairing the oracle of T0 (contract v2 unchanged, attempt 1); findings: AC4: The application satisfies the required behavior. Running the oracle reproduces a Pl\n- Oracle calibrated against main 237d4c7a: every criterion produced a verdict, no harness defect, no criterion weakened.\n- Repaired oracle validated (sha 9fe3ef5879b1); proposing an oracle-only amendment (contract ef49e49787b4 unchanged).\n- Oracle-only amendment PR #4 opened (amend/T0/oracle-v3-4); waiting for your approval on GitHub.\n- Contract PR #4 approved on GitHub.\n- Repaired oracle of T0 merged (597e18c1); the Builder's work is kept and re-checked.\n- Task branch updated with the repaired oracle (Builder work kept; head 8eab81c5); gate re-evaluation started\n- Gate verdict for 8eab81c5: DONE\n- Independent Verifier started against a local preview of 8eab81c5 (blind to code).\n- Independent Verifier: 0 finding(s).\n- Builder resumed for a correction.\n- Mutant author wrote 3 mutant(s): AC1 (/decisions Open list renders the full decision title instead of the shortened one); AC2 (Home trust-boundary section renders the ful\n- Oracle mutation test: 3 killed, 0 survived, 0 not evaluable.\n- VERIFYING → DONE: All must-criteria verified by the gate for 8eab81c5; independent Verifier check found no blocking defect\n- PR #2 approved on GitHub (head 8eab81c5).\n- DONE → ACCEPTED: Accepted by the owner on GitHub and merged (4caa53ef)",
+   "expect": {
+    "final_state": "ACCEPTED",
+    "must_mention": [
+     [
+      "accept"
+     ]
+    ],
+    "clean": true
+   }
+  },
+  {
+   "id": "su-11",
+   "source": "historical",
+   "input": "Task T1\n- Waiting for GitHub access to agents-app (checked every minute; resumes automatically).\n- BLOCKED_EVIDENCE → PROPOSED: GitHub access to agents-app detected; continuing automatically\n- Contract drafter started (Builder slot, isolated container, no GitHub access).\n- The drafter wrote no contract file; drafting again.\n- Contract drafter started (Builder slot, isolated container, no GitHub access).\n- PROPOSED → BLOCKED_EVIDENCE: The contract drafter produced no contract file twice.\n- Admin (operator): Retry an infrastructure block - root cause fixed: the cloned Builder login was expired; the project now uses the working Builder identity\n- BLOCKED_EVIDENCE → PROPOSED: Owner asked to retry after missing evidence\n- The drafter wrote no contract file; drafting again.\n- Contract drafter started (Builder slot, isolated container, no GitHub access).\n- Contract draft v1 written (6 criteria, lint clean).\n- Verifier started (blind: contract v1 only) to author the oracle of record for AC1, AC2, AC3, AC4, AC5.\n- Oracle calibrated against main c3d3a64d: every criterion produced a verdict, no harness defect.\n- Oracle of record written and validated (7567 bytes, sha 3b522c856b12); contract v1 is ready for your approval.\n- Contract v1 approved in Agents App (sha256 384aebca1605).\n- PROPOSED → CONTRACTED: Contract v1 approved by the owner on GitHub and merged (sha256 384aebca1605)",
+   "expect": {
+    "final_state": "CONTRACTED",
+    "must_mention": [],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-12",
+   "source": "historical",
+   "input": "Task T1\n- Contract v1 approved in Agents App (sha256 384aebca1605).\n- PROPOSED → CONTRACTED: Contract v1 approved by the owner on GitHub and merged (sha256 384aebca1605)\n- Queued: another task of this project is still being built or verified (stacking starts only on a DONE head).\n- Stacked on T0 (DONE at 8eab81c5, awaiting acceptance): this task builds on its head and both are accepted together.\n- Stacked on T0 (DONE at 8eab81c5, awaiting acceptance): this task builds on its head and both are accepted together.\n- Stacked on T0 (DONE at 8eab81c5, awaiting acceptance): this task builds on its head and both are accepted together.\n- Stacked on T0 (DONE at 8eab81c5, awaiting acceptance): this task builds on its head and both are accepted together.\n- Stacked on T0 (DONE at 8eab81c5, awaiting acceptance): this task builds on its head and both are accepted together.\n- Stacked on T0 (DONE at 8eab81c5, awaiting acceptance): this task builds on its head and both are accepted together.\n- Stacked on T0 (DONE at 8eab81c5, awaiting acceptance): this task builds on its head and both are accepted together.\n- Stacked on T0 (DONE at 8eab81c5, awaiting acceptance): this task builds on its head and both are accepted together.\n- Stacked on T0 (DONE at 8eab81c5, awaiting acceptance): this task builds on its head and both are accepted together.\n- Stacked on T0 (DONE at 8eab81c5, awaiting acceptance): this task builds on its head and both are accepted together.\n- Builder started on T1 (isolated container; repository 8eab81c5).\n- CONTRACTED → IN_PROGRESS: Builder started on the approved contract\n- IN_PROGRESS → VERIFYING: Work submitted as PR #5 (head 20450e75); gate evaluation started",
+   "expect": {
+    "final_state": "VERIFYING",
+    "must_mention": [],
+    "clean": true
+   }
+  },
+  {
+   "id": "su-13",
+   "source": "historical",
+   "input": "Task T1\n- Stacked on T0 (DONE at 8eab81c5, awaiting acceptance): this task builds on its head and both are accepted together.\n- Stacked on T0 (DONE at 8eab81c5, awaiting acceptance): this task builds on its head and both are accepted together.\n- Builder started on T1 (isolated container; repository 8eab81c5).\n- CONTRACTED → IN_PROGRESS: Builder started on the approved contract\n- IN_PROGRESS → VERIFYING: Work submitted as PR #5 (head 20450e75); gate evaluation started\n- Gate verdict for 20450e75: DONE\n- Independent Verifier started against a local preview of 20450e75 (blind to code).\n- VERIFYING → DONE: All must-criteria verified by the gate for 20450e75; independent Verifier check found no blocking defect\n- T0 was accepted on its own; this task's PR is updated with main and re-verified.\n- DONE → VERIFYING: PR updated with main after the stack parent was merged (head b89ee5b2); gate re-evaluation started\n- Gate verdict for b89ee5b2: DONE\n- Independent Verifier started against a local preview of b89ee5b2 (blind to code).\n- VERIFYING → DONE: All must-criteria verified by the gate for b89ee5b2; independent Verifier check found no blocking defect\n- PR #5 approved on GitHub (head b89ee5b2).\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-02T16:30:44.515Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"b89ee5b27f94c781b5f41ccdff4b21\n- DONE → ACCEPTED: Accepted by the owner on GitHub and merged (edbdb0c5)",
+   "expect": {
+    "final_state": "ACCEPTED",
+    "must_mention": [
+     [
+      "accept"
+     ]
+    ],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-14",
+   "source": "historical",
+   "input": "Task T2\n- Intent recorded: “Money Factory 2 — Independent Foundation” (standard tier).\n- Task key T2 assigned (repository main 9bf4492b).\n- Contract drafter started (Builder slot, isolated container, no GitHub access).\n- PROPOSED → BLOCKED_DECISION: The intent needs an owner decision before it can become a contract\n- Decision: Register Money Factory 2 as its own project and re-file T2 there\n- BLOCKED_DECISION → PROPOSED: Owner decided; the contract is being revised with the decision\n- Contract drafter started (Builder slot, isolated container, no GitHub access).\n- PROPOSED → BLOCKED_DECISION: The intent needs an owner decision before it can become a contract\n- Decision: Abandon T2 in Agents App and re-file the intent under the new Money Factory 2 project\n- BLOCKED_DECISION → PROPOSED: Owner decided; the contract is being revised with the decision\n- Contract drafter started (Builder slot, isolated container, no GitHub access).\n- PROPOSED → BLOCKED_DECISION: The intent needs an owner decision before it can become a contract\n- Decision: Abandon the task\n- BLOCKED_DECISION → ABANDONED: Abandoned by the owner",
+   "expect": {
+    "final_state": "ABANDONED",
+    "must_mention": [
+     [
+      "abandon"
+     ]
+    ],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-15",
+   "source": "historical",
+   "input": "Task T4\n- updating the task branch with main failed in the executor (harness): {\"t\":\"2026-10-03T03:04:34.898Z\",\"id\":\"u\",\"ok\":false,\"op\":\"update_branch\",\"status\":422,\"message\":\"Ther\n- updating the task branch with main failed in the executor (harness): {\"t\":\"2026-10-03T03:04:39.403Z\",\"id\":\"u\",\"ok\":false,\"op\":\"update_branch\",\"status\":422,\"message\":\"Ther\n- DONE → BLOCKED_EVIDENCE: updating the task branch with main failed 4 times in the executor (infrastructure, not the work): {\"t\":\"2026-10-03T03:04:39.403Z\",\"id\":\"u\",\"ok\":f\n- Admin (operator): Retry an infrastructure block - update_branch 422 no new commits is a no-op: the transport now treats it as already up to date; repeat the restack step\n- BLOCKED_EVIDENCE → DONE: Retry after missing evidence (the owner)\n- DONE → VERIFYING: PR updated with main after the stack parent was merged (head 388ad4d2); gate re-evaluation started\n- Independent Verifier started against a local preview of 388ad4d2 (blind to code).\n- Independent Verifier: 1 finding(s), 1 critical/high.\n- Correction 1 of 3: returning the gate findings (VERIFIER:DEFECT) to the Builder automatically.\n- Builder resumed for a correction.\n- VERIFYING → IN_PROGRESS: Correction 1: Builder resumed with the verification findings\n- IN_PROGRESS → VERIFYING: Work submitted as a correction to PR #14 (head 1269e724); gate evaluation started\n- Gate verdict for 1269e724: DONE\n- Independent Verifier started against a local preview of 1269e724 (blind to code).\n- Independent Verifier: 0 finding(s).\n- VERIFYING → DONE: All must-criteria verified by the gate for 1269e724; independent Verifier check found no blocking defect",
+   "expect": {
+    "final_state": "DONE",
+    "must_mention": [],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-16",
+   "source": "historical",
+   "input": "Task T4\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:28:23.687Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:28:29.859Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:28:39.382Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- Decided by the control system (recommended action, no owner involved): Self-recovery: repeat \"await_acceptance\" -> Retry. Automatic retry 1 of 2 in 2 min (retryable failu\n- Self-recovery: repeating \"await_acceptance\".\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:30:46.257Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:30:50.046Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:30:59.261Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:31:05.611Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- Decided by the control system (recommended action, no owner involved): Self-recovery: repeat \"await_acceptance\" -> Retry. Automatic retry 2 of 2 in 15 min (retryable fail\n- Self-recovery: repeating \"await_acceptance\".\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:46:12.681Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:46:20.565Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:46:26.301Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:46:32.152Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- DONE → BLOCKED_EVIDENCE: merging the accepted PR failed 4 times in the executor (infrastructure, not the work): {\"t\":\"2026-10-03T03:46:32.152Z\",\"id\":\"m\",\"ok\":false,\"op\":\"",
+   "expect": {
+    "final_state": "BLOCKED_EVIDENCE",
+    "must_mention": [
+     [
+      "block"
+     ]
+    ],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-17",
+   "source": "historical",
+   "input": "Task T4\n- Self-recovery: repeating \"await_acceptance\".\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:46:12.681Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:46:20.565Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:46:26.301Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T03:46:32.152Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba8\n- DONE → BLOCKED_EVIDENCE: merging the accepted PR failed 4 times in the executor (infrastructure, not the work): {\"t\":\"2026-10-03T03:46:32.152Z\",\"id\":\"m\",\"ok\":false,\"op\":\"\n- Admin (operator): Retry an infrastructure block - accepted PR behind main: the control plane now updates the branch and re-verifies instead of retrying the merge\n- BLOCKED_EVIDENCE → DONE: Retry after missing evidence (the owner)\n- PR #14 was approved but main has moved since; the branch is brought up to date and verified again. Your approval was for 1269e724 and is needed once more for the updated \n- DONE → VERIFYING: PR updated with main (head c1de9f1a); gate re-evaluation started\n- Gate verdict for c1de9f1a: DONE\n- Independent Verifier started against a local preview of c1de9f1a (blind to code).\n- Independent Verifier: 0 finding(s).\n- VERIFYING → DONE: All must-criteria verified by the gate for c1de9f1a; independent Verifier check found no blocking defect\n- PR #14 approved on GitHub (head c1de9f1a).\n- DONE → ACCEPTED: Accepted by the owner on GitHub and merged (d9383904)",
+   "expect": {
+    "final_state": "ACCEPTED",
+    "must_mention": [
+     [
+      "accept"
+     ]
+    ],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-18",
+   "source": "historical",
+   "input": "Task T5\n- Decision: Project Capabilities section only (the intent's text); the title is a mislabel\n- BLOCKED_DECISION → PROPOSED: Owner decided; the contract is being revised with the decision\n- Contract drafter started (Builder slot, isolated container, no GitHub access).\n- Contract draft v1 failed lint: AC7: verify \"suite\" does not fit type behavior (allowed: blackbox); AC8: verify \"suite\" does not fit type behavior (allowed: blackbox)\n- Contract drafter started (Builder slot, isolated container, no GitHub access).\n- Contract draft v2 written (9 criteria, lint clean).\n- Verifier started (blind: contract v2 only) to author the oracle of record for AC1, AC2, AC3, AC4, AC5, AC6.\n- Oracle calibration not completed (preview of main); recorded as Unknown.\n- Oracle of record written and validated (7662 bytes, sha 47a180789eea); contract v2 needs your approval: the acceptance check was not calibrated against main.\n- Contract v2 approved in Agents App (sha256 91a856df8677).\n- Contract PR #8 opened (amend/T5/contract-v2-9); the gate validates it and the control system merges it (no owner action).\n- PROPOSED → CONTRACTED: Contract v2 confirmed by the gate and merged (sha256 91a856df8677)\n- Queued: another task of this project is still being built or verified (stacking starts only on a DONE head).\n- Builder started on T5 (isolated container; repository 82e066db; context package 4000 bytes, 14 files).\n- CONTRACTED → IN_PROGRESS: Builder started on the approved contract\n- IN_PROGRESS → VERIFYING: Work submitted as PR #9 (head 8967f3f1); gate evaluation started",
+   "expect": {
+    "final_state": "VERIFYING",
+    "must_mention": [],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-19",
+   "source": "historical",
+   "input": "Task T5\n- Task branch updated with the repaired oracle (Builder work kept; head 929bc8d9); gate re-evaluation started\n- Gate verdict for 929bc8d9: FAIL:REGRESSION (a must-criterion of an earlier task failed)\n- Independent arbiter started: who owns the failure of 929bc8d9 (T4:AC5)?\n- Arbiter: T4:AC5=oracle. The sole listed failure, T4:AC5, is oracle-owned. The earlier oracle reproduces the gate timeout because its exact accessible-name selector misses\n- The arbiter attributes the regression failures to the checks of T4 (stale against the approved contract of T5); the Verifier updates them. Nothing is charged to the Build\n- Verifier updating the regression check of T4 (AC5) that the approved contract of T5 supersedes (attempt 1).\n- Regression-check amendment PR #12 opened (amend/T4/regress-9-r2); the gate validates it and the control system merges it.\n- Updated regression checks merged (253160bf); the Builder's work is kept and re-checked.\n- Task branch updated with the repaired oracle (Builder work kept; head 2c990a1d); gate re-evaluation started\n- Gate verdict for 2c990a1d: DONE\n- Independent Verifier started against a local preview of 2c990a1d (blind to code).\n- Independent Verifier: 0 finding(s).\n- VERIFYING → DONE: All must-criteria verified by the gate for 2c990a1d; independent Verifier check found no blocking defect\n- PR #9 approved on GitHub (head 2c990a1d).\n- merging the accepted PR failed in the executor (harness): {\"t\":\"2026-10-03T02:01:28.916Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"2c990a1d92c61b5106edb4130d95b1\n- DONE → ACCEPTED: Accepted by the owner on GitHub and merged (01f98c0d)",
+   "expect": {
+    "final_state": "ACCEPTED",
+    "must_mention": [
+     [
+      "accept"
+     ],
+     [
+      "fail"
+     ]
+    ],
+    "clean": false
+   }
+  },
+  {
+   "id": "su-20",
+   "source": "historical",
+   "input": "Task T6\n- Verifier started (blind: contract v2 only) to author the oracle of record for AC1, AC2, AC3, AC6, AC7, AC8, AC10, AC11, AC12 (attempt 2).\n- The oracle failed the output check (attempt 2); returned to the Verifier with the findings: no out/check.mjs was written\n- Verifier started (blind: contract v2 only) to author the oracle of record for AC1, AC2, AC3, AC6, AC7, AC8, AC10, AC11, AC12 (attempt 3).\n- PROPOSED → BLOCKED_EVIDENCE: The Verifier could not produce a valid oracle in 3 attempts (the output check): no out/check.mjs was written\n- Admin (operator): Retry an infrastructure block - the Verifier hit its usage limit (not a defective check); the control plane now pauses for quota and repeats the same st\n- BLOCKED_EVIDENCE → PROPOSED: Retry after missing evidence (the owner)\n- The oracle failed the output check (attempt 1); returned to the Verifier with the findings: no out/check.mjs was written\n- Verifier started (blind: contract v2 only) to author the oracle of record for AC1, AC2, AC3, AC6, AC7, AC8, AC10, AC11, AC12 (attempt 2).\n- Worker quota exhausted (ERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://). The job is paused with all state kept and r\n- Quota available again: the paused worker step is repeated with the same inputs; no state was lost and no attempt was spent.\n- Verifier started (blind: contract v2 only) to author the oracle of record for AC1, AC2, AC3, AC6, AC7, AC8, AC10, AC11, AC12 (attempt 2).\n- Oracle calibrated against main 0ea5c5a1: every criterion produced a verdict, no harness defect.\n- Decided by the control system (recommended action, no owner involved): Approve the contract for T6: Execution ledger on the System page -> Approve contract. Contract v2 (\n- Contract PR #20 opened (amend/T6/contract-v2-10); the gate validates it and the control system merges it (no owner action).\n- Plan v3 for contract v2: complex (rule 1: 9 must-criteria (more than 6)). Contract merged.\n- PROPOSED → CONTRACTED: Contract v2 confirmed by the gate and merged (sha256 200e1b3f4f5f)",
+   "expect": {
+    "final_state": "CONTRACTED",
+    "must_mention": [],
+    "clean": false
+   }
+  }
+ ]
+}

@@ -1,0 +1,288 @@
+{
+ "class": "log_summary",
+ "version": 1,
+ "statement": "Analyse a log excerpt: did the step fail, where did the failure originate, which line shows it, and a grounded one- or two-sentence summary.",
+ "cases": [
+  {
+   "id": "ls-01",
+   "source": "historical",
+   "input": "user\nYou are the blind Verifier: you author the oracle of record for task T6 BEFORE any implementation exists.\nERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 6:06 AM.\nERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 6:06 AM.\ntokens used 12,320",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "model_vendor"
+    ],
+    "error_contains": [
+     "hit your usage limit"
+    ]
+   }
+  },
+  {
+   "id": "ls-02",
+   "source": "historical",
+   "input": "Builder session bko-builder-v0-30 started (model opus)\n{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"num_turns\":1,\"result\":\"Failed to authenticate: OAuth session expired and could not be refreshed\"}\nsession exit code 1",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "model_vendor"
+    ],
+    "error_contains": [
+     "Failed to authenticate",
+     "OAuth session expired"
+    ]
+   }
+  },
+  {
+   "id": "ls-03",
+   "source": "historical",
+   "input": "2026-10-03T03:46:31Z transport start repo=agents-app ops=merge_approved\n{\"t\":\"2026-10-03T03:46:32.152Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba87bdb281d11\",\"status\":405,\"message\":\"Repository rule violations found\\n\\nRequired status check \\\"gate\\\" is expected.\\n\\n\"}\n2026-10-03T03:46:32Z transport end rc=0",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "github"
+    ],
+    "error_contains": [
+     "Repository rule violations",
+     "Required status check"
+    ]
+   }
+  },
+  {
+   "id": "ls-04",
+   "source": "historical",
+   "input": "2026-10-03T03:04:38Z transport start repo=agents-app ops=update_branch\n{\"t\":\"2026-10-03T03:04:39.403Z\",\"id\":\"u\",\"ok\":false,\"op\":\"update_branch\",\"status\":422,\"message\":\"There are no new commits on the base branch.\"}\n2026-10-03T03:04:39Z transport end rc=0",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "github"
+    ],
+    "error_contains": [
+     "no new commits"
+    ]
+   }
+  },
+  {
+   "id": "ls-05",
+   "source": "historical",
+   "input": "app-job-start id=1721 op=transport\nTraceback (most recent call last):\n  File \"bko.py\", line 1333, in app_execute\n    return op_gate_evidence({\"repo\": _repo(p), \"check_run\": int(p[\"check_run\"])})\nTypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'\napp-job-end id=1721 op=transport status=error",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "executor"
+    ],
+    "error_contains": [
+     "TypeError"
+    ]
+   }
+  },
+  {
+   "id": "ls-06",
+   "source": "historical",
+   "input": "app-job-start id=627 op=worktree\ntransport repo=agents-app ops=fetch_tree token_ok=True\nJobError: fetch_tree failed: {'err': None, 'tree_mismatch': None, 'skipped': None}\napp-job-end id=627 op=worktree status=error seconds=4",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "executor",
+     "github"
+    ],
+    "error_contains": [
+     "fetch_tree failed"
+    ]
+   }
+  },
+  {
+   "id": "ls-07",
+   "source": "historical",
+   "input": "app-job-start id=1455 op=preview\nnetwork create bko-pv-t8 --internal\nJobError: network bko-pv-t8 not as defined: \napp-job-end id=1455 op=preview status=error seconds=1",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "docker"
+    ],
+    "error_contains": [
+     "not as defined"
+    ]
+   }
+  },
+  {
+   "id": "ls-08",
+   "source": "historical",
+   "input": "npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/work/node_modules/next/dist/next-devtools/server/font'\nnpm error code ENOSPC\nnpm error syscall mkdir\nnpm error path /work/node_modules/.bin\nnpm error errno -28\nnpm error nospc ENOSPC: no space left on device, mkdir '/work/node_modules/.bin'\nnpm error nospc There appears to be insufficient space on your system to finish.\nnpm error nospc Clear up some disk space and try again.",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "docker"
+    ],
+    "error_contains": [
+     "ENOSPC"
+    ]
+   }
+  },
+  {
+   "id": "ls-09",
+   "source": "historical",
+   "input": "app-job-start id=657 op=worktree\ntransport repo=agents-app ops=fetch_tree token_ok=False\nJobError: ACCESS: the agent GitHub App installation has no access to repository agents-app (token mint refused)\napp-job-end id=657 op=worktree status=error",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "github"
+    ],
+    "error_contains": [
+     "no access to repository",
+     "ACCESS:"
+    ]
+   }
+  },
+  {
+   "id": "ls-10",
+   "source": "historical",
+   "input": "IN_PROGRESS → VERIFYING: Work submitted as PR #14 (head 8b622335); gate evaluation started\nGate verdict for 8b622335: FAIL:ORACLE (a must-criterion of T4 failed)\n- T4:AC1 (oracle:oracle/T4/check.mjs): not verified - locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Project Capabilities', exact: true, level: 2 }).locator('xpath=ancestor::*[descendant::table][1]') to be visible",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "gate"
+    ],
+    "error_contains": [
+     "FAIL:ORACLE",
+     "Timeout 15000ms"
+    ]
+   }
+  },
+  {
+   "id": "ls-11",
+   "source": "controlled",
+   "input": "> agents-app@0.1.0 check\n> npm run typecheck && npm run lint && npm run test\n\n> agents-app@0.1.0 typecheck\n> tsc --noEmit\n\nsrc/components/worker-runs.tsx(41,17): error TS2322: Type 'number | null' is not assignable to type 'number'.\n  Type 'null' is not assignable to type 'number'.\nnpm error Lifecycle script `typecheck` failed with error:\nnpm error code 2",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "gate"
+    ],
+    "error_contains": [
+     "error TS2322"
+    ]
+   }
+  },
+  {
+   "id": "ls-12",
+   "source": "controlled",
+   "input": " RUN  v5.0.2 /work\n\n ✓ tests/text.test.ts (4 tests) 6ms\n ❯ tests/sort.test.ts (3 tests | 1 failed) 21ms\n   × sorting > sorts books by author, then title 9ms\n     → expected [ 'Brave New World', 'Animal Farm' ] to deeply equal [ 'Animal Farm', 'Brave New World' ]\n\n Test Files  1 failed | 17 passed (18)\n      Tests  1 failed | 132 passed (133)",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "gate"
+    ],
+    "error_contains": [
+     "sorts books by author",
+     "1 failed",
+     "expected ["
+    ]
+   }
+  },
+  {
+   "id": "ls-13",
+   "source": "historical",
+   "input": "Verifier started (blind: contract v2 only) to author the oracle of record for AC1, AC2, AC3, AC6, AC7, AC8, AC10, AC11, AC12 (attempt 2).\nThe oracle failed the output check (attempt 2); returned to the Verifier with the findings: no out/check.mjs was written\nVerifier started (blind: contract v2 only) to author the oracle of record for AC1, AC2, AC3, AC6, AC7, AC8, AC10, AC11, AC12 (attempt 3).\nPROPOSED → BLOCKED_EVIDENCE: The Verifier could not produce a valid oracle in 3 attempts (the output check): no out/check.mjs was written",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "verifier"
+    ],
+    "error_contains": [
+     "no out/check.mjs was written",
+     "failed the output check"
+    ]
+   }
+  },
+  {
+   "id": "ls-14",
+   "source": "historical",
+   "input": "Builder resumed for a correction.\nThe Builder ended without REPORT.md or BLOCKED.json; asking it to write its structured outcome.\nBuilder resumed for a correction.\nIN_PROGRESS → BLOCKED_EVIDENCE: The Builder ended twice without a structured outcome (no REPORT.md / BLOCKED.json).",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "builder"
+    ],
+    "error_contains": [
+     "without REPORT.md",
+     "without a structured outcome"
+    ]
+   }
+  },
+  {
+   "id": "ls-15",
+   "source": "controlled",
+   "input": "app-job-start id=1380 op=preview\nnetwork create bko-pv-t9 --internal\nError response from daemon: all predefined address pools have been fully subnetted\napp-job-end id=1380 op=preview status=error seconds=2",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "docker"
+    ],
+    "error_contains": [
+     "address pools have been fully subnetted"
+    ]
+   }
+  },
+  {
+   "id": "ls-16",
+   "source": "controlled",
+   "input": "agents-app-worker  | applying migrations\nagents-app-worker  | error: column \"plan_version\" of relation \"plans\" already exists\nagents-app-worker  |     at migrate (/app/src/db/migrate-cli.ts:18:9)\nagents-app-worker  | control loop not started\nagents-app-worker exited with code 1",
+   "expect": {
+    "status": "failed",
+    "component": [
+     "app"
+    ],
+    "error_contains": [
+     "already exists"
+    ]
+   }
+  },
+  {
+   "id": "ls-17",
+   "source": "controlled",
+   "input": "> agents-app@0.1.0 check\n> npm run typecheck && npm run lint && npm run test\n\n> agents-app@0.1.0 typecheck\n> tsc --noEmit\n\n> agents-app@0.1.0 lint\n> eslint .\n\n> agents-app@0.1.0 test\n> vitest run\n\n Test Files  18 passed (18)\n      Tests  133 passed (133)\n   Duration  183.80s",
+   "expect": {
+    "status": "ok",
+    "component": [
+     "unknown"
+    ],
+    "error_contains": []
+   }
+  },
+  {
+   "id": "ls-18",
+   "source": "historical",
+   "input": "IN_PROGRESS → VERIFYING: Work submitted as PR #24 (head 380e37ef); gate evaluation started\nGate verdict for 380e37ef: DONE\nIndependent Verifier started against a local preview of 380e37ef (blind to code).\nIndependent Verifier: 0 finding(s).\nVERIFYING → DONE: All must-criteria verified by the gate for 380e37ef; independent Verifier check found no blocking defect",
+   "expect": {
+    "status": "ok",
+    "component": [
+     "unknown"
+    ],
+    "error_contains": []
+   }
+  },
+  {
+   "id": "ls-19",
+   "source": "historical",
+   "input": "app_up: {\"agents-app-web\": \"c94e95e13476\", \"agents-app-worker\": \"ead68ddcdbfa\", \"commit\": \"d3ca17fe6f6d5fd410214ef69a69582330d700f7\", \"image\": \"agentsapp/agents-app:d3ca17fe6f6d5fd4\", \"web_health\": \"200 {\\\"status\\\":\\\"ok\\\",\\\"env\\\":\\\"production\\\",\\\"build\\\":\\\"d3ca17fe6f6d5fd4\\\"}\", \"worker_heartbeat_age_s\": \"1\", \"worker_running\": true}",
+   "expect": {
+    "status": "ok",
+    "component": [
+     "unknown"
+    ],
+    "error_contains": []
+   }
+  },
+  {
+   "id": "ls-20",
+   "source": "controlled",
+   "input": "npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory.\nnpm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported\n\nadded 512 packages in 41s\n\n148 packages are looking for funding\n  run `npm fund` for details",
+   "expect": {
+    "status": "ok",
+    "component": [
+     "unknown"
+    ],
+    "error_contains": []
+   }
+  }
+ ]
+}

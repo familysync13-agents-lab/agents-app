@@ -1,7 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { runs } from "@/db/schema";
 import { arbiterPrompt, VERIFIER_SCAFFOLD } from "@/domain/prompts";
-import { submitCandidate } from "./shadow";
 import type { TaskCtx } from "./context";
 import { currentContract } from "./steps-contract";
 import { correction, unmergedDependencies, waitForDependencies } from "./steps-build";
@@ -151,13 +150,6 @@ export async function attributeCollect(ctx: TaskCtx): Promise<void> {
   const summary = rows.map((x) => `${String(x.criterion)}=${x.party}`).join(", ");
   await ctx.log("verifier", `Arbiter: ${summary}. ${String(a?.summary ?? "").slice(0, 300)}`, { run: runId, artifact: art });
   const fact = { ...f.fact, attribution: summary, arbiter_run: runId, artifact: art };
-  // SHADOW MODE: a not-yet-qualified candidate gets the same bounded findings; its answer is recorded and compared, never used
-  try {
-    await submitCandidate(ctx.db, { taskId: ctx.task.id, risk: ctx.task.tier, details: f.details, expected: [...new Set(rows.map((x) => String(x.party)))].sort().join("+"), mode: "shadow" });
-  } catch {
-    /* shadow bookkeeping never affects the task */
-  }
-
   if (by("ambiguity").length) {
     await ctx.transition("BLOCKED_DECISION", `Product ambiguity found while attributing the failure of ${f.head.slice(0, 8)}`, fact, { resumeState: "VERIFYING" });
     const amb = by("ambiguity");

@@ -13,6 +13,7 @@ import { TaskCtx } from "./context";
 import { currentContract, isBehind } from "./steps-contract";
 import { workerOptions, blockEvidence, harnessFailure, latestGate, mainSha, ownerApproved, pollDue, PROTECTED, sub, unb64, vols } from "./common";
 import { finishSession, startSession } from "./sessions";
+import { codeRoute, repairInstruction, repairPlan, shadowCode, shadowSmallCode, smallCodeTask } from "./steps-local";
 
 /** Step: start the build - deliberately serialized per project (no accidental stacked branches: bake-off lesson 6). */
 export async function buildStart(ctx: TaskCtx): Promise<void> {
@@ -67,8 +68,13 @@ export async function buildStart(ctx: TaskCtx): Promise<void> {
   const prompt = cur?.current
     ? planTaskPrompt(info, { key: ctx.task.key!, title: ctx.task.title }, cur.current, { index: cur.index, total: cur.order.length, done: cur.order.slice(0, cur.index).map((t) => t.id) })
     : buildPrompt(info, { key: ctx.task.key!, title: ctx.task.title });
+  // deterministic classification: a plan task confined to a few named files is SMALL_CODE; it goes to the local coder only when
+  // that worker has qualified for the class (otherwise Claude Code builds it and the local coder is shadowed)
+  if (c && cur?.current && !ctx.data.noLocal && smallCodeTask(ctx, c.body as unknown as Contract, cur.current).small && (await codeRoute(ctx, "small_code")).local)
+    return ctx.goto("local_build", { baseSha: base, mainSha: ctx.data.mainSha, stackBase: ctx.data.stackBase });
   const s = await startSession(ctx, "build", base, prompt, c ? { context: { contract: c.body as unknown as Contract, task: cur?.current ?? null } } : {});
   if (s === "wait") return;
+  if (c && cur?.current && !ctx.data.noLocal) await shadowSmallCode(ctx, c.body as unknown as Contract, cur.current, base, s.runId);
   if (cur?.current) await savePlan(ctx, cur, (t) => ({ ...t, status: "running" }));
   const fact = { run: s.runId, container: s.container, base_sha: base, contract: c?.id ?? null, plan_task: cur?.current?.id ?? null };
   if (ctx.task.state === "IN_PROGRESS") await ctx.log("system", `Builder started on plan task ${cur?.current?.id ?? ""} (on ${base.slice(0, 8)}).`, fact);
@@ -471,10 +477,30 @@ export async function correction(ctx: TaskCtx, verdict: string, details: string,
 
 export async function fixStart(ctx: TaskCtx): Promise<void> {
   if (await ctx.builderBusy()) return;
-  const prompt = correctionPrompt({ key: ctx.task.key! }, String(ctx.data.head), String(ctx.data.verdict), String(ctx.data.details));
+  const fix = correctionPrompt({ key: ctx.task.key! }, String(ctx.data.head), String(ctx.data.verdict), String(ctx.data.details));
   const resume = ctx.task.builderSessionId ?? undefined;
-  const s = await startSession(ctx, "correction", String(ctx.task.headSha), resume ? prompt : prompt, { resume });
+  // a failed check stage confined to a few named files is a BOUNDED REPAIR: the qualified local coder gets one attempt
+  const plan = ctx.data.noLocal ? null : await repairPlan(ctx, String(ctx.data.verdict), String(ctx.data.details));
+  if (plan?.route.local) return ctx.goto("local_fix", { verdict: ctx.data.verdict, details: ctx.data.details, head: ctx.data.head, fact: ctx.data.fact });
+  // no session to resume (the work so far was built by the local coder): the Builder starts with its full instructions
+  let prompt = fix;
+  if (!resume) {
+    const cur = await planCursor(ctx);
+    const info = { name: ctx.project.name, description: ctx.project.description, stack: ctx.project.stack };
+    const full = cur?.current
+      ? planTaskPrompt(info, { key: ctx.task.key!, title: ctx.task.title }, cur.current, { index: cur.index, total: cur.order.length, done: cur.order.slice(0, cur.index).map((t) => t.id) })
+      : buildPrompt(info, { key: ctx.task.key!, title: ctx.task.title });
+    prompt = `${full}\n\nAN EARLIER ATTEMPT IS ALREADY IN THIS WORKSPACE (made by another worker). Keep what is right, fix what is not.\n${fix}`;
+  }
+  const s = await startSession(ctx, "correction", String(ctx.task.headSha), prompt, { resume });
   if (s === "wait") return;
+  if (plan?.route.shadow) {
+    try {
+      await shadowCode(ctx, { cls: "bounded_repair", worker: plan.route.shadow, ref: String(ctx.task.headSha), instruction: repairInstruction(ctx.task.key!, String(ctx.data.verdict), String(ctx.data.details)), scope: plan.scope, context: [] });
+    } catch {
+      /* shadow bookkeeping never affects the task */
+    }
+  }
   await ctx.transition("IN_PROGRESS", `Correction ${ctx.task.corrections}: Builder resumed with the verification findings`, {
     run: s.runId,
     ...(ctx.data.fact as Record<string, unknown>),

@@ -1,0 +1,456 @@
+{
+ "class": "bounded_repair",
+ "version": 1,
+ "base": "d3ca17fe6f6d5fd410214ef69a69582330d700f7",
+ "statement": "Repair a failing check with the smallest correct change, confined to one named file.",
+ "cases": [
+  {
+   "id": "br-01",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/text.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/text.ts",
+     "find": "if (chars.length <= max) return title;",
+     "replace": "if (chars.length < max) return title;"
+    }
+   ],
+   "pretest": [
+    "tests/text.test.ts"
+   ],
+   "tests": [
+    "tests/text.test.ts"
+   ]
+  },
+  {
+   "id": "br-02",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/text.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/text.ts",
+     "find": "const head = chars.slice(0, max - 1);",
+     "replace": "const head = chars.slice(0, max);"
+    }
+   ],
+   "pretest": [
+    "tests/text.test.ts"
+   ],
+   "tests": [
+    "tests/text.test.ts"
+   ]
+  },
+  {
+   "id": "br-03",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/text.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/text.ts",
+     "find": "const space = head.findLastIndex((c) => /\\s/.test(c));",
+     "replace": "const space = head.findIndex((c) => /\\s/.test(c));"
+    }
+   ],
+   "pretest": [
+    "tests/text.test.ts"
+   ],
+   "tests": [
+    "tests/text.test.ts"
+   ]
+  },
+  {
+   "id": "br-04",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/lifecycle.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/lifecycle.ts",
+     "find": "return from === to || ALLOWED[from].includes(to);",
+     "replace": "return from === to || ALLOWED[to].includes(from);"
+    }
+   ],
+   "pretest": [
+    "tests/domain.test.ts"
+   ],
+   "tests": [
+    "tests/domain.test.ts"
+   ]
+  },
+  {
+   "id": "br-05",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/lifecycle.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/lifecycle.ts",
+     "find": "if (verdict.startsWith(\"BLOCKED:\")) return \"blocked\";",
+     "replace": "if (verdict.startsWith(\"BLOCKED\")) return \"harness\";"
+    }
+   ],
+   "pretest": [
+    "tests/domain.test.ts"
+   ],
+   "tests": [
+    "tests/domain.test.ts"
+   ]
+  },
+  {
+   "id": "br-06",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/gate.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/gate.ts",
+     "find": "    case \"not_verified\":\n      return \"not_verified\";",
+     "replace": "    case \"not_verified\":\n      return \"unknown\";"
+    }
+   ],
+   "pretest": [
+    "tests/domain.test.ts"
+   ],
+   "tests": [
+    "tests/domain.test.ts"
+   ]
+  },
+  {
+   "id": "br-07",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/gate.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/gate.ts",
+     "find": "if (c.status === \"verified\") continue;",
+     "replace": "if (c.status !== \"verified\") continue;"
+    }
+   ],
+   "pretest": [
+    "tests/domain.test.ts"
+   ],
+   "tests": [
+    "tests/domain.test.ts"
+   ]
+  },
+  {
+   "id": "br-08",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/gate.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/gate.ts",
+     "find": "[true, ev.regression ?? {}],",
+     "replace": "[false, ev.regression ?? {}],"
+    }
+   ],
+   "pretest": [
+    "tests/domain.test.ts"
+   ],
+   "tests": [
+    "tests/domain.test.ts"
+   ]
+  },
+  {
+   "id": "br-09",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/capabilities.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/capabilities.ts",
+     "find": "language: languages.length ? languages.join(\", \") : NOT_DETECTED,",
+     "replace": "language: languages.length ? languages.join(\"/\") : NOT_DETECTED,"
+    }
+   ],
+   "pretest": [
+    "tests/project-capabilities.test.ts"
+   ],
+   "tests": [
+    "tests/project-capabilities.test.ts"
+   ]
+  },
+  {
+   "id": "br-10",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/capabilities.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/capabilities.ts",
+     "find": "const text = (v: unknown) => (typeof v === \"string\" && v.trim() ? v.trim() : null);",
+     "replace": "const text = (v: unknown) => (typeof v === \"string\" ? v : null);"
+    }
+   ],
+   "pretest": [
+    "tests/project-capabilities.test.ts"
+   ],
+   "tests": [
+    "tests/project-capabilities.test.ts"
+   ]
+  },
+  {
+   "id": "br-11",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/capabilities.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/capabilities.ts",
+     "find": "typecheck: command(cmds.typecheck),",
+     "replace": "typecheck: command(cmds.lint),"
+    }
+   ],
+   "pretest": [
+    "tests/project-capabilities.test.ts"
+   ],
+   "tests": [
+    "tests/project-capabilities.test.ts"
+   ]
+  },
+  {
+   "id": "br-12",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/policy.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/policy.ts",
+     "find": "if (assumptions.length > CALIBRATION.maxAssumptions)",
+     "replace": "if (assumptions.length >= CALIBRATION.maxAssumptions)"
+    }
+   ],
+   "pretest": [
+    "tests/contract-v2.test.ts",
+    "tests/policy.test.ts"
+   ],
+   "tests": [
+    "tests/contract-v2.test.ts",
+    "tests/policy.test.ts"
+   ]
+  },
+  {
+   "id": "br-13",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/policy.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/policy.ts",
+     "find": "if (hits.length !== 1) return owner(\"the recommendation does not name exactly one option\");",
+     "replace": "if (hits.length === 0) return owner(\"the recommendation does not name exactly one option\");"
+    }
+   ],
+   "pretest": [
+    "tests/recommended.test.ts"
+   ],
+   "tests": [
+    "tests/recommended.test.ts"
+   ]
+  },
+  {
+   "id": "br-14",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/policy.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/policy.ts",
+     "find": "if (isAbandon(hit) && f.hasWork) return owner(",
+     "replace": "if (isAbandon(hit) && !f.hasWork) return owner("
+    }
+   ],
+   "pretest": [
+    "tests/recommended.test.ts"
+   ],
+   "tests": [
+    "tests/recommended.test.ts"
+   ]
+  },
+  {
+   "id": "br-15",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/policy.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/policy.ts",
+     "find": "if (f.cls !== \"routine\") return owner(",
+     "replace": "if (f.cls === \"routine\") return owner("
+    }
+   ],
+   "pretest": [
+    "tests/recommended.test.ts"
+   ],
+   "tests": [
+    "tests/recommended.test.ts"
+   ]
+  },
+  {
+   "id": "br-16",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/policy.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/policy.ts",
+     "find": "const must = f.body.criteria.filter((k) => k.priority === \"must\");",
+     "replace": "const must = f.body.criteria.filter((k) => k.priority === \"should\");"
+    }
+   ],
+   "pretest": [
+    "tests/contract-v2.test.ts",
+    "tests/policy.test.ts"
+   ],
+   "tests": [
+    "tests/contract-v2.test.ts",
+    "tests/policy.test.ts"
+   ]
+  },
+  {
+   "id": "br-17",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/router.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/router.ts",
+     "find": "if (rs.length < QUALIFY.minSamples) return { status: \"shadow\"",
+     "replace": "if (rs.length <= QUALIFY.minSamples) return { status: \"shadow\""
+    }
+   ],
+   "pretest": [
+    "tests/routing-table.test.ts",
+    "tests/builder.test.ts"
+   ],
+   "tests": [
+    "tests/routing-table.test.ts",
+    "tests/builder.test.ts"
+   ]
+  },
+  {
+   "id": "br-18",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/router.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/router.ts",
+     "find": "if (q.status === \"qualified\" && i.risk !== \"critical\" && usable(alt)) {",
+     "replace": "if (q.status === \"qualified\" && usable(alt)) {"
+    }
+   ],
+   "pretest": [
+    "tests/routing-table.test.ts",
+    "tests/builder.test.ts"
+   ],
+   "tests": [
+    "tests/routing-table.test.ts",
+    "tests/builder.test.ts"
+   ]
+  },
+  {
+   "id": "br-19",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/plan.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/plan.ts",
+     "find": "if (must.length > CALIBRATION.maxMustCriteriaAtomic) reasons.push(",
+     "replace": "if (must.length >= CALIBRATION.maxMustCriteriaAtomic) reasons.push("
+    }
+   ],
+   "pretest": [
+    "tests/contract-v2.test.ts"
+   ],
+   "tests": [
+    "tests/contract-v2.test.ts"
+   ]
+  },
+  {
+   "id": "br-20",
+   "source": "controlled (seeded defect in project code at the pinned commit)",
+   "instruction": "A unit test of this project fails. Find the defect in the file you may change and repair it with the smallest correct change, so that the failing check passes. Do not change behaviour the tests do not complain about, and do not change tests.",
+   "scope": [
+    "src/domain/plan.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/plan.ts",
+     "find": "return { shape: reasons.length ? \"complex\" : \"atomic\", reasons };",
+     "replace": "return { shape: reasons.length > 1 ? \"complex\" : \"atomic\", reasons };"
+    }
+   ],
+   "pretest": [
+    "tests/contract-v2.test.ts"
+   ],
+   "tests": [
+    "tests/contract-v2.test.ts"
+   ]
+  }
+ ]
+}

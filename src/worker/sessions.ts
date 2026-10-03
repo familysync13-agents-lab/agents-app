@@ -4,7 +4,7 @@ import type { Contract } from "@/domain/contract";
 import { buildContextPackage, contextSeeds, rankFiles, type ContextPackage, type ScanResult } from "@/domain/context";
 import type { PlanTask } from "@/domain/plan";
 import { detectProfile, type CapabilityProfile } from "@/domain/profile";
-import { classifyFailure, route, type RouteDecision, type TaskClass } from "@/domain/router";
+import { classifyFailure, route, type AnyTaskClass, type RouteDecision, type TaskClass } from "@/domain/router";
 import type { TaskCtx } from "./context";
 import { blockEvidence, harnessFailure, pollDue, vols } from "./common";
 
@@ -18,7 +18,7 @@ export async function routeFor(ctx: TaskCtx, taskClass: TaskClass, unavailable: 
 }
 
 /** Ledger fields of a run: which worker, why, under which permission envelope. */
-export function ledger(taskClass: TaskClass, d: RouteDecision) {
+export function ledger(taskClass: AnyTaskClass, d: RouteDecision) {
   return { taskClass, worker: d.worker, harness: d.harness, model: d.model, provider: d.provider, routeReason: d.reason, envelope: d.envelope as unknown as Record<string, unknown> };
 }
 
@@ -27,7 +27,7 @@ export function ledger(taskClass: TaskClass, d: RouteDecision) {
  * static relationships and history of the files that matter. Never blocks the work: if the scan fails, the worker starts without a
  * package (recorded). Also refreshes the project's capability profile from the same scan.
  */
-async function contextFor(ctx: TaskCtx, vol: string, c: Contract, task: PlanTask | null, errors: string | null): Promise<"wait" | ContextPackage | null> {
+export async function contextFor(ctx: TaskCtx, vol: string, c: Contract, task: PlanTask | null, errors: string | null): Promise<"wait" | ContextPackage | null> {
   const seeds = contextSeeds(c, task);
   const s1 = await ctx.once("ctx1", "context_scan", () => ({ vol, terms: seeds.terms }));
   if (!s1) return "wait";

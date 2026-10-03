@@ -9,12 +9,11 @@ import { detectProfile } from "@/domain/profile";
 import { classifyFailure, qualification, QUALIFY, route, ROUTES, TASK_CLASSES, WORKERS, type QualRecord } from "@/domain/router";
 import { createTask } from "@/server/owner";
 import { activePlan } from "@/server/plans";
-import { collectCandidates, qualifyReplay, routeTable } from "@/worker/shadow";
 import { executionOrder } from "@/worker/steps-plan";
 import { clock, contractRows, FakeExecutor, openDecisions, runUntil, setup, taskRow } from "./support/harness";
 import { CONTRACT, fixtureHandlers as scenario } from "./support/fixture-handlers";
 
-/* Builder phase acceptance tests (BT1..BT12). */
+/* Builder phase acceptance tests (BT1..BT17; shadow mode and the qualification harness: tests/local-workers.test.ts). */
 
 const recs = (worker: string, taskClass: string, n: number, agreeing: number): QualRecord[] => Array.from({ length: n }, (_, i) => ({ worker, taskClass, valid: true, agree: i < agreeing }));
 
@@ -297,47 +296,6 @@ describe("decomposed execution", () => {
     expect(ex.log.some((l) => l.op === "transport" && String((l.params.ops as { branch?: string }[])[0]!.branch ?? "").includes("/plan-"))).toBe(false);
     expect(PlanBody.parse((await activePlan(db, id))!.body)).toMatchObject({ shape: "complex", tasks: [] });
   }, 60000);
-});
-
-describe("shadow mode and the qualification harness", () => {
-  const fail = { failFirstGate: true } as const;
-  it("BT10 a candidate gets the same bounded input in production, is recorded and compared, and controls nothing", async () => {
-    const run = async (localLlm: "agree" | "disagree" | "invalid" | "unavailable") => {
-      const { db, clk, ex, id } = await start({ ...fail, localLlm });
-      await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_acceptance");
-      const t = await taskRow(db, id);
-      const q = await db.select().from(qualificationRecords);
-      return { t, q, ex, db };
-    };
-    const a = await run("agree");
-    expect(a.q.map((r) => [r.worker, r.taskClass, r.mode, r.expected, r.valid, r.agree, r.note])).toEqual([["local-llm", "failure_triage", "shadow", "implementation", true, true, "qwen-test"]]);
-    const sent = a.ex.log.find((l) => l.op === "local_llm")!.params;
-    expect(Object.keys(sent).sort()).toEqual(["prompt", "system"]); // a bounded structured request: no tools, no files, no repository
-    expect(String(sent.prompt).length).toBeLessThan(6100);
-    const d = await run("disagree");
-    expect(d.q.map((r) => [r.valid, r.agree])).toEqual([[true, false]]);
-    expect((await run("invalid")).q.map((r) => [r.valid, r.agree])).toEqual([[false, false]]);
-    const u = await run("unavailable");
-    expect(u.q.map((r) => [r.valid, r.agree])).toEqual([[false, null]]); // could not run: no verdict about its quality
-    // whatever the candidate said, the production outcome is identical: the trusted arbiter decided
-    for (const r of [a, d, u]) expect([r.t.corrections, r.t.headSha, r.t.state]).toEqual([1, "h2", "DONE"]);
-    expect((await routeTable(a.db)).find((x) => x.taskClass === "failure_triage")).toMatchObject({ worker: "codex-verifier", shadow: ["local-llm"], alternatives: [{ worker: "local-llm", status: "shadow", samples: 1 }] });
-  }, 90000);
-
-  it("BT11 the harness replays recorded historical cases through the candidate without re-running any trusted worker", async () => {
-    const { db, clk, ex, id } = await start({ ...fail, localLlm: "agree" });
-    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_acceptance");
-    const verifierRuns = ex.log.filter((l) => l.op === "verifier").length;
-    const r = await qualifyReplay(db, 10);
-    expect(r).toEqual({ submitted: 1, cases: 1 });
-    await ex.drain();
-    expect(await collectCandidates(db)).toBe(1);
-    const q = await db.select().from(qualificationRecords).orderBy(qualificationRecords.id);
-    expect(q.map((x) => [x.mode, x.agree])).toEqual([["shadow", true], ["harness", true]]);
-    expect(q[0]!.inputSha256).toMatch(/^[0-9a-f]{64}$/);
-    expect(ex.log.filter((l) => l.op === "verifier").length).toBe(verifierRuns); // the original record is the baseline
-    expect((await taskRow(db, id)).step).toBe("await_acceptance");
-  });
 });
 
 describe("BT12 schema and boundaries", () => {

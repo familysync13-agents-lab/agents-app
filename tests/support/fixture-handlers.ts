@@ -21,7 +21,7 @@ export const CONTRACT = (key: string) => ({
 
 const ORACLE = `import { chromium } from 'playwright';\nconst base = process.argv[2];\nconsole.log(JSON.stringify({ criterion: 'AC1', result: 'pass' }));\n`;
 
-export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: "agree" | "disagree" | "invalid" | "unavailable" } = {}) {
+export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: (p: Record<string, unknown>) => Record<string, unknown>; localCode?: (p: Record<string, unknown>) => Record<string, unknown>; verdicts?: (items: { id: string }[]) => { id: string; pass: boolean; reason: string }[] } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -61,6 +61,8 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
     scans: [] as Record<string, unknown>[],
     quotaServed: 0,
     quotaSessions: new Set<string>(),
+    localCode: [] as Record<string, unknown>[],
+    verifierFiles: new Map<string, Record<string, string>>(),
     verifierQuotaSessions: new Set<string>(),
   };
   const heads = (pr: number, i: number) => (pr === 102 ? `h${i}` : `h${pr}${"abc"[i - 1]}`);
@@ -91,10 +93,10 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
         hits: Object.fromEntries(terms.map((t, i) => [t, i % 2 === 0 ? [{ file: "src/app/lists/page.tsx", line: 10 + i, text: `… ${t} …` }, { file: "src/lib/sort.ts", line: 3, text: t }] : []])),
       };
     },
-    local_llm: () => {
-      if (opts.localLlm === "unavailable" || !opts.localLlm) return { ok: false, available: false, reason: "connection refused" };
-      if (opts.localLlm === "invalid") return { ok: false, available: true, model: "qwen-test", output: null, raw: "not json", ms: 900 };
-      return { ok: true, available: true, model: "qwen-test", output: { parties: [opts.localLlm === "agree" ? (opts.arbiter ?? "implementation") : "environment"] }, ms: 1200 };
+    local_llm: (p) => (opts.localLlm ? opts.localLlm(p) : { ok: false, available: false, reason: "connection refused" }),
+    local_code: (p) => {
+      state.localCode.push(p);
+      return opts.localCode ? opts.localCode(p) : { ok: false, stage: "prepare", reason: "no local model in this scenario" };
     },
     builder: (p) => {
       state.builderPrompts.push(String(p.prompt_text));
@@ -118,6 +120,7 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
     },
     verifier: (p) => {
       state.verifierPrompts.push(String(p.prompt ?? ""));
+      state.verifierFiles.set(String(p.work_vol), (p.files ?? {}) as Record<string, string>);
       const name = `bko-verifier-${++state.n}`;
       state.sessions.set(name, 0);
       if (opts.verifierQuota && state.quotaServed < opts.verifierQuota) {
@@ -177,7 +180,10 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
         if (pl !== null) out[".bakeoff/plan.json"] = b64(JSON.stringify(pl));
       }
       if (paths.includes(".bakeoff/REPORT.md")) out[".bakeoff/REPORT.md"] = b64("# Report\nImplemented sorting.");
-      if (paths.includes("out/findings.json")) {
+      if (paths.includes("out/findings.json") && /^agents-vw-0-q/.test(vol)) {
+        const items = JSON.parse(Buffer.from(state.verifierFiles.get(vol)!["items.json"]!, "base64").toString()) as { id: string }[];
+        out["out/findings.json"] = b64(JSON.stringify({ verdicts: opts.verdicts ? opts.verdicts(items) : items.map((x) => ({ id: x.id, pass: true, reason: "faithful" })) }));
+      } else if (paths.includes("out/findings.json")) {
         state.verifierFindingsServed++;
         const high = opts.verifierHigh && state.verifierFindingsServed === 1;
         out["out/findings.json"] = b64(

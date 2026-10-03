@@ -140,7 +140,7 @@ export async function recentWorkerRuns(db?: Db) {
 export async function routingTable(db?: Db): Promise<RoutingRow[]> {
   const d = db ?? (await getDb());
   const records: QualRecord[] = await d
-    .select({ worker: qualificationRecords.worker, taskClass: qualificationRecords.taskClass, valid: qualificationRecords.valid, agree: qualificationRecords.agree })
+    .select({ worker: qualificationRecords.worker, taskClass: qualificationRecords.taskClass, valid: qualificationRecords.valid, agree: qualificationRecords.agree, model: qualificationRecords.model, voided: qualificationRecords.voided, mode: qualificationRecords.mode })
     .from(qualificationRecords);
   return TASK_CLASSES.map((taskClass) => {
     const decision = route({ taskClass, risk: "standard", records });

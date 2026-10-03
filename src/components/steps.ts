@@ -23,6 +23,8 @@ export const STEP_INFO: Record<string, { label: string; role: Role; waitingOnOwn
   await_gate: { label: "Gate evaluating the exact commit", role: "gate" },
   gate_collect: { label: "Recording the gate evidence", role: "gate" },
   fix_start: { label: "Returning findings to the Builder", role: "system" },
+  local_build: { label: "Building (local coder, one bounded attempt)", role: "builder" },
+  local_fix: { label: "Repairing a failed check (local coder, one bounded attempt)", role: "builder" },
   acceptance_start: { label: "Preparing a live preview for independent verification", role: "system" },
   acceptance_poll: { label: "Independent verification against a live preview", role: "verifier" },
   acceptance_collect: { label: "Recording the independent findings", role: "system" },

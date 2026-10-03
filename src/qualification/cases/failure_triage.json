@@ -1,0 +1,167 @@
+{
+ "class": "failure_triage",
+ "version": 1,
+ "statement": "Classify the cause of a failed step from its error text into the fixed failure vocabulary, quoting the deciding phrase verbatim.",
+ "cases": [
+  {
+   "id": "ft-01",
+   "source": "historical",
+   "input": "worktree: JobError: fetch_tree failed: {'err': None, 'tree_mismatch': None, 'skipped': None}",
+   "expect": {
+    "class": "infrastructure"
+   }
+  },
+  {
+   "id": "ft-02",
+   "source": "historical",
+   "input": "re-running the gate on the approved contract PR failed in the executor (harness): TypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'",
+   "expect": {
+    "class": "infrastructure"
+   }
+  },
+  {
+   "id": "ft-03",
+   "source": "historical",
+   "input": "preview: JobError: network bko-pv-t8 not as defined: ",
+   "expect": {
+    "class": "infrastructure"
+   }
+  },
+  {
+   "id": "ft-04",
+   "source": "historical",
+   "input": "merging the accepted PR failed 4 times in the executor: {\"t\":\"2026-10-03T03:46:32.152Z\",\"id\":\"m\",\"ok\":false,\"op\":\"merge_approved\",\"head\":\"1269e7241f8ed9a1969e7b73fe4ba87bdb281d11\",\"status\":405,\"message\":\"Repository rule violations found\\n\\nRequired status check \\\"gate\\\" is expected.\\n\\n\"}",
+   "expect": {
+    "class": "infrastructure"
+   }
+  },
+  {
+   "id": "ft-05",
+   "source": "historical",
+   "input": "npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat '/work/node_modules/next/dist/next-devtools/server/font'\nnpm error code ENOSPC\nnpm error syscall mkdir\nnpm error path /work/node_modules/.bin\nnpm error errno -28\nnpm error nospc ENOSPC: no space left on device, mkdir '/work/node_modules/.bin'\nnpm error nospc There appears to be insufficient space on your system to finish.",
+   "expect": {
+    "class": "infrastructure"
+   }
+  },
+  {
+   "id": "ft-06",
+   "source": "historical",
+   "input": "worktree: JobError: ACCESS: the agent GitHub App installation has no access to repository agents-app (token mint refused)",
+   "expect": {
+    "class": "access"
+   }
+  },
+  {
+   "id": "ft-07",
+   "source": "controlled",
+   "input": "opening the task PR failed: {\"ok\":false,\"op\":\"pr_from_worktree\",\"status\":403,\"message\":\"Resource not accessible by integration\",\"documentation_url\":\"https://docs.github.com/rest/pulls/pulls#create-a-pull-request\"}",
+   "expect": {
+    "class": "access"
+   }
+  },
+  {
+   "id": "ft-08",
+   "source": "historical",
+   "input": "Builder session ended (exit 1, 1 turn): Failed to authenticate: OAuth session expired and could not be refreshed",
+   "expect": {
+    "class": "credential"
+   }
+  },
+  {
+   "id": "ft-09",
+   "source": "controlled",
+   "input": "Verifier session ended (exit 1): ERROR: Failed to refresh token: 400 Bad Request: invalid_grant. Your session has expired, please run `codex login` again.",
+   "expect": {
+    "class": "credential"
+   }
+  },
+  {
+   "id": "ft-10",
+   "source": "historical",
+   "input": "Verifier session ended (exit 1, no result).\nERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 6:06 AM.\nERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 6:06 AM.",
+   "expect": {
+    "class": "quota"
+   }
+  },
+  {
+   "id": "ft-11",
+   "source": "controlled",
+   "input": "Builder session ended (exit 1, 3 turns): API Error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"This request would exceed your account's rate limit. Please try again later.\"}}",
+   "expect": {
+    "class": "quota"
+   }
+  },
+  {
+   "id": "ft-12",
+   "source": "historical",
+   "input": "PROPOSED → BLOCKED_EVIDENCE: The Verifier could not produce a valid oracle in 3 attempts (the output check): no out/check.mjs was written",
+   "expect": {
+    "class": "check_defect"
+   }
+  },
+  {
+   "id": "ft-13",
+   "source": "historical",
+   "input": "The Builder blocked: I've blocked T9 instead of changing the app, because the failure is a bug in the oracle, not in the app. What's wrong: in `oracle/T9/check.mjs:153`, the `selected()` helper hands a function to Playwright's `locator.evaluate` and uses the variable `text` inside it; that variable is not in scope in the browser, so the check throws for every implementation.",
+   "expect": {
+    "class": "check_defect"
+   }
+  },
+  {
+   "id": "ft-14",
+   "source": "controlled",
+   "input": "Oracle calibration against main 9edbefce failed for AC2, AC3, AC4: ReferenceError: baseURL is not defined\n    at file:///tmp/check.mjs:41:22\n    at ModuleJob.run (node:internal/modules/esm/module_job:271:25)",
+   "expect": {
+    "class": "check_defect"
+   }
+  },
+  {
+   "id": "ft-15",
+   "source": "controlled",
+   "input": "The Builder session was stopped: it exceeded 60 minutes without finishing (last output: 'Running the test suite...').",
+   "expect": {
+    "class": "timeout"
+   }
+  },
+  {
+   "id": "ft-16",
+   "source": "controlled",
+   "input": "oracle_run: the check process was killed after 900 s; it printed no result line for AC1, AC2, AC3.",
+   "expect": {
+    "class": "timeout"
+   }
+  },
+  {
+   "id": "ft-17",
+   "source": "controlled",
+   "input": "Gate verdict for 4c1f0a2e: FAIL:CHECK (candidate check stage (lint/types/tests) did not pass)\nCheck stage output (tail):\nsrc/components/worker-runs.tsx(41,17): error TS2322: Type 'number | null' is not assignable to type 'number'.\n  Type 'null' is not assignable to type 'number'.",
+   "expect": {
+    "class": "implementation"
+   }
+  },
+  {
+   "id": "ft-18",
+   "source": "controlled",
+   "input": "Gate verdict for 77ab3d10: FAIL:CHECK (candidate check stage (lint/types/tests) did not pass)\nCheck stage output (tail):\n FAIL  tests/sort.test.ts > sorting > sorts books by author, then title\nAssertionError: expected [ 'Brave New World', 'Animal Farm' ] to deeply equal [ 'Animal Farm', 'Brave New World' ]\n Test Files  1 failed | 17 passed (18)",
+   "expect": {
+    "class": "implementation"
+   }
+  },
+  {
+   "id": "ft-19",
+   "source": "historical",
+   "input": "The Builder blocked (decision): I didn't write a contract for T3. I wrote `/work/.bakeoff/BLOCKED.json` instead (type `BLOCKED:DECISION`, class `owner`), so the owner has to make a decision before anything can be built. Why it's blocked: the intent is \"build small logo for beer store\", and nothing in this project is a beer store.",
+   "expect": {
+    "class": "owner_decision"
+   }
+  },
+  {
+   "id": "ft-20",
+   "source": "historical",
+   "input": "IN_PROGRESS → BLOCKED_DECISION: The Builder blocked (decision): Two approved, active contracts (both CONTRACTED and both re-checked by the gate as regressions) define the SAME 'Project Capabilities' section on /system with the SAME preview Demo Project profile, and they contradict each other, so no code change can pass the gate.",
+   "expect": {
+    "class": "owner_decision"
+   }
+  }
+ ]
+}

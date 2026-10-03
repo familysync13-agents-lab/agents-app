@@ -185,7 +185,7 @@ export const runs = pgTable(
       .references(() => tasks.id),
     role: text("role").$type<"builder" | "verifier">().notNull(),
     purpose: text("purpose")
-      .$type<"draft_contract" | "author_oracle" | "build" | "correction" | "acceptance_check" | "mutants" | "repair_oracle" | "attribution" | "plan">()
+      .$type<"draft_contract" | "author_oracle" | "build" | "correction" | "acceptance_check" | "mutants" | "repair_oracle" | "attribution" | "plan" | "semantic">()
       .notNull(),
     container: text("container"),
     sessionId: text("session_id"),
@@ -450,7 +450,8 @@ export const qualificationRecords = pgTable(
     id: serial("id").primaryKey(),
     worker: text("worker").notNull(),
     taskClass: text("task_class").notNull(),
-    mode: text("mode").$type<"shadow" | "harness">().notNull(),
+    /** shadow / harness = qualification evidence; production = a routed job whose output the control plane used */
+    mode: text("mode").$type<"shadow" | "harness" | "production">().notNull(),
     taskId: integer("task_id").references(() => tasks.id),
     inputSha256: text("input_sha256").notNull(),
     /** what the trusted path decided for the same input */
@@ -462,10 +463,40 @@ export const qualificationRecords = pgTable(
     durationMs: integer("duration_ms"),
     jobId: integer("job_id"),
     note: text("note"),
+    // ---- local-worker extension: what exactly ran, on which pinned case, and what each downstream check said ----
+    /** exact model identifier and the digest the host reported for it */
+    model: text("model"),
+    modelDigest: text("model_digest"),
+    /** qualification case id and the sha256 of the case set file it came from (cases are pinned in the repository) */
+    caseId: text("case_id"),
+    caseSetSha256: text("case_set_sha256"),
+    /** deterministic gate: schema, grounding, agreement with the reference / the project's own checks */
+    gate: boolean("gate"),
+    gateDetail: jsonb("gate_detail").$type<Record<string, unknown>>(),
+    /** independent Verifier (only when the gate passed): pass | fail | not_applicable */
+    verifier: text("verifier").$type<"pass" | "fail" | "not_applicable">(),
+    verifierNote: text("verifier_note"),
+    contextBytes: integer("context_bytes"),
+    promptTokens: integer("prompt_tokens"),
+    outputTokens: integer("output_tokens"),
+    /** kept for audit, excluded from qualification */
+    voided: boolean("voided").notNull().default(false),
     createdAt: created(),
   },
   (t) => [index("qualification_worker_class_idx").on(t.worker, t.taskClass)],
 );
+
+/** A batch of gate-passing outputs handed to the independent Verifier (one session per batch); advanced by the control loop. */
+export const qualificationBatches = pgTable("qualification_batches", {
+  id: serial("id").primaryKey(),
+  worker: text("worker").notNull(),
+  taskClass: text("task_class").notNull(),
+  state: text("state").$type<"start" | "started" | "poll" | "dump" | "done" | "failed" | "quota">().notNull().default("start"),
+  recordIds: jsonb("record_ids").$type<number[]>().notNull(),
+  data: jsonb("data").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: created(),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+});
 
 export const heartbeats = pgTable("heartbeats", {
   name: text("name").primaryKey(),

@@ -55,6 +55,8 @@ const STEP_NODE: Record<string, FlowNode> = {
   regress_pr: "owner",
   resume_after_oracle: "gate",
   fix_start: "builder",
+  local_build: "builder",
+  local_fix: "builder",
   attribute_start: "verifier",
   attribute_poll: "verifier",
   attribute_collect: "verifier",

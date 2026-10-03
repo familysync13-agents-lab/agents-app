@@ -1,0 +1,390 @@
+{
+ "class": "small_code",
+ "version": 1,
+ "base": "d3ca17fe6f6d5fd410214ef69a69582330d700f7",
+ "statement": "Implement one function to a written specification, confined to one named file; the project's existing tests for it are the gate.",
+ "cases": [
+  {
+   "id": "sc-01",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `shortenTitle` in src/domain/text.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Return the display form of a title: at most `max` Unicode code points (count code points with Array.from, never split a surrogate pair). A title of at most `max` code points is returned unchanged. A longer title becomes a prefix followed by the single character \"\u2026\" (U+2026), together at most `max` code points: take the first max-1 code points; when the code point right after them (index max-1) is not whitespace the cut would split a word, so cut back to the last whitespace inside those max-1 code points, if there is one at an index greater than 0; remove trailing whitespace from what is kept; if that leaves nothing, keep the first max-1 code points with trailing whitespace removed instead.",
+   "scope": [
+    "src/domain/text.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/text.ts",
+     "find": "export function shortenTitle(title: string, max = TITLE_MAX): string {\n  const chars = Array.from(title);\n  if (chars.length <= max) return title;\n  const head = chars.slice(0, max - 1);\n  let cut = head.length;\n  // the cut splits a word unless the next character is whitespace: back off to the last whitespace that fits\n  if (!/\\s/.test(chars[max - 1]!)) {\n    const space = head.findLastIndex((c) => /\\s/.test(c));\n    if (space > 0) cut = space;\n  }\n  const kept = head.slice(0, cut).join(\"\").trimEnd() || head.join(\"\").trimEnd();\n  return `${kept}\u2026`;\n}",
+     "replace": "export function shortenTitle(title: string, max = TITLE_MAX): string {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/text.test.ts"
+   ]
+  },
+  {
+   "id": "sc-02",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `canTransition` in src/domain/lifecycle.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Return true when `from` equals `to`, or when `to` is listed for `from` in the ALLOWED table of this file; otherwise false.",
+   "scope": [
+    "src/domain/lifecycle.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/lifecycle.ts",
+     "find": "export function canTransition(from: TaskState, to: TaskState): boolean {\n  return from === to || ALLOWED[from].includes(to);\n}",
+     "replace": "export function canTransition(from: TaskState, to: TaskState): boolean {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/domain.test.ts"
+   ]
+  },
+  {
+   "id": "sc-03",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `classifyVerdict` in src/domain/lifecycle.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Classify a gate verdict string, in this order: exactly \"DONE\" -> \"pass\"; exactly \"FAIL:TAMPER\" or \"FAIL:FOREIGN-HEAD\" -> \"tamper\"; any other verdict starting with \"FAIL:\" -> \"candidate_failure\"; a verdict starting with \"BLOCKED:\" -> \"blocked\"; anything else -> \"harness\".",
+   "scope": [
+    "src/domain/lifecycle.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/lifecycle.ts",
+     "find": "export function classifyVerdict(verdict: string): \"pass\" | \"candidate_failure\" | \"blocked\" | \"tamper\" | \"harness\" {\n  if (verdict === \"DONE\") return \"pass\";\n  if (verdict === \"FAIL:TAMPER\" || verdict === \"FAIL:FOREIGN-HEAD\") return \"tamper\";\n  if (verdict.startsWith(\"FAIL:\")) return \"candidate_failure\"; // CHECK, ORACLE, REGRESSION, CANARY, SECRET, BUILD\n  if (verdict.startsWith(\"BLOCKED:\")) return \"blocked\";\n  return \"harness\";\n}",
+     "replace": "export function classifyVerdict(verdict: string): \"pass\" | \"candidate_failure\" | \"blocked\" | \"tamper\" | \"harness\" {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/domain.test.ts"
+   ]
+  },
+  {
+   "id": "sc-04",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `mapStatus` in src/domain/gate.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Map the gate's status text to an EvidenceStatus, ignoring letter case: \"verified\" -> \"verified\"; \"not verified\" or \"not_verified\" -> \"not_verified\"; \"partially verified\" or \"partially_verified\" -> \"partially_verified\"; \"waived\" -> \"waived\"; anything else, including undefined, -> \"unknown\".",
+   "scope": [
+    "src/domain/gate.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/gate.ts",
+     "find": "export function mapStatus(s: string | undefined): EvidenceStatus {\n  switch ((s ?? \"\").toLowerCase()) {\n    case \"verified\":\n      return \"verified\";\n    case \"not verified\":\n    case \"not_verified\":\n      return \"not_verified\";\n    case \"partially verified\":\n    case \"partially_verified\":\n      return \"partially_verified\";\n    case \"waived\":\n      return \"waived\";\n    default:\n      return \"unknown\";\n  }\n}",
+     "replace": "export function mapStatus(s: string | undefined): EvidenceStatus {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/domain.test.ts"
+   ]
+  },
+  {
+   "id": "sc-05",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `criteriaFromGate` in src/domain/gate.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Return one CriterionEvidence per entry of ev.criteria (regression: false) followed by one per entry of ev.regression (regression: true), each in the object's own key order; a missing object counts as empty. For an entry [subject, v]: check = v.check, or \"unmapped\" when it is missing; status = mapStatus(v.status); oracle = oracleOf(check); persistence = persistenceOf(check); detail = v.detail (or \"\") cut to its first 2000 characters.",
+   "scope": [
+    "src/domain/gate.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/gate.ts",
+     "find": "export function criteriaFromGate(ev: GateEvidence): CriterionEvidence[] {\n  const out: CriterionEvidence[] = [];\n  for (const [regression, rec] of [\n    [false, ev.criteria ?? {}],\n    [true, ev.regression ?? {}],\n  ] as const) {\n    for (const [subject, v] of Object.entries(rec)) {\n      const check = v.check ?? \"unmapped\";\n      out.push({\n        subject,\n        status: mapStatus(v.status),\n        oracle: oracleOf(check),\n        persistence: persistenceOf(check),\n        detail: (v.detail ?? \"\").slice(0, 2000),\n        check,\n        regression,\n      });\n    }\n  }\n  return out;\n}",
+     "replace": "export function criteriaFromGate(ev: GateEvidence): CriterionEvidence[] {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/domain.test.ts"
+   ]
+  },
+  {
+   "id": "sc-06",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `correctionDetails` in src/domain/gate.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Build the text handed to the Builder for a correction, as lines joined with \"\\n\". First one line \"- <reason>\" per entry of ev.reasons. Then, for every criterion of criteriaFromGate(ev) whose status is not \"verified\", the line \"- <subject> (<where>): <status><detail>\", where <where> is \"regression of an earlier task\" for a regression criterion and its check otherwise, <status> is the status with its first \"_\" replaced by a space, and <detail> is \" - \" followed by the trimmed detail cut to 600 characters (omitted when the detail is empty). Then, when ev.verdict is \"FAIL:CHECK\" and ev.checks.check_stage is a non-empty string, the line \"Check stage output (tail):\\n\" followed by the last 3000 characters of stripAnsi of that string. Then, when ev.verdict is \"FAIL:BUILD\" and ev.checks.build.log_tail is set, the line \"Build output (tail):\\n\" followed by the last 3000 characters of stripAnsi of it. When there is no line at all, return \"(the gate gave no further detail)\".",
+   "scope": [
+    "src/domain/gate.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/gate.ts",
+     "find": "export function correctionDetails(ev: GateEvidence): string {\n  const lines: string[] = [];\n  for (const r of ev.reasons ?? []) lines.push(`- ${r}`);\n  for (const c of criteriaFromGate(ev)) {\n    if (c.status === \"verified\") continue;\n    lines.push(`- ${c.subject} (${c.regression ? \"regression of an earlier task\" : c.check}): ${c.status.replace(\"_\", \" \")}${c.detail ? ` - ${c.detail.trim().slice(0, 600)}` : \"\"}`);\n  }\n  const checkStage = (ev.checks?.check_stage as string | undefined) ?? \"\";\n  if (ev.verdict === \"FAIL:CHECK\" && checkStage) lines.push(`Check stage output (tail):\\n${stripAnsi(String(checkStage)).slice(-3000)}`);\n  const build = ev.checks?.build as { log_tail?: string } | undefined;\n  if (ev.verdict === \"FAIL:BUILD\" && build?.log_tail) lines.push(`Build output (tail):\\n${stripAnsi(build.log_tail).slice(-3000)}`);\n  return lines.join(\"\\n\") || \"(the gate gave no further detail)\";\n}",
+     "replace": "export function correctionDetails(ev: GateEvidence): string {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/domain.test.ts"
+   ]
+  },
+  {
+   "id": "sc-07",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `capabilityRow` in src/domain/capabilities.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Turn a stored capability profile (unknown jsonb) into a CapabilityRow, reading it defensively. Return null when the profile is missing, not an object, or an array. languages: the string entries of profile.languages that are non-empty after trimming (trimmed), joined with \", \"; NOT_DETECTED when there is none or it is not an array. framework and packageManager: the trimmed string, or NOT_DETECTED when missing, empty or not a string. build, test, lint, typecheck: from profile.commands (an object; anything else counts as empty) - a non-empty trimmed string gives { available: true, command: <trimmed string> }, anything else { available: false }. browserTests: { available: true, command: null } only when profile.browserTests is exactly true, otherwise { available: false }. Use the helpers `text` and `command` of this file.",
+   "scope": [
+    "src/domain/capabilities.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/capabilities.ts",
+     "find": "export function capabilityRow(profile: unknown): CapabilityRow | null {\n  if (!profile || typeof profile !== \"object\" || Array.isArray(profile)) return null;\n  const p = profile as Record<string, unknown>;\n  const languages = Array.isArray(p.languages) ? p.languages.map(text).filter((l): l is string => l !== null) : [];\n  const cmds = p.commands && typeof p.commands === \"object\" ? (p.commands as Record<string, unknown>) : {};\n  return {\n    language: languages.length ? languages.join(\", \") : NOT_DETECTED,\n    framework: text(p.framework) ?? NOT_DETECTED,\n    packageManager: text(p.packageManager) ?? NOT_DETECTED,\n    build: command(cmds.build),\n    test: command(cmds.test),\n    lint: command(cmds.lint),\n    typecheck: command(cmds.typecheck),\n    browserTests: p.browserTests === true ? { available: true, command: null } : { available: false },\n  };\n}",
+     "replace": "export function capabilityRow(profile: unknown): CapabilityRow | null {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/project-capabilities.test.ts"
+   ]
+  },
+  {
+   "id": "sc-08",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `recoveryDelay` in src/domain/policy.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Return the delay in seconds before the next automatic retry: the entry of RECOVERY_DELAYS_S at index `previousAutoRetries` when that index exists, otherwise null (no automatic retry is left).",
+   "scope": [
+    "src/domain/policy.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/policy.ts",
+     "find": "export function recoveryDelay(previousAutoRetries: number): number | null {\n  return previousAutoRetries < RECOVERY_DELAYS_S.length ? RECOVERY_DELAYS_S[previousAutoRetries]! : null;\n}",
+     "replace": "export function recoveryDelay(previousAutoRetries: number): number | null {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/policy.test.ts"
+   ]
+  },
+  {
+   "id": "sc-09",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `verificationPlan` in src/domain/policy.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Return which optional AI verification runs for a tier, as an object with exactly these properties: independentVerifier: always true; mutation: true only for the \"critical\" tier; unknownBlocks: true only for the \"critical\" tier.",
+   "scope": [
+    "src/domain/policy.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/policy.ts",
+     "find": "export function verificationPlan(tier: \"standard\" | \"critical\") {\n  return {\n    independentVerifier: true,\n    /** oracle mutation test: an extra Builder-slot session + previews; critical tier only */\n    mutation: tier === \"critical\",\n    /** a Verifier that could not run leaves Unknown: it blocks only where the tier requires independent evidence */\n    unknownBlocks: tier === \"critical\",\n  };\n}",
+     "replace": "export function verificationPlan(tier: \"standard\" | \"critical\") {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/policy.test.ts"
+   ]
+  },
+  {
+   "id": "sc-10",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `qualification` in src/domain/router.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Qualification of one worker for one task class, from recorded evidence only. Consider the records of that worker and task class whose `agree` is not null. With none, return { status: \"unqualified\", samples: 0, agreement: null }. Otherwise samples is their number and agreement is the share of them with agree === true AND valid === true. With fewer than QUALIFY.minSamples samples the status is \"shadow\"; otherwise \"qualified\" when agreement >= QUALIFY.minAgreement, \"rejected\" when agreement < QUALIFY.rejectBelow, and \"shadow\" in between. Always return { status, samples, agreement }.",
+   "scope": [
+    "src/domain/router.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/router.ts",
+     "find": "export function qualification(records: QualRecord[], worker: string, taskClass: string): QualStatus {\n  const rs = records.filter((r) => r.worker === worker && r.taskClass === taskClass && r.agree !== null);\n  if (rs.length === 0) return { status: \"unqualified\", samples: 0, agreement: null };\n  const agreement = rs.filter((r) => r.agree === true && r.valid === true).length / rs.length;\n  if (rs.length < QUALIFY.minSamples) return { status: \"shadow\", samples: rs.length, agreement };\n  if (agreement >= QUALIFY.minAgreement) return { status: \"qualified\", samples: rs.length, agreement };\n  if (agreement < QUALIFY.rejectBelow) return { status: \"rejected\", samples: rs.length, agreement };\n  return { status: \"shadow\", samples: rs.length, agreement };\n}",
+     "replace": "export function qualification(records: QualRecord[], worker: string, taskClass: string): QualStatus {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/routing-table.test.ts",
+    "tests/builder.test.ts"
+   ]
+  },
+  {
+   "id": "sc-11",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `classifyShape` in src/domain/plan.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Classify a contract as \"atomic\" or \"complex\" by fixed rules over its must-criteria (priority === \"must\"); collect a reason string per rule that applies, in this order, and return { shape: \"complex\" when at least one reason applies, otherwise \"atomic\", reasons }. Rule 1: more than CALIBRATION.maxMustCriteriaAtomic must-criteria -> `rule 1: ${n} must-criteria (more than ${CALIBRATION.maxMustCriteriaAtomic})`. Rule 2: every must-criterion has a group and there are at least 2 distinct non-blank groups -> `rule 2: ${count} independent deliverables (${the distinct groups, sorted, joined with \", \"})`. Rule 3: at least one must-criterion is tagged \"migration\" and some must-criterion of type \"behavior\" is not tagged \"migration\" -> \"rule 3: a data migration and user-visible behaviour that depends on it\". Rule 4: at least one must-criterion is tagged \"interface-change\" and some must-criterion is not -> \"rule 4: changes an interface accepted contracts depend on and adds new behaviour on top\". Rule 5: f.budgetExhausted is true -> \"rule 5: an atomic attempt exhausted its correction budget\".",
+   "scope": [
+    "src/domain/plan.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/plan.ts",
+     "find": "export function classifyShape(c: Contract, f: ShapeFacts = {}): { shape: Shape; reasons: string[] } {\n  const reasons: string[] = [];\n  const must = c.criteria.filter((k) => k.priority === \"must\");\n  if (must.length > CALIBRATION.maxMustCriteriaAtomic) reasons.push(`rule 1: ${must.length} must-criteria (more than ${CALIBRATION.maxMustCriteriaAtomic})`);\n  const groups = new Set(must.map((k) => k.group).filter((g): g is string => !!g && g.trim().length > 0));\n  if (groups.size >= 2 && must.every((k) => !!k.group)) reasons.push(`rule 2: ${groups.size} independent deliverables (${[...groups].sort().join(\", \")})`);\n  const tagged = (t: string) => must.filter((k) => k.tags.includes(t));\n  if (tagged(\"migration\").length > 0 && must.some((k) => k.type === \"behavior\" && !k.tags.includes(\"migration\")))\n    reasons.push(\"rule 3: a data migration and user-visible behaviour that depends on it\");\n  if (tagged(\"interface-change\").length > 0 && must.some((k) => !k.tags.includes(\"interface-change\")))\n    reasons.push(\"rule 4: changes an interface accepted contracts depend on and adds new behaviour on top\");\n  if (f.budgetExhausted) reasons.push(\"rule 5: an atomic attempt exhausted its correction budget\");\n  return { shape: reasons.length ? \"complex\" : \"atomic\", reasons };\n}",
+     "replace": "export function classifyShape(c: Contract, f: ShapeFacts = {}): { shape: Shape; reasons: string[] } {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/contract-v2.test.ts"
+   ]
+  },
+  {
+   "id": "sc-12",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `extraFiles` in src/domain/context.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Return the files of `changed` that are not in `supplied` and do not start with \".bakeoff/\", sorted ascending.",
+   "scope": [
+    "src/domain/context.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/context.ts",
+     "find": "export function extraFiles(supplied: string[], changed: string[]): string[] {\n  const s = new Set(supplied);\n  return changed.filter((f) => !s.has(f) && !f.startsWith(\".bakeoff/\")).sort();\n}",
+     "replace": "export function extraFiles(supplied: string[], changed: string[]): string[] {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/builder.test.ts"
+   ]
+  },
+  {
+   "id": "sc-13",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `rankFiles` in src/domain/context.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Rank the files found by a context scan. scan.hits maps each search term to its hits ({ file, line, text }); a missing hits object counts as empty. A file's score is the number of distinct terms in which it appears at least once. A file's penalty is 1 when it is a test file (its path matches /(^|\\/)(tests?|__tests__)\\/|\\.test\\.|\\.spec\\./) plus 1 when it ends with .md, .json, .lock, .sql or .snap. Order the files by penalty ascending, then score descending, then path ascending (localeCompare), and return at most CONTEXT_BUDGET.maxFiles paths.",
+   "scope": [
+    "src/domain/context.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/context.ts",
+     "find": "export function rankFiles(scan: ScanResult): string[] {\n  const s = new Map<string, number>();\n  for (const [, hs] of Object.entries(scan.hits ?? {})) for (const f of new Set(hs.map((h) => h.file))) s.set(f, (s.get(f) ?? 0) + 1);\n  const pen = (f: string) => (/(^|\\/)(tests?|__tests__)\\/|\\.test\\.|\\.spec\\./.test(f) ? 1 : 0) + (/\\.(md|json|lock|sql|snap)$/.test(f) ? 1 : 0);\n  return [...s.entries()].sort((a, b) => pen(a[0]) - pen(b[0]) || b[1] - a[1] || a[0].localeCompare(b[0])).map(([f]) => f).slice(0, CONTEXT_BUDGET.maxFiles);\n}",
+     "replace": "export function rankFiles(scan: ScanResult): string[] {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/builder.test.ts"
+   ]
+  },
+  {
+   "id": "sc-14",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `integratedRequirement` in src/domain/plan.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: The integrated-verification requirement of a plan. A plan with at least one task: { required: true, status: \"pending\", head: null, contract_version: p.contract_version, contract_sha256: p.contract_sha256 }. A plan without tasks: { required: false, status: \"not_required\" }.",
+   "scope": [
+    "src/domain/plan.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/plan.ts",
+     "find": "export function integratedRequirement(p: PlanBody): IntegratedVerification {\n  return p.tasks.length > 0\n    ? { required: true, status: \"pending\", head: null, contract_version: p.contract_version, contract_sha256: p.contract_sha256 }\n    : { required: false, status: \"not_required\" };\n}",
+     "replace": "export function integratedRequirement(p: PlanBody): IntegratedVerification {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/contract-v2.test.ts"
+   ]
+  },
+  {
+   "id": "sc-15",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `fulfilmentBlockers` in src/domain/plan.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Reasons why a planned contract is not fulfilled yet. A plan without tasks has none (return []). Otherwise, in this order: when some task has a status other than \"done\" or \"dropped\": `plan tasks not done: ${their ids joined with \", \"}`; when iv.status is not \"passed\": `integrated verification against contract v${p.contract_version} is ${iv.status} (every task passing is not sufficient)`.",
+   "scope": [
+    "src/domain/plan.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/plan.ts",
+     "find": "export function fulfilmentBlockers(p: PlanBody, iv: IntegratedVerification): string[] {\n  if (p.tasks.length === 0) return [];\n  const why: string[] = [];\n  const open = p.tasks.filter((t) => t.status !== \"done\" && t.status !== \"dropped\");\n  if (open.length) why.push(`plan tasks not done: ${open.map((t) => t.id).join(\", \")}`);\n  if (iv.status !== \"passed\") why.push(`integrated verification against contract v${p.contract_version} is ${iv.status} (every task passing is not sufficient)`);\n  return why;\n}",
+     "replace": "export function fulfilmentBlockers(p: PlanBody, iv: IntegratedVerification): string[] {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/contract-v2.test.ts"
+   ]
+  },
+  {
+   "id": "sc-16",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `gateScope` in src/domain/plan.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Which requirement ids the gate requires for a branch of a planned contract, or null for \"the whole contract\". Return null when there is no plan, the plan has no tasks, or `integrated` is true. Plan task ids look like \"T9.a\": a task's entry name is the part after the dot. Return null when `entry` is not null and no task has that entry name. Otherwise return the sorted, de-duplicated union of the `covers` of the tasks named in `mergedEntries` and, when `entry` is not null, of the task named `entry` (entry names that match no task contribute nothing).",
+   "scope": [
+    "src/domain/plan.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/plan.ts",
+     "find": "export function gateScope(p: Pick<PlanBody, \"contract\" | \"tasks\"> | null, entry: string | null, mergedEntries: string[], integrated: boolean): string[] | null {\n  if (!p || p.tasks.length === 0 || integrated) return null;\n  const by = new Map(p.tasks.map((t) => [t.id.split(\".\")[1]!, t]));\n  if (entry !== null && !by.has(entry)) return null;\n  const req = new Set<string>();\n  for (const k of [...mergedEntries, ...(entry ? [entry] : [])]) for (const r of by.get(k)?.covers ?? []) req.add(r);\n  return [...req].sort();\n}",
+     "replace": "export function gateScope(p: Pick<PlanBody, \"contract\" | \"tasks\"> | null, entry: string | null, mergedEntries: string[], integrated: boolean): string[] | null {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/contract-v2.test.ts"
+   ]
+  },
+  {
+   "id": "sc-17",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `partialMergeDecision` in src/domain/plan.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Decide what happens to already merged plan tasks when a contract is revised. If any of the facts mergedTasksSelfContained, mainHealthy, conflictsWithRevisedContract, onlyServesAbandonedOutcome is null (checked in this order): { decision: \"NEEDS_OWNER\", reasons: one `cannot be established: ${fact name}` per null fact }. Otherwise collect problems in this order: not mergedTasksSelfContained -> \"a requirement is left half-delivered\"; not mainHealthy -> \"main is not healthy\"; conflictsWithRevisedContract -> \"conflicts with the revised contract\"; onlyServesAbandonedOutcome -> \"exists only for the abandoned outcome\". No problem: { decision: \"KEEP\", reasons: [\"independently valid; main healthy; consistent with the contract\"] }. With problems: when laterWorkDependsOnIt === false and revertPassesGate === true: { decision: \"REVERT\", reasons: the problems }; otherwise { decision: \"NEEDS_OWNER\", reasons: the problems plus one more: \"later accepted work depends on it\" when laterWorkDependsOnIt is truthy, else \"a safe revert could not be established\" }.",
+   "scope": [
+    "src/domain/plan.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/plan.ts",
+     "find": "export function partialMergeDecision(f: PartialMergeFacts): PartialMergeDecision {\n  const unknown = ([\"mergedTasksSelfContained\", \"mainHealthy\", \"conflictsWithRevisedContract\", \"onlyServesAbandonedOutcome\"] as const).filter((k) => f[k] === null);\n  if (unknown.length) return { decision: \"NEEDS_OWNER\", reasons: unknown.map((k) => `cannot be established: ${k}`) };\n  const bad: string[] = [];\n  if (!f.mergedTasksSelfContained) bad.push(\"a requirement is left half-delivered\");\n  if (!f.mainHealthy) bad.push(\"main is not healthy\");\n  if (f.conflictsWithRevisedContract) bad.push(\"conflicts with the revised contract\");\n  if (f.onlyServesAbandonedOutcome) bad.push(\"exists only for the abandoned outcome\");\n  if (bad.length === 0) return { decision: \"KEEP\", reasons: [\"independently valid; main healthy; consistent with the contract\"] };\n  if (f.laterWorkDependsOnIt === false && f.revertPassesGate === true) return { decision: \"REVERT\", reasons: bad };\n  return { decision: \"NEEDS_OWNER\", reasons: [...bad, f.laterWorkDependsOnIt ? \"later accepted work depends on it\" : \"a safe revert could not be established\"] };\n}",
+     "replace": "export function partialMergeDecision(f: PartialMergeFacts): PartialMergeDecision {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/contract-v2.test.ts"
+   ]
+  },
+  {
+   "id": "sc-18",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `requirementIds` in src/domain/plan.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Return { required, all } for a contract: `required` = the ids of the criteria with priority \"must\" followed by the ids of all constraints; `all` = the ids of all criteria followed by the ids of all constraints (a contract without constraints has none).",
+   "scope": [
+    "src/domain/plan.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/plan.ts",
+     "find": "export function requirementIds(c: Contract): { required: string[]; all: string[] } {\n  const required = [...c.criteria.filter((k) => k.priority === \"must\").map((k) => k.id), ...(c.constraints ?? []).map((x) => x.id)];\n  const all = [...c.criteria.map((k) => k.id), ...(c.constraints ?? []).map((x) => x.id)];\n  return { required, all };\n}",
+     "replace": "export function requirementIds(c: Contract): { required: string[]; all: string[] } {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/contract-v2.test.ts"
+   ]
+  },
+  {
+   "id": "sc-19",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `canonicalJson` in src/domain/contract.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Return the canonical text of a JSON value: JSON.stringify of the value with all object keys sorted recursively (use the helper sortKeys of this file; arrays keep their order), with an indent of 1 space, followed by one trailing newline.",
+   "scope": [
+    "src/domain/contract.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/contract.ts",
+     "find": "export function canonicalJson(value: unknown): string {\n  return JSON.stringify(sortKeys(value), null, 1) + \"\\n\";\n}",
+     "replace": "export function canonicalJson(value: unknown): string {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/contract-v2.test.ts",
+    "tests/domain.test.ts"
+   ]
+  },
+  {
+   "id": "sc-20",
+   "source": "controlled (a tested function of the project removed at the pinned commit)",
+   "instruction": "Implement the function `outcomeChanged` in src/domain/contract.ts. Its body has been removed and currently throws. Keep its signature and everything else in the file exactly as it is.\n\nSpecification: Return true when the outcome of two contracts differs: compare JSON.stringify(outcomeOf(prev)) with JSON.stringify(outcomeOf(next)) (outcomeOf is defined in this file).",
+   "scope": [
+    "src/domain/contract.ts"
+   ],
+   "context": [],
+   "setup": [
+    {
+     "path": "src/domain/contract.ts",
+     "find": "export function outcomeChanged(prev: Contract, next: Contract): boolean {\n  return JSON.stringify(outcomeOf(prev)) !== JSON.stringify(outcomeOf(next));\n}",
+     "replace": "export function outcomeChanged(prev: Contract, next: Contract): boolean {\n  throw new Error(\"not implemented\");\n}"
+    }
+   ],
+   "tests": [
+    "tests/contract-v2.test.ts"
+   ]
+  }
+ ]
+}

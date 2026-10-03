@@ -1,0 +1,267 @@
+{
+ "class": "structured_extraction",
+ "version": 1,
+ "statement": "Extract the fixed fields (task, criterion, error kind, timeout, first named element) from one finding of a browser check.",
+ "cases": [
+  {
+   "id": "se-01",
+   "source": "historical",
+   "input": "T6:AC12 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Routing and qualification', exact: true, level: 2 }) to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC12",
+    "error_kind": "timeout",
+    "timeout_ms": 10000,
+    "target_role": "heading",
+    "target_name": "Routing and qualification"
+   }
+  },
+  {
+   "id": "se-02",
+   "source": "historical",
+   "input": "T6:AC3 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Recent worker runs', exact: true, level: 2 }) to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC3",
+    "error_kind": "timeout",
+    "timeout_ms": 10000,
+    "target_role": "heading",
+    "target_name": "Recent worker runs"
+   }
+  },
+  {
+   "id": "se-03",
+   "source": "historical",
+   "input": "T4:AC3 · regression · oracle:oracle/T4/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Project Capabilities', exact: true, level: 2 }).locator('xpath=ancestor::*[descendant::li][1]').getByRole('listitem').filter({ has: getByRole('heading', { name: 'Demo Project', exact: true, level: 3 }) }) to be visible",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC3",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "heading",
+    "target_name": "Project Capabilities"
+   }
+  },
+  {
+   "id": "se-04",
+   "source": "historical",
+   "input": "T6:AC12 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 12000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Recent worker runs', exact: true, level: 2 }) to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC12",
+    "error_kind": "timeout",
+    "timeout_ms": 12000,
+    "target_role": "heading",
+    "target_name": "Recent worker runs"
+   }
+  },
+  {
+   "id": "se-05",
+   "source": "historical",
+   "input": "T6:AC8 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 12000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Routing and qualification', exact: true, level: 2 }) to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC8",
+    "error_kind": "timeout",
+    "timeout_ms": 12000,
+    "target_role": "heading",
+    "target_name": "Routing and qualification"
+   }
+  },
+  {
+   "id": "se-06",
+   "source": "historical",
+   "input": "T5:AC4 · regression · oracle:oracle/T5/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Project Capabilities', exact: true, level: 2 }).locator('xpath=ancestor::*[descendant::table][1]').getByRole('table').first() to be visible",
+   "expect": {
+    "task": "T5",
+    "criterion": "AC4",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "heading",
+    "target_name": "Project Capabilities"
+   }
+  },
+  {
+   "id": "se-07",
+   "source": "historical",
+   "input": "T4:AC5 · oracle:oracle/T4/check.mjs · Projects panel must include New intent linking to /projects/demo/new",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC5",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "se-08",
+   "source": "historical",
+   "input": "T4:AC5 · oracle:oracle/T4/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Projects', exact: true, level: 2 }).locator('xpath=ancestor::*[descendant::a][1]').getByRole('link', { name: 'New intent', exact: true }).first() to be visible",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC5",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "heading",
+    "target_name": "Projects"
+   }
+  },
+  {
+   "id": "se-09",
+   "source": "historical",
+   "input": "T4:AC3 · oracle:oracle/T4/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Project Capabilities', exact: true, level: 2 }).locator('xpath=ancestor::*[descendant::table][1]') to be visible",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC3",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "heading",
+    "target_name": "Project Capabilities"
+   }
+  },
+  {
+   "id": "se-10",
+   "source": "historical",
+   "input": "T4:AC5 · regression · oracle:oracle/T4/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Projects', exact: true, level: 2 }).locator('xpath=ancestor::*[descendant::a][1]').getByRole('link', { name: 'New intent', exact: true }).first() to be visible",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC5",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "heading",
+    "target_name": "Projects"
+   }
+  },
+  {
+   "id": "se-11",
+   "source": "historical",
+   "input": "T4:AC4 · regression · oracle:oracle/T4/check.mjs · Build status card label: expected exactly one element\n\n2 !== 1",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC4",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "se-12",
+   "source": "historical",
+   "input": "T4:AC3 · regression · oracle:oracle/T4/check.mjs · Project list must be within the Project Capabilities section\n\n4 !== 1",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC3",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "se-13",
+   "source": "historical",
+   "input": "T6:AC7 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Routing and qualification', exact: true, level: 2 }) to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC7",
+    "error_kind": "timeout",
+    "timeout_ms": 10000,
+    "target_role": "heading",
+    "target_name": "Routing and qualification"
+   }
+  },
+  {
+   "id": "se-14",
+   "source": "historical",
+   "input": "T6:AC1 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Recent worker runs', exact: true, level: 2 }) to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC1",
+    "error_kind": "timeout",
+    "timeout_ms": 10000,
+    "target_role": "heading",
+    "target_name": "Recent worker runs"
+   }
+  },
+  {
+   "id": "se-15",
+   "source": "controlled",
+   "input": "T9:AC2 · oracle:oracle/T9/check.mjs · /lists/42: expected HTTP 200, got 500",
+   "expect": {
+    "task": "T9",
+    "criterion": "AC2",
+    "error_kind": "http_status",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "se-16",
+   "source": "controlled",
+   "input": "T1:AC3 · oracle:oracle/T1/check.mjs · HARNESS: preview is unreachable: page.goto: net::ERR_CONNECTION_REFUSED at http://preview:8080/",
+   "expect": {
+    "task": "T1",
+    "criterion": "AC3",
+    "error_kind": "harness",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "se-17",
+   "source": "controlled",
+   "input": "T10:AC4 · regression · oracle:oracle/T10/check.mjs · HARNESS: ReferenceError: baseURL is not defined",
+   "expect": {
+    "task": "T10",
+    "criterion": "AC4",
+    "error_kind": "harness",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "se-18",
+   "source": "controlled",
+   "input": "T0:AC2 · regression · oracle:oracle/T0/check.mjs · locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Approve contract', exact: true })",
+   "expect": {
+    "task": "T0",
+    "criterion": "AC2",
+    "error_kind": "timeout",
+    "timeout_ms": 30000,
+    "target_role": "button",
+    "target_name": "Approve contract"
+   }
+  },
+  {
+   "id": "se-19",
+   "source": "controlled",
+   "input": "T11:AC1 · oracle:oracle/T11/check.mjs · Description field value\n\nExpected: \"Optional description\"\nReceived: \"\"",
+   "expect": {
+    "task": "T11",
+    "criterion": "AC1",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "se-20",
+   "source": "controlled",
+   "input": "T9:AC8 · oracle:oracle/T9/check.mjs · page.waitForURL: Timeout 25000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"",
+   "expect": {
+    "task": "T9",
+    "criterion": "AC8",
+    "error_kind": "timeout",
+    "timeout_ms": 25000,
+    "target_role": null,
+    "target_name": null
+   }
+  }
+ ]
+}
