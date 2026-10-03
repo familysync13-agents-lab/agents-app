@@ -1,0 +1,286 @@
+{
+ "assumptions": [
+  {
+   "basis": "existing behaviour",
+   "chosen": "Each cell shows the value as recorded on the run (purpose e.g. \"build\", worker e.g. \"claude-code\", task class e.g. \"build\", reason = the recorded route reason text, task key e.g. \"T3\"); a purpose may additionally be followed by a human label. The context size is the recorded byte count as an integer (digit grouping and a trailing \"bytes\"/\"B\" unit allowed); when no context package was recorded the cell shows \"—\", like the audit log's empty Task cell. Newest first = by run start time, latest first. A run with no recorded worker/task class/reason (older runs) shows \"—\" in that cell.",
+   "id": "A1",
+   "question": "How are the purpose, worker, task class, reason and context size written in the \"Recent worker runs\" table, and in what order are runs \"newest first\"?",
+   "reversible": true
+  },
+  {
+   "basis": "existing behaviour",
+   "chosen": "The Router's decision for a standard-tier task with all enabled workers available, computed from the recorded qualification records at the time the page is opened; Worker and Reason are exactly the Router's chosen worker id and reason text. An alternative's status is \"disabled\" when the worker is not enabled in the Router's table, otherwise the Router's qualification status; its samples are the number of recorded qualification samples the Router counts for that worker and class.",
+   "id": "A2",
+   "question": "Which worker \"would run that class now\", given that the Router's decision also depends on the task's risk tier and on quota pauses?",
+   "reversible": true
+  },
+  {
+   "basis": "stated intent",
+   "chosen": "Like the other preview demo data (APP_ENV=preview only), two finished demo runs: first a run on demo task T1 with purpose \"draft_contract\", worker \"claude-code\", task class \"contract_draft\", reason \"trusted worker (no alternative is defined for this class)\" and no context package; then, started later, a run on demo task T3 with purpose \"build\", worker \"claude-code\", task class \"build\", reason \"trusted worker (no alternative has qualified for this class)\" and a context package of 48213 bytes. Plus three demo qualification records for worker \"local-llm\", task class \"log_summary\", mode shadow, valid and agreeing. No other qualification records.",
+   "id": "A3",
+   "question": "What demonstration data does the gate preview carry for these sections?",
+   "reversible": true
+  }
+ ],
+ "canary_routes": [
+  "/",
+  "/system"
+ ],
+ "constraints": [
+  {
+   "id": "C1",
+   "kind": "regression",
+   "statement": "All existing content of /system remains present and unchanged: the h1 \"System\", the heartbeat tiles, the \"Build\" and \"Executor jobs\" tiles, the cards headed \"Backups\", \"Recent executor errors\" and \"Administrative operations (audit log)\" (and any section added by another task, such as \"Project Capabilities\"), the footer line about recovery points, the live refresh, and the page title \"System · Agents\".",
+   "trace": {
+    "ref": "They must not change any other part of the System page",
+    "source": "intent"
+   },
+   "verify": "blackbox"
+  },
+  {
+   "id": "C2",
+   "kind": "prohibited",
+   "statement": "Both sections only read recorded facts (the runs table, the Router's static rule table and the recorded qualification records): opening /system never writes to the database, creates executor jobs, contacts a worker or model, or shows an estimated, projected or animated value.",
+   "trace": {
+    "ref": "Both sections show only recorded facts; nothing is estimated or animated",
+    "source": "intent"
+   },
+   "verify": "judgment"
+  },
+  {
+   "id": "C3",
+   "kind": "prohibited",
+   "statement": "The demonstration worker runs and demonstration qualification records exist only in the gate preview's demo data (APP_ENV=preview); production never receives invented runs or qualification evidence, so production routing is never influenced by demo data.",
+   "trace": {
+    "ref": "AC2: the preview must carry known runs for AC2 to be checkable black-box, and that demo data must not leak into production where qualification records drive the Router",
+    "source": "necessary"
+   },
+   "verify": "static"
+  }
+ ],
+ "criteria": [
+  {
+   "given": "the gate preview with its demo data and the owner signed in via /auth/preview",
+   "group": "Recent worker runs",
+   "id": "AC1",
+   "priority": "must",
+   "tags": [],
+   "then": "the response is HTTP 200 and the page shows exactly one h2 heading whose text is exactly \"Recent worker runs\"; within that section there is a table whose column headers are, in order, \"Task\", \"Purpose\", \"Worker\", \"Task class\", \"Reason\", \"Context bytes\"",
+   "trace": {
+    "ref": "Deliverable 1, heading \"Recent worker runs\": a table of the 20 most recent worker runs, newest first",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\""
+  },
+  {
+   "given": "the gate preview with its demo data (two demo runs as stated in the interface: the T1 contract-drafting run, then the later T3 build run) and the owner signed in",
+   "group": "Recent worker runs",
+   "id": "AC2",
+   "priority": "must",
+   "tags": [],
+   "then": "there are exactly two body rows; the first row's cells contain, in column order, \"T3\", \"build\", \"claude-code\", \"build\" and \"trusted worker (no alternative has qualified for this class)\"; the second row's cells contain \"T1\", \"draft_contract\", \"claude-code\", \"contract_draft\" and \"trusted worker (no alternative is defined for this class)\"",
+   "trace": {
+    "ref": "Each row shows the task key, the purpose of the run, the worker, the task class, the reason the Router chose that worker",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\" and reads the body rows of the \"Recent worker runs\" table"
+  },
+  {
+   "given": "the gate preview with its demo data, in which the T3 build run recorded a context package of 48213 bytes and the T1 run recorded none, and the owner signed in",
+   "group": "Recent worker runs",
+   "id": "AC3",
+   "priority": "must",
+   "tags": [],
+   "then": "the T3 row's \"Context bytes\" cell, after removing \",\" and whitespace and a trailing \"bytes\" or \"B\", is exactly \"48213\"; the T1 row's \"Context bytes\" cell is exactly \"—\" (surrounding whitespace removed)",
+   "trace": {
+    "ref": "the size of the context package in bytes (or a dash when there was none)",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\" and reads the \"Context bytes\" cells of the \"Recent worker runs\" table"
+  },
+  {
+   "given": "more than 20 worker runs are recorded, the owner signed in",
+   "group": "Recent worker runs",
+   "id": "AC4",
+   "priority": "should",
+   "tags": [],
+   "then": "the \"Recent worker runs\" table has exactly 20 body rows: the 20 most recently started runs, the most recent first",
+   "trace": {
+    "ref": "a table of the 20 most recent worker runs, newest first",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\""
+  },
+  {
+   "given": "no worker run is recorded, the owner signed in",
+   "group": "Recent worker runs",
+   "id": "AC5",
+   "priority": "should",
+   "tags": [],
+   "then": "the \"Recent worker runs\" section is still present with its h2 heading and shows the text \"No worker runs yet\", with no run rows; the page loads without error",
+   "trace": {
+    "ref": "When there are no runs it shows the text \"No worker runs yet\"",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\""
+  },
+  {
+   "given": "the gate preview with its demo data and the owner signed in via /auth/preview",
+   "group": "Routing and qualification",
+   "id": "AC6",
+   "priority": "must",
+   "tags": [],
+   "then": "the response is HTTP 200 and the page shows exactly one h2 heading whose text is exactly \"Routing and qualification\"; within that section there is a table whose column headers are, in order, \"Task class\", \"Worker\", \"Reason\", \"Alternatives\", with exactly 10 body rows whose \"Task class\" cells are, top to bottom, \"contract_draft\", \"plan\", \"build\", \"correction\", \"mutants\", \"check_author\", \"acceptance_check\", \"attribution\", \"failure_triage\", \"log_summary\"",
+   "trace": {
+    "ref": "Deliverable 2, heading \"Routing and qualification\": a table with one row per task class",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\""
+  },
+  {
+   "given": "the gate preview with its demo data and the owner signed in",
+   "group": "Routing and qualification",
+   "id": "AC7",
+   "priority": "must",
+   "tags": [],
+   "then": "the \"Worker\" cell is exactly \"claude-code\" for contract_draft, plan, build, correction, mutants and log_summary, and exactly \"codex-verifier\" for check_author, acceptance_check, attribution and failure_triage; the \"Reason\" cell contains \"trusted worker (no alternative is defined for this class)\" for contract_draft, plan, mutants, check_author, acceptance_check and attribution, and \"trusted worker (no alternative has qualified for this class)\" for build, correction, failure_triage and log_summary",
+   "trace": {
+    "ref": "showing the worker that would run that class now and the reason",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\" and reads the \"Worker\" and \"Reason\" cells of the \"Routing and qualification\" table"
+  },
+  {
+   "given": "the gate preview with its demo data (three shadow qualification records of local-llm for log_summary, no other qualification records) and the owner signed in",
+   "group": "Routing and qualification",
+   "id": "AC8",
+   "priority": "must",
+   "tags": [],
+   "then": "the build row's and the correction row's \"Alternatives\" cells each contain two entries, first one containing \"codex-builder\", \"disabled\" and \"0 samples\", then one containing \"opencode-local\", \"disabled\" and \"0 samples\"; the failure_triage row's cell contains one entry containing \"local-llm\", \"unqualified\" and \"0 samples\"; the log_summary row's cell contains one entry containing \"local-llm\", \"shadow\" and \"3 samples\"; the \"Alternatives\" cell of each of the other six rows is exactly \"—\"",
+   "trace": {
+    "ref": "for each alternative worker of that class its status (unqualified, shadow, qualified, rejected or disabled) and its number of samples",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\" and reads the \"Alternatives\" cells of the \"Routing and qualification\" table"
+  },
+  {
+   "given": "an enabled alternative worker has at least 20 recorded, valid and agreeing qualification samples for a class (e.g. local-llm for log_summary), the owner signed in",
+   "group": "Routing and qualification",
+   "id": "AC9",
+   "priority": "should",
+   "tags": [],
+   "then": "that alternative's entry shows \"qualified\" with its sample count, and the row's \"Worker\" cell shows that alternative with the Router's reason (beginning \"qualified for\"), exactly as the Router decides for a standard-tier task",
+   "trace": {
+    "ref": "the worker that would run that class now and the reason",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\""
+  },
+  {
+   "given": "the gate preview with its demo data and the owner signed in",
+   "id": "AC10",
+   "priority": "must",
+   "tags": [],
+   "then": "the page still shows the h1 \"System\", the h2 headings \"Backups\", \"Recent executor errors\" and \"Administrative operations (audit log)\", and the tiles labelled \"Build\" and \"Executor jobs\"; the document title is \"System · Agents\"",
+   "trace": {
+    "ref": "They must not change any other part of the System page",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\""
+  },
+  {
+   "given": "the owner signed in on the gate preview and on \"/\"",
+   "id": "AC11",
+   "priority": "must",
+   "tags": [],
+   "then": "the browser is at \"/system\" with HTTP status 200 and both the \"Recent worker runs\" and the \"Routing and qualification\" headings are visible",
+   "trace": {
+    "ref": "Add two independent, read-only sections to the System page",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner activates the navigation link \"System\""
+  },
+  {
+   "given": "the gate preview with its demo data and the owner signed in",
+   "id": "AC12",
+   "priority": "must",
+   "tags": [],
+   "then": "the visible text of both new sections is identical before and after the reload, and neither section contains a button, form, text input or select",
+   "trace": {
+    "ref": "Both sections show only recorded facts; nothing is estimated or animated",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens \"/system\", reads both new sections, reloads the page and reads them again"
+  },
+  {
+   "id": "AC13",
+   "priority": "should",
+   "refs": [
+    "/system",
+    "src/app/(app)/system/page.tsx",
+    "src/components/ui.tsx"
+   ],
+   "statement": "Both new sections use the existing System page look (Card with CardHeader, the same table and muted-text styling as \"Administrative operations (audit log)\", monospace for identifiers such as worker ids and task classes), show no animation, spinner or progress indicator, and stay usable at a 375px-wide viewport (the tables may scroll horizontally inside their cards, as the audit table does) and on desktop.",
+   "tags": [],
+   "trace": {
+    "ref": "nothing is estimated or animated. They must not change any other part of the System page",
+    "source": "intent"
+   },
+   "type": "experience"
+  }
+ ],
+ "id": "T6",
+ "intent_sha256": "8abc11f86768ee3b998ad41350ca7397fc29e132d4451ec953ca4860cc29c6d7",
+ "interface": {
+  "ui": "Sign-in for the gate preview: GET /auth/preview (redirects to / with an owner session). System page: route /system (navigation link \"System\"), page title \"System · Agents\", h1 \"System\" (unchanged). NEW section 1: a card with heading (h2) exactly \"Recent worker runs\" on /system, containing a table whose column headers are, in this order: \"Task\", \"Purpose\", \"Worker\", \"Task class\", \"Reason\", \"Context bytes\". One body row per worker run, at most 20, newest first (by start time). Task cell: the task key (preview: \"T1\", \"T3\"; it may link to /tasks/{id}). Purpose cell: the recorded purpose (preview: \"build\", \"draft_contract\"), optionally followed by a human label. Worker cell: the recorded worker id (preview: \"claude-code\"). Task class cell: the recorded task class (preview: \"build\", \"contract_draft\"). Reason cell: the recorded route reason (preview: \"trusted worker (no alternative has qualified for this class)\", \"trusted worker (no alternative is defined for this class)\"). Context bytes cell: the recorded byte count as an integer (preview: 48213; digit grouping such as \"48,213\" and a trailing \"bytes\" or \"B\" are allowed), or exactly \"—\" (U+2014) when the run had no context package; any other unrecorded value is also shown as \"—\". With no runs, the section shows the text \"No worker runs yet\" and no table body rows. Preview rows, top to bottom: [T3 | build | claude-code | build | trusted worker (no alternative has qualified for this class) | 48213], [T1 | draft_contract | claude-code | contract_draft | trusted worker (no alternative is defined for this class) | —]. NEW section 2: a card with heading (h2) exactly \"Routing and qualification\" on /system, containing a table whose column headers are, in this order: \"Task class\", \"Worker\", \"Reason\", \"Alternatives\". Exactly one body row per Router task class, in the Router's order: contract_draft, plan, build, correction, mutants, check_author, acceptance_check, attribution, failure_triage, log_summary (Task class cell shows that identifier). Worker cell: the worker id the Router would choose now for a standard-tier task; Reason cell: the Router's reason text. Alternatives cell: for each alternative worker the Router defines for that class, in the Router's order, one entry (e.g. a list item or line) containing the worker id, its status as exactly one of the words \"unqualified\", \"shadow\", \"qualified\", \"rejected\", \"disabled\", and its sample count written as \"{n} samples\" (e.g. \"codex-builder disabled 0 samples\"); exactly \"—\" when the class has no alternative. Preview values (A3 demo data): build and correction: Worker \"claude-code\", Reason \"trusted worker (no alternative has qualified for this class)\", alternatives codex-builder disabled 0 samples, opencode-local disabled 0 samples; failure_triage: Worker \"codex-verifier\", Reason \"trusted worker (no alternative has qualified for this class)\", alternative local-llm unqualified 0 samples; log_summary: Worker \"claude-code\", Reason \"trusted worker (no alternative has qualified for this class)\", alternative local-llm shadow 3 samples; contract_draft, plan, mutants: Worker \"claude-code\"; check_author, acceptance_check, attribution: Worker \"codex-verifier\"; all six with Reason \"trusted worker (no alternative is defined for this class)\" and Alternatives \"—\". Existing content on /system keeps its headings: \"Backups\", \"Recent executor errors\", \"Administrative operations (audit log)\"; tiles \"Build\" and \"Executor jobs\"."
+ },
+ "non_goals": [
+  "Showing other ledger fields (harness, model, provider, permission envelope, context file list, extra files, failure class, status, outcome, duration, cost) - they may be shown but are not required.",
+  "Filtering, sorting, searching or paginating either table; showing more than the 20 most recent runs; any per-run detail page.",
+  "Changing the Router (src/domain/router.ts): its rule table, workers, qualification thresholds or how it decides; changing how runs or qualification records are recorded.",
+  "Enabling, disabling, qualifying or rejecting a worker, or recording qualification evidence, from the UI; any new button, form, action or API under /api/v0.",
+  "Showing the ledger or routing on other pages (Command page, project pages, task pages) or changing the task page's \"Workers\" card.",
+  "Estimates, projections, charts, progress indicators or animations of any kind.",
+  "Changing the existing System page content (heartbeat tiles, \"Build\", \"Executor jobs\", \"Backups\", \"Recent executor errors\", \"Administrative operations (audit log)\", any \"Project Capabilities\" section of other tasks) or its live refresh; changing sign-in, sessions or authorization."
+ ],
+ "open_questions": [],
+ "policies": [
+  "policy.json"
+ ],
+ "scope": {
+  "paths": [
+   "**"
+  ],
+  "summary": "The System page (/system) gains two independent, read-only sections. \"Recent worker runs\" is a table of the 20 most recent worker runs (newest first) showing, from the run records the control loop already writes, the task key, the run's purpose, the worker, the task class, the Router's reason for choosing that worker and the size of the context package in bytes (a dash when the run had none); with no runs it says \"No worker runs yet\". \"Routing and qualification\" is a table with one row per task class of the static Router showing the worker that would run that class now and the Router's reason, plus, for each alternative worker defined for that class, its qualification status (unqualified, shadow, qualified, rejected or disabled) and its number of recorded samples, derived from the recorded qualification evidence only. Nothing is estimated or animated. The gate preview's demonstration data gains demonstration worker runs (and a few demonstration qualification records) so both sections can be checked black-box. All other parts of the System page stay unchanged."
+ },
+ "tier": "standard",
+ "title": "Execution ledger on the System page",
+ "traces_to": [
+  "OWNER-INTENT-T6"
+ ],
+ "version": 1
+}
