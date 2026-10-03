@@ -4,8 +4,9 @@ import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { activity, artifacts, executorJobs, qualificationBatches, qualificationRecords, runs } from "@/db/schema";
 import { sha256 } from "@/domain/contract";
-import { ALL_TASK_CLASSES, CODE_CLASSES, classifyFailure, qualification, ROUTES, route, SEMANTIC_CLASSES, WORKERS, type AnyTaskClass, type CodeClass, type QualRecord, type Risk, type SemanticClass } from "@/domain/router";
-import { boundInput, CODE_SYSTEM, SEMANTIC, semanticGate } from "@/domain/semantic";
+import { ALL_TASK_CLASSES, CANDIDATES, CODE_CLASSES, classifyFailure, modelOf, QUALIFY, qualification, ROUTES, route, SEMANTIC_CLASSES, WORKERS, type AnyTaskClass, type CodeClass, type QualRecord, type Risk, type SemanticClass } from "@/domain/router";
+import { RESEARCH, RESEARCH_CLASSES, type ResearchClass } from "@/domain/research";
+import { boundInput, CODE_SYSTEM, PATCH_SYSTEM, SEMANTIC, semanticGate, type SemanticSpec } from "@/domain/semantic";
 
 /*
  * QUALIFICATION HARNESS and production path of the LOCAL workers (local-worker extension).
@@ -19,8 +20,22 @@ import { boundInput, CODE_SYSTEM, SEMANTIC, semanticGate } from "@/domain/semant
  */
 type Json = Record<string, unknown>;
 const DIR = () => path.join(process.cwd(), "src", "qualification", "cases");
-const isSemantic = (c: string): c is SemanticClass => (SEMANTIC_CLASSES as readonly string[]).includes(c);
-const isCode = (c: string): c is CodeClass => (CODE_CLASSES as readonly string[]).includes(c);
+const isProdSemantic = (c: string): c is SemanticClass => (SEMANTIC_CLASSES as readonly string[]).includes(c);
+const isResearch = (c: string): c is ResearchClass => (RESEARCH_CLASSES as readonly string[]).includes(c);
+/** bounded text-in / JSON-out classes: the production semantic classes and the research pack */
+const isSemantic = (c: string): c is SemanticClass | ResearchClass => isProdSemantic(c) || isResearch(c);
+/**
+ * EDIT-BASED coding classes: a separate qualification path. Same pinned tasks as the whole-file classes, but the worker answers
+ * with exact search/replace edits, and the gate additionally requires that nothing outside the lines the task is about changed.
+ */
+export const PATCH_CLASSES = ["patch_repair", "patch_small_code"] as const;
+export type PatchClass = (typeof PATCH_CLASSES)[number];
+const isPatch = (c: string): c is PatchClass => (PATCH_CLASSES as readonly string[]).includes(c);
+const PATCH_BASE: Record<PatchClass, CodeClass> = { patch_repair: "bounded_repair", patch_small_code: "small_code" };
+const isCode = (c: string): c is CodeClass | PatchClass => (CODE_CLASSES as readonly string[]).includes(c) || isPatch(c);
+const specOf = (c: SemanticClass | ResearchClass): SemanticSpec => (isResearch(c) ? RESEARCH[c] : SEMANTIC[c]);
+/** every class that has a qualification harness */
+export const HARNESS_CLASSES: readonly string[] = [...SEMANTIC_CLASSES, ...RESEARCH_CLASSES, ...CODE_CLASSES, ...PATCH_CLASSES];
 export const HARNESS_VOL = "agents-qf-1";
 
 export interface SemanticCase { id: string; source: string; input: string; expect: Json }
@@ -28,7 +43,8 @@ export interface CodeCase { id: string; source: string; instruction: string; sco
 export interface CaseSet<T> { class: string; version: number; statement: string; base?: string; cases: T[]; sha: string }
 
 export function loadCaseSet<T = SemanticCase | CodeCase>(cls: string): CaseSet<T> {
-  const raw = fs.readFileSync(path.join(DIR(), `${cls}.json`), "utf8");
+  // the edit-based classes use the SAME pinned tasks as the whole-file classes (one file, one sha): only the interface differs
+  const raw = fs.readFileSync(path.join(DIR(), `${isPatch(cls) ? PATCH_BASE[cls] : cls}.json`), "utf8");
   return { ...(JSON.parse(raw) as Omit<CaseSet<T>, "sha">), sha: sha256(raw) };
 }
 
@@ -40,18 +56,20 @@ export function localCandidate(cls: AnyTaskClass): string | null {
   return ROUTES[cls].alternatives.find((w) => WORKERS[w]!.enabled && WORKERS[w]!.provider === "ollama-host") ?? null;
 }
 
-function semanticJob(cls: SemanticClass, model: string, input: string) {
-  const spec = SEMANTIC[cls];
-  const prompt = boundInput(cls, input);
+function semanticJob(cls: SemanticClass | ResearchClass, model: string, input: string) {
+  const spec = specOf(cls);
+  const prompt = isResearch(cls) ? input.slice(0, spec.maxInput) : boundInput(cls, input);
   return { prompt, params: { model, system: spec.system, prompt, schema: spec.schema, max_tokens: spec.maxTokens } };
 }
 
 /** Run the pinned cases of a class through its local candidate (harness mode). Cases already recorded for this model and case set are skipped. */
-export async function qualifyRun(db: Db, cls: string, opts: { ids?: string[]; repo?: string } = {}): Promise<{ submitted: number; skipped: number; worker: string | null; model?: string; caseSet?: string }> {
+export async function qualifyRun(db: Db, cls: string, opts: { ids?: string[]; repo?: string; worker?: string } = {}): Promise<{ submitted: number; skipped: number; worker: string | null; model?: string; caseSet?: string }> {
   if (!isSemantic(cls) && !isCode(cls)) throw new Error(`no qualification harness for class ${cls}`);
-  const worker = localCandidate(cls);
+  // an explicit worker may be a routable local worker or an evaluation candidate; without one, the class's own local alternative
+  const worker = opts.worker ?? (cls in ROUTES ? localCandidate(cls as AnyTaskClass) : null);
   if (!worker) return { submitted: 0, skipped: 0, worker: null };
-  const model = WORKERS[worker]!.model;
+  const model = modelOf(worker);
+  if (!model || (WORKERS[worker] && WORKERS[worker]!.provider !== "ollama-host")) throw new Error(`${worker} is not a local worker or evaluation candidate`);
   const set = loadCaseSet(cls);
   const had = await db.select({ caseId: qualificationRecords.caseId }).from(qualificationRecords).where(and(eq(qualificationRecords.worker, worker), eq(qualificationRecords.taskClass, cls), eq(qualificationRecords.model, model), eq(qualificationRecords.caseSetSha256, set.sha), eq(qualificationRecords.voided, false)));
   const done = new Set(had.map((h) => h.caseId));
@@ -66,6 +84,8 @@ export async function qualifyRun(db: Db, cls: string, opts: { ids?: string[]; re
       const k = c as CodeCase;
       op = "local_code";
       params = { vol: HARNESS_VOL, model, reset: true, system: CODE_SYSTEM, instruction: k.instruction, scope: k.scope, context: k.context ?? [], setup: k.setup ?? [], hidden: k.hidden ?? [], pretest: k.pretest ?? [], checks: { typecheck: true, lint: true, tests: k.tests } };
+      // edit-based interface: exact search/replace edits; everything outside the lines of the seeded defect / the removed function must stay byte-identical
+      if (isPatch(cls)) params = { ...params, mode: "patch", system: PATCH_SYSTEM, preserve: (k.setup ?? []).map((s) => ({ path: s.path, anchor: s.replace })) };
       bytes = k.instruction.length; digestOf = JSON.stringify(params);
     }
     const [job] = await db.insert(executorJobs).values({ op, params }).returning({ id: executorJobs.id });
@@ -101,16 +121,16 @@ export async function collectCandidates(db: Db, now: () => Date = () => new Date
       const g = res.gate ?? {};
       const pass = g.pass === true;
       const checks = (g.checks ?? []).map((c) => ({ name: c.name, rc: c.rc, ms: c.ms, tail: c.rc === 0 ? "" : String(c.tail).slice(-1200) }));
-      await set({ ...usage, valid: g.stage === "checks", gate: pass, gateDetail: { stage: g.stage, reason: g.reason ?? null, checks, diffstat: res.diffstat ?? null, pretest_rc: res.pretest_rc ?? null }, output: { notes: res.notes ?? null, changed: res.changed ?? [], diff: String(res.diff ?? "").slice(0, 30000) }, contextBytes: res.prompt_chars ?? r.contextBytes, ...(pass ? {} : { agree: r.mode === "production" ? null : false }) });
+      await set({ ...usage, valid: g.stage === "checks", gate: pass, gateDetail: { stage: g.stage, reason: g.reason ?? null, checks, diffstat: res.diffstat ?? null, numstat: (res as Json).numstat ?? null, edits: (res as Json).edits ?? null, loaded_bytes: (res as Json).loaded_bytes ?? null, pretest_rc: res.pretest_rc ?? null }, output: { notes: res.notes ?? null, changed: res.changed ?? [], diff: String(res.diff ?? "").slice(0, 30000) }, contextBytes: res.prompt_chars ?? r.contextBytes, ...(pass ? {} : { agree: r.mode === "production" ? null : false }) });
       continue;
     }
-    const cls = r.taskClass as SemanticClass;
+    const cls = r.taskClass as SemanticClass | ResearchClass;
     const input = String((j.params as Json).prompt ?? "");
     const expect = r.expected ? (JSON.parse(r.expected) as Json) : null;
-    const g = semanticGate(cls, input, res.ok ? res.output : null, r.mode === "production" ? null : expect);
-    const needsVerifier = SEMANTIC[cls].verifier && g.pass;
+    const g = isResearch(cls) ? researchGate(cls, input, res.ok ? res.output : null, expect) : semanticGate(cls, input, res.ok ? res.output : null, r.mode === "production" ? null : expect);
+    const needsVerifier = specOf(cls).verifier && g.pass;
     await set({ ...usage, valid: g.valid, gate: g.pass, gateDetail: { problems: g.problems, ...(res.ok ? {} : { raw: String(res.raw ?? "").slice(0, 400) }) }, output: (res.output ?? { raw: null }) as Json, verifier: g.pass && !needsVerifier ? "not_applicable" : null, ...(r.mode === "production" ? {} : needsVerifier ? {} : { agree: g.pass }) });
-    if (r.mode === "production") await finishProduction(db, r, g.pass ? (res.output as Json) : null, g.pass ? null : `the output failed its gate (${g.problems.slice(0, 2).join("; ")})`);
+    if (r.mode === "production" && isProdSemantic(cls)) await finishProduction(db, r, g.pass ? (res.output as Json) : null, g.pass ? null : `the output failed its gate (${g.problems.slice(0, 2).join("; ")})`);
   }
   await qualifyVerify(db);
   n += await advanceBatches(db, now);
@@ -124,6 +144,19 @@ Create the directory /work/out if needed. Do not create or change anything else.
 const VERIFY_CODE = `You are an independent code reviewer. The file /work/items.json holds a JSON array of items {id, task, diff}. Each diff is a change a worker made for the task in a TypeScript project; the project's own type check, lint and tests already pass with it. For every item decide whether the change itself is acceptable: it does what the task states, it changes nothing unrelated, it does not special-case test inputs or weaken or remove checks, and it contains no evident defect. A different but correct solution passes.
 Write /work/out/findings.json with exactly this shape and one verdict per item: {"verdicts": [{"id": "<item id>", "pass": true or false, "reason": "<one sentence>"}]}
 Create the directory /work/out if needed. Do not create or change anything else. Finish with the single line VERIFIER-DONE.`;
+
+const VERIFY_RESEARCH = `You are an independent reviewer of research work. The file /work/items.json holds a JSON array of items {id, task, rubric, input, output}. Each output was produced for the task from the input alone. For every item decide whether the output satisfies its rubric, judging strictly against the input: anything the output states that the input does not support is a failure, and so is a guessed or invented value. Style does not matter.
+Write /work/out/findings.json with exactly this shape and one verdict per item: {"verdicts": [{"id": "<item id>", "pass": true or false, "reason": "<one sentence naming the decisive point>"}]}
+Create the directory /work/out if needed. Do not create or change anything else. Finish with the single line VERIFIER-DONE.`;
+
+/** The research gate: structural problems make an output invalid; reference problems make a valid output disagree. */
+function researchGate(cls: ResearchClass, input: string, out: unknown, expect: Json | null) {
+  if (!out || typeof out !== "object" || Array.isArray(out)) return { pass: false, valid: false, problems: ["[schema] output is not a JSON object"] };
+  const structural = RESEARCH[cls].structural(input, out as Json);
+  if (structural.length) return { pass: false, valid: false, problems: structural };
+  const dis = expect ? RESEARCH[cls].agree(out as Json, expect) : [];
+  return { pass: dis.length === 0, valid: true, problems: dis };
+}
 
 /** Hand every gate-passing output that still lacks an independent verdict to the Verifier, in batches. */
 export async function qualifyVerify(db: Db, cls?: string): Promise<{ batches: number; records: number }> {
@@ -157,6 +190,7 @@ async function batchItems(db: Db, b: typeof qualificationBatches.$inferSelect): 
     const [j] = r.jobId ? await db.select().from(executorJobs).where(eq(executorJobs.id, r.jobId)) : [];
     const p = (j?.params ?? {}) as Json;
     if (isCode(r.taskClass)) items.push({ id: `r${r.id}`, task: String(p.instruction ?? "").slice(0, 6000), diff: String((r.output as Json | null)?.diff ?? "").slice(0, 30000) });
+    else if (isResearch(r.taskClass)) items.push({ id: `r${r.id}`, task: loadCaseSetSafe(r.taskClass)?.statement ?? r.taskClass, rubric: RESEARCH[r.taskClass].rubric, input: String(p.prompt ?? ""), output: r.output });
     else items.push({ id: `r${r.id}`, instruction: loadCaseSetSafe(r.taskClass)?.statement ?? r.taskClass, input: String(p.prompt ?? ""), output: r.output });
   }
   return items;
@@ -182,7 +216,7 @@ export async function advanceBatches(db: Db, now: () => Date = () => new Date())
       const others = live.filter((x) => x.id !== b.id && ["started", "poll", "dump"].includes(x.state));
       if (others.length) continue;
       const items = await batchItems(db, b);
-      const [j] = await db.insert(executorJobs).values({ op: "verifier", params: { work_vol: `agents-vw-0-q${b.id}`, files: { "items.json": Buffer.from(JSON.stringify(items, null, 1)).toString("base64") }, prompt: isCode(b.taskClass) ? VERIFY_CODE : VERIFY_SEMANTIC } }).returning({ id: executorJobs.id });
+      const [j] = await db.insert(executorJobs).values({ op: "verifier", params: { work_vol: `agents-vw-0-q${b.id}`, files: { "items.json": Buffer.from(JSON.stringify(items, null, 1)).toString("base64") }, prompt: isCode(b.taskClass) ? VERIFY_CODE : isResearch(b.taskClass) ? VERIFY_RESEARCH : VERIFY_SEMANTIC } }).returning({ id: executorJobs.id });
       await upd("started", { jobId: j!.id, items: items.length }); n++;
       continue;
     }
@@ -241,30 +275,53 @@ export async function advanceBatches(db: Db, now: () => Date = () => new Date())
 // ---------------------------------------------------------------- status ---------------------------------------------------------
 const median = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)]! : null);
 
-/** Per (local worker, class): the Router's verdict and the evidence behind it. Read-only. */
+export type FinalStatus = "QUALIFIED_CANDIDATE" | "PENDING_VERIFICATION" | "FAILED_GATE" | "REJECTED_BY_VERIFIER" | "PATCH_BASED_LOCAL_CODING" | "DISABLED" | "NOT_RUN";
+/**
+ * The qualification status of one (worker or candidate, class), from its recorded samples only. Gate and Verifier are reported
+ * separately; the threshold is the Router's (QUALIFY.minAgreement over at least QUALIFY.minSamples samples) and is not relaxed.
+ */
+export function finalStatus(i: { enabled: boolean; cls: string; samples: number; gatePass: number; verifierPending: number; agree: number }): FinalStatus {
+  if (!i.enabled) return "DISABLED";
+  if (i.samples === 0) return "NOT_RUN";
+  const need = QUALIFY.minAgreement;
+  // a class already below the threshold on the gate alone cannot recover, whatever is still pending
+  if (i.samples >= QUALIFY.minSamples && i.gatePass / i.samples < need) return "FAILED_GATE";
+  if (i.samples < QUALIFY.minSamples || i.verifierPending > 0) return "PENDING_VERIFICATION";
+  if (i.agree / i.samples >= need) return isPatch(i.cls) ? "PATCH_BASED_LOCAL_CODING" : "QUALIFIED_CANDIDATE";
+  return "REJECTED_BY_VERIFIER";
+}
+
+/** Per (worker or evaluation candidate, class) with a harness: gate, Verifier, agreement and final status, with every failed case. Read-only. */
 export async function qualifyStatus(db: Db) {
   const all = await db.select().from(qualificationRecords);
   const recs: QualRecord[] = all;
+  const pairs = new Map<string, { worker: string; cls: string }>();
+  for (const cls of ALL_TASK_CLASSES) for (const w of ROUTES[cls].alternatives) if (WORKERS[w]!.provider === "ollama-host") pairs.set(`${w}|${cls}`, { worker: w, cls });
+  for (const r of all) if (!r.voided && modelOf(r.worker) && (WORKERS[r.worker]?.provider === "ollama-host" || CANDIDATES[r.worker])) pairs.set(`${r.worker}|${r.taskClass}`, { worker: r.worker, cls: r.taskClass });
   const out = [];
-  for (const cls of ALL_TASK_CLASSES) {
-    for (const w of ROUTES[cls].alternatives) {
-      const def = WORKERS[w]!;
-      if (def.provider !== "ollama-host") continue;
-      const mine = all.filter((r) => r.worker === w && r.taskClass === cls && !r.voided && r.model === def.model);
-      const ev = mine.filter((r) => r.mode !== "production");
-      const q = qualification(recs, w, cls);
-      const d = route({ taskClass: cls, risk: "standard", records: recs });
-      out.push({
-        taskClass: cls, worker: w, model: def.model, digest: mine.find((r) => r.modelDigest)?.modelDigest ?? null, status: def.enabled ? q.status : "disabled", samples: q.samples, agreement: q.agreement,
-        gatePass: ev.filter((r) => r.gate === true).length, gateFail: ev.filter((r) => r.gate === false).length,
-        verifierPass: ev.filter((r) => r.verifier === "pass").length, verifierFail: ev.filter((r) => r.verifier === "fail").length, verifierPending: ev.filter((r) => r.gate === true && r.verifier === null).length, verifierNotApplicable: ev.filter((r) => r.verifier === "not_applicable").length,
-        unavailable: ev.filter((r) => r.valid === false && r.gate === null).length, production: mine.filter((r) => r.mode === "production").length,
-        medianMs: median(ev.map((r) => r.durationMs).filter((x): x is number => typeof x === "number")), medianContextBytes: median(ev.map((r) => r.contextBytes).filter((x): x is number => typeof x === "number")),
-        promptTokens: ev.reduce((a, r) => a + (r.promptTokens ?? 0), 0), outputTokens: ev.reduce((a, r) => a + (r.outputTokens ?? 0), 0),
-        routedTo: d.worker, routeReason: d.reason,
-        failures: ev.filter((r) => r.agree === false).map((r) => ({ case: r.caseId, gate: r.gate, verifier: r.verifier, why: r.gate === false ? JSON.stringify(r.gateDetail).slice(0, 260) : r.verifierNote })),
-      });
-    }
+  for (const { worker: w, cls } of pairs.values()) {
+    const model = modelOf(w)!;
+    const mine = all.filter((r) => r.worker === w && r.taskClass === cls && !r.voided && r.model === model);
+    const ev = mine.filter((r) => r.mode !== "production" && r.gate !== null);
+    const routable = cls in ROUTES && ROUTES[cls as AnyTaskClass].alternatives.includes(w);
+    const q = qualification(recs, w, cls);
+    const d = cls in ROUTES ? route({ taskClass: cls as AnyTaskClass, risk: "standard", records: recs }) : null;
+    const gatePass = ev.filter((r) => r.gate === true).length;
+    const verifierPending = ev.filter((r) => r.gate === true && r.verifier === null).length;
+    const agree = ev.filter((r) => r.agree === true).length;
+    out.push({
+      taskClass: cls, worker: w, model, candidateOnly: !routable, digest: mine.find((r) => r.modelDigest)?.modelDigest ?? null,
+      status: WORKERS[w] && !WORKERS[w]!.enabled ? "disabled" : q.status, samples: ev.length, agreement: ev.length ? agree / ev.length : null,
+      finalStatus: finalStatus({ enabled: WORKERS[w] ? WORKERS[w]!.enabled : true, cls, samples: ev.length, gatePass, verifierPending, agree }),
+      gatePass, gateFail: ev.filter((r) => r.gate === false).length, schemaInvalid: ev.filter((r) => r.valid === false).length,
+      verifierPass: ev.filter((r) => r.verifier === "pass").length, verifierFail: ev.filter((r) => r.verifier === "fail").length, verifierPending, verifierNotApplicable: ev.filter((r) => r.verifier === "not_applicable").length,
+      unavailable: mine.filter((r) => r.mode !== "production" && r.valid === false && r.gate === null).length, production: mine.filter((r) => r.mode === "production").length,
+      medianMs: median(ev.map((r) => r.durationMs).filter((x): x is number => typeof x === "number")), maxMs: Math.max(0, ...ev.map((r) => r.durationMs ?? 0)), medianContextBytes: median(ev.map((r) => r.contextBytes).filter((x): x is number => typeof x === "number")),
+      promptTokens: ev.reduce((a, r) => a + (r.promptTokens ?? 0), 0), outputTokens: ev.reduce((a, r) => a + (r.outputTokens ?? 0), 0),
+      routedTo: d?.worker ?? null, routeReason: d?.reason ?? "evaluation only: this class is not routed",
+      failures: ev.filter((r) => r.agree === false).map((r) => ({ case: r.caseId, gate: r.gate, verifier: r.verifier, stage: (r.gateDetail as Json | null)?.stage ?? null, why: r.gate === false ? JSON.stringify((r.gateDetail as Json | null)?.problems ?? (r.gateDetail as Json | null)?.reason ?? r.gateDetail).slice(0, 500) : r.verifierNote, checks: r.gate === false && isCode(cls) ? ((r.gateDetail as Json | null)?.checks as { name: string; rc: number; tail: string }[] | undefined)?.filter((c) => c.rc !== 0).map((c) => `${c.name}: ${c.tail.slice(-300)}`) : undefined, diffstat: isCode(cls) ? (r.gateDetail as Json | null)?.diffstat : undefined })),
+      unavailableNotes: mine.filter((r) => r.valid === false && r.gate === null).map((r) => `${r.caseId}: ${r.note}`).slice(0, 5),
+    });
   }
   return out;
 }

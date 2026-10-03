@@ -1,0 +1,877 @@
+{
+ "class": "evidence_extraction",
+ "version": 1,
+ "pack": "research",
+ "statement": "Extract only the facts a document states, with verbatim quotes, numbers, dates and qualifiers preserved.",
+ "cases": [
+  {
+   "id": "ex-01",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r01",
+   "input": "Document: research notes on printable wedding seating charts\n\nCraftMarket seller dashboard export (marketplace data export, 2026-08-31): Search term \"wedding seating chart template\": 18,400 searches in August 2026 on CraftMarket, up from 12,900 in August 2025.\n\nCraftMarket listing pages (top 20 results) (marketplace listings, 2026-09-02): Prices of the top 20 listings range from $4.50 to $14.00; the median is $8.00.\n\nWeddingBiz Weekly (trade newsletter, 2026-07-15): An estimated 2,300 shops list seating-chart templates on CraftMarket, the newsletter writes, citing a third-party tracker.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "18,400",
+       "August 2026"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "12,900",
+       "August 2025"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$4.50",
+       "$14.00"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "median",
+       "$8.00"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "2,300",
+       "shops"
+      ],
+      "qualifier": "estimated"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-02",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r02",
+   "input": "Document: research notes on custom pet portrait mugs\n\nPrintHub supplier price list (supplier price list, 2026-09-01): An 11 oz ceramic mug with full-colour print costs $6.20 per unit including packaging; production takes 3 business days.\n\nShopStat category report (analytics report, 2026-08-20): Approximately 41,000 monthly searches for \"custom pet mug\" across tracked marketplaces in Q2 2026.\n\nCraftMarket listing pages (marketplace listings, 2026-09-03): The 30 best-selling custom pet mugs are priced between $18.00 and $32.00.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "$6.20",
+       "per unit"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "3 business days"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "41,000",
+       "Q2 2026"
+      ],
+      "qualifier": "Approximately"
+     },
+     {
+      "tokens": [
+       "$18.00",
+       "$32.00"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "30"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-03",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r03",
+   "input": "Document: research notes on logo design packages for independent beer stores\n\nNational Retail Registry (official statistics, 2026-03-31): The registry lists 6,840 independent beer and bottle shops as of 31 March 2026.\n\nBrewRetail Association survey (industry survey, 2026-04-22): Of 310 member shops surveyed, 27% plan to rebrand within 12 months.\n\nDesignRates Index (pricing index, 2026-06-01): Freelance logo packages for small retailers typically cost between $350 and $1,200.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "6,840",
+       "31 March 2026"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "310"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "27%",
+       "12 months"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$350",
+       "$1,200"
+      ],
+      "qualifier": "typically"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-04",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r04",
+   "input": "Document: research notes on budget-planning templates for a note-taking app\n\nNoteGrid template gallery (marketplace listings, 2026-09-05): The gallery shows 1,480 templates tagged \"budget\"; 37 of them have more than 500 downloads.\n\nNoteGrid template gallery (marketplace listings, 2026-09-05): Paid budget templates are priced from $5 to $29; 62% of the tagged templates are free.\n\nTemplateMakers podcast transcript (podcast transcript, 2026-02-14): One guest claims his budget template earns \"about $9,000 a month\"; no statement or screenshot was shown.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "1,480"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "37",
+       "500 downloads"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$5",
+       "$29"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "62%",
+       "free"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$9,000 a month"
+      ],
+      "qualifier": "about"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-05",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r05",
+   "input": "Document: research notes on 3D-printed desk cable organisers\n\nOwn print log (internal measurement, 2026-08-28): One organiser takes 2 h 40 min to print and uses 38 g of filament; 3 of 50 test prints failed.\n\nFilamentDirect invoice (supplier invoice, 2026-08-12): PLA filament: $19.90 per 1 kg spool.\n\nCraftMarket listing pages (marketplace listings, 2026-09-04): Comparable organisers sell for $9.00 to $16.50; the best seller shows 2,870 sales since 2023.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "2 h 40 min"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "38 g"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "3 of 50"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$19.90",
+       "1 kg"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$9.00",
+       "$16.50"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "2,870",
+       "2023"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-06",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r06",
+   "input": "Document: research notes on personalised children's storybooks\n\nBookPress print quote (supplier quote, 2026-08-19): A 28-page hardcover costs $11.40 per copy at quantity 1 and $8.90 at quantity 50; delivery in 6 to 9 business days.\n\nKidLit Market Monitor (analytics report, 2026-05-30): The report estimates the personalised children's book segment at $520 million worldwide in 2025.\n\nParentCircle survey (consumer survey, 2026-06-12): Among 1,004 parents, 34% bought a personalised book in the last two years; 71% of those paid $25 or more.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "$11.40"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$8.90",
+       "50"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "6 to 9 business days"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$520 million",
+       "2025"
+      ],
+      "qualifier": "estimates"
+     },
+     {
+      "tokens": [
+       "1,004"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "34%"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "71%",
+       "$25"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-07",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r07",
+   "input": "Document: research notes on sourdough starter kits\n\nFood Safety Office guidance note (official guidance, 2026-02-01): Dried starter cultures sold to consumers must carry an allergen label and a batch number.\n\nBakeBox competitor site (competitor website, 2026-09-02): BakeBox sells its starter kit for $24.00 plus $5.50 shipping.\n\nHomeBaker forum (community forum, 2026-07-21): Posters report that about one in four mailed starters arrived dead in summer.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "allergen label",
+       "batch number"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$24.00"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$5.50",
+       "shipping"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "one in four",
+       "summer"
+      ],
+      "qualifier": "about"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-08",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r08",
+   "input": "Document: research notes on laser-engraved cutting boards\n\nLaserPro product page (supplier product page, 2026-08-25): The LP-40 engraver costs $1,899; the manufacturer states an engraving time of 6 minutes for a 20 x 30 cm board.\n\nWoodSupply wholesale list (supplier price list, 2026-08-25): Blank bamboo boards cost $4.80 each in cases of 24.\n\nCraftMarket listing pages (marketplace listings, 2026-09-03): Personalised boards are listed at $28 to $65; listings with more than 1,000 sales cluster at $34 to $39.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "$1,899"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "6 minutes",
+       "20 x 30 cm"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$4.80",
+       "24"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$28",
+       "$65"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "1,000 sales",
+       "$34",
+       "$39"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-09",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r09",
+   "input": "Document: research notes on resume templates for nurses\n\nLabour Statistics Bureau (official statistics, 2026-04-15): 194,500 openings for registered nurses are projected each year from 2024 to 2034.\n\nCraftMarket search results (marketplace listings, 2026-09-04): \"nurse resume template\" returns 3,912 listings; the first page is dominated by 5 shops.\n\nCraftMarket search results (marketplace listings, 2026-09-04): First-page listings cost $6.99 to $15.99.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "194,500",
+       "2024 to 2034"
+      ],
+      "qualifier": "projected"
+     },
+     {
+      "tokens": [
+       "3,912"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "5 shops"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$6.99",
+       "$15.99"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-10",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r10",
+   "input": "Document: research notes on AI-illustrated colouring books\n\nPagePress publisher terms (platform policy, 2026-07-01): From 1 July 2026 publishers must declare AI-generated content; undeclared titles may be removed.\n\nPagePress royalty calculator (platform calculator, 2026-09-01): A 60-page paperback listed at $7.99 yields a royalty of $2.14 per copy.\n\nBookRank tracker (analytics tool, 2026-09-02): The category \"adult colouring\" holds roughly 86,000 titles; the tracker estimates the #100 title sells 14 copies a day.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "1 July 2026",
+       "declare"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "removed"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$7.99"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$2.14"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "86,000"
+      ],
+      "qualifier": "roughly"
+     },
+     {
+      "tokens": [
+       "#100",
+       "14 copies a day"
+      ],
+      "qualifier": "roughly"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-11",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r11",
+   "input": "Document: research notes on houseplant care subscription box\n\nLeafCrate competitor site (competitor website, 2026-09-01): LeafCrate charges $29 per month; GreenPost charges $35 per month with free shipping.\n\nSubscriptionMetrics benchmark (industry benchmark, 2026-03-15): Median monthly churn for hobby boxes was 11.2% in 2025.\n\nRegionPost rate card (official rate card, 2026-01-01): Parcels up to 2 kg cost $7.40; live plants are accepted Monday to Wednesday only.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "$29 per month"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$35 per month",
+       "free shipping"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "11.2%",
+       "2025"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "2 kg",
+       "$7.40"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "Monday to Wednesday"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-12",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r12",
+   "input": "Document: research notes on photo-editing preset packs\n\nLumaEdit creator store (marketplace listings, 2026-09-05): Preset packs in the store cost $12 to $49; bundles of 100 or more presets average $39.\n\nLumaEdit creator store (marketplace listings, 2026-09-05): The store lists 7,250 preset packs; the top 10 creators hold 46% of all reviews.\n\nPhotoBiz Report (analytics report, 2026-04-11): Preset sales on creator stores fell by an estimated 18% between 2024 and 2025.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "$12",
+       "$49"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "100",
+       "$39"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "7,250"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "top 10",
+       "46%"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "18%",
+       "2024 and 2025"
+      ],
+      "qualifier": "estimated"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-13",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r13",
+   "input": "Document: research notes on hand-poured soy candles\n\nWaxWorks supplier price list (supplier price list, 2026-08-20): Soy wax costs $3.10 per kg in 20 kg boxes; an 8 oz jar with lid costs $1.25; fragrance oil costs $28 per 500 ml.\n\nCraftMarket fee schedule (platform fee schedule, 2026-07-01): CraftMarket charges a 6.5% transaction fee plus $0.20 per listing.\n\nCraftMarket listing pages (marketplace listings, 2026-09-02): 8 oz soy candles are listed from $12 to $26; the median of the first 40 results is $18.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "$3.10 per kg"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$1.25"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$28",
+       "500 ml"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "6.5%"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$0.20"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$12",
+       "$26"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "40",
+       "$18"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-14",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r14",
+   "input": "Document: research notes on cut files for craft cutting machines\n\nCraftMarket seller dashboard export (marketplace data export, 2026-08-31): Our own shop: 1,206 visits and 58 orders for cut-file bundles in August 2026.\n\nCraftMarket listing pages (marketplace listings, 2026-09-03): Bundles of 50 to 200 files sell for $2.50 to $9.00.\n\nCutterCo licence terms (platform policy, 2026-05-01): Files that contain trademarked characters may not be sold; repeat infringement closes the shop.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "1,206 visits"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "58 orders",
+       "August 2026"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "50 to 200"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$2.50",
+       "$9.00"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "trademarked characters"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "closes the shop"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-15",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r15",
+   "input": "Document: research notes on language flashcard decks\n\nLinguaStats survey (consumer survey, 2026-02-18): Of 2,150 adult learners surveyed, 48% use paper flashcards at least weekly.\n\nCraftMarket listing pages (marketplace listings, 2026-09-04): Printable Spanish decks cost $3.00 to $11.50.\n\nCraftMarket listing pages (marketplace listings, 2026-09-04): \"spanish flashcards printable\" returns 842 listings; 19 have more than 100 reviews.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "2,150"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "48%",
+       "weekly"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$3.00",
+       "$11.50"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "842"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "19",
+       "100 reviews"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-16",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r16",
+   "input": "Document: research notes on refurbished mechanical keyboards\n\nOwn purchase records (internal measurement, 2026-08-30): We bought 12 used boards for $31 on average and spent 1.5 hours refurbishing each.\n\nSwapBay sold listings (marketplace data export, 2026-08-30): Refurbished boards of the same models sold for $68 to $115 in the last 90 days; 143 sales were recorded.\n\nKeebTalk community (community forum, 2026-08-12): Buyers say they pay more when the listing includes a typing-sound video.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "12",
+       "$31"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "1.5 hours"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$68",
+       "$115"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "143 sales",
+       "90 days"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "typing-sound video"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-17",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r17",
+   "input": "Document: research notes on printable homeschool planners\n\nEducation Department census (official statistics, 2026-05-12): An estimated 3.4 million children were homeschooled in the 2025-26 school year.\n\nCraftMarket listing pages (marketplace listings, 2026-09-04): Printable homeschool planners cost $5 to $22; undated planners make up most of the first page.\n\nHomeschoolMoms group (community forum, 2026-08-25): Many members write that they want a planner that covers several children on one page.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "3.4 million",
+       "2025-26"
+      ],
+      "qualifier": "estimated"
+     },
+     {
+      "tokens": [
+       "$5",
+       "$22"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "undated"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "several children",
+       "one page"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-18",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r18",
+   "input": "Document: research notes on custom LED neon-style signs\n\nGlowWorks workshop quote (supplier quote, 2026-08-27): A 60 cm sign costs $48 ex works; air freight adds $22; lead time is 10 to 14 days.\n\nSignShop competitor site (competitor website, 2026-09-01): SignShop sells 60 cm custom signs for $149 to $219.\n\nCustoms Authority tariff table (official statistics, 2026-01-01): Illuminated signs are subject to an import duty of 5.7%.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "$48"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$22"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "10 to 14 days"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$149",
+       "$219"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "5.7%"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-19",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r19",
+   "input": "Document: research notes on paid newsletter for motorhome owners\n\nVehicle Licensing Agency (official statistics, 2026-03-31): 512,000 motorhomes were registered as of 31 March 2026.\n\nRoadLife Letter public page (competitor website, 2026-09-02): RoadLife Letter states it has \"over 9,000 paying subscribers\" at $7 per month.\n\nNewsletterBench (industry benchmark, 2026-02-10): Free-to-paid conversion for hobby newsletters is typically 2% to 5%.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "512,000",
+       "31 March 2026"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "9,000"
+      ],
+      "qualifier": "over"
+     },
+     {
+      "tokens": [
+       "$7 per month"
+      ],
+      "qualifier": "over"
+     },
+     {
+      "tokens": [
+       "2% to 5%"
+      ],
+      "qualifier": "typically"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ex-20",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r20",
+   "input": "Document: research notes on dog-walking flyer and booking kit\n\nPetCare Trade Body report (industry survey, 2026-03-20): The trade body counts 38,200 registered dog-walking businesses, 81% of them sole traders.\n\nCraftMarket listing pages (marketplace listings, 2026-09-04): \"dog walking flyer template\" returns 268 listings; none includes a booking form.\n\nCraftMarket listing pages (marketplace listings, 2026-09-04): Flyer templates cost $3.50 to $9.00.",
+   "expect": {
+    "required": [
+     {
+      "tokens": [
+       "38,200"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "81%",
+       "sole traders"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "268"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "booking form"
+      ],
+      "qualifier": null
+     },
+     {
+      "tokens": [
+       "$3.50",
+       "$9.00"
+      ],
+      "qualifier": null
+     }
+    ]
+   }
+  }
+ ]
+}

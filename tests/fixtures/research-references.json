@@ -1,0 +1,4578 @@
+{
+ "research_planning": {
+  "rp-01": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy printable wedding seating charts each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer printable wedding seating charts and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-02": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy custom pet portrait mugs each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer custom pet portrait mugs and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-03": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy logo design packages for independent beer stores each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer logo design packages for independent beer stores and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-04": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy budget-planning templates for a note-taking app each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer budget-planning templates for a note-taking app and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-05": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy 3D-printed desk cable organisers each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer 3D-printed desk cable organisers and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-06": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy personalised children's storybooks each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer personalised children's storybooks and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-07": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy sourdough starter kits each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer sourdough starter kits and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-08": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy laser-engraved cutting boards each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer laser-engraved cutting boards and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-09": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy resume templates for nurses each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer resume templates for nurses and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-10": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy AI-illustrated colouring books each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer AI-illustrated colouring books and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-11": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy houseplant care subscription box each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer houseplant care subscription box and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-12": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy photo-editing preset packs each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer photo-editing preset packs and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-13": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy hand-poured soy candles each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer hand-poured soy candles and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-14": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy cut files for craft cutting machines each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer cut files for craft cutting machines and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-15": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy language flashcard decks each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer language flashcard decks and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-16": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy refurbished mechanical keyboards each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer refurbished mechanical keyboards and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-17": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy printable homeschool planners each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer printable homeschool planners and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-18": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy custom LED neon-style signs each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer custom LED neon-style signs and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-19": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy paid newsletter for motorhome owners each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer paid newsletter for motorhome owners and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  },
+  "rp-20": {
+   "questions": [
+    {
+     "q": "How many buyers search for or buy dog-walking flyer and booking kit each month?",
+     "category": "demand",
+     "evidence": "marketplace search volumes and sales counts"
+    },
+    {
+     "q": "How many sellers already offer dog-walking flyer and booking kit and how concentrated are sales?",
+     "category": "competition",
+     "evidence": "marketplace listing counts and review distribution"
+    },
+    {
+     "q": "What price range do comparable offers sell at?",
+     "category": "pricing",
+     "evidence": "prices of the best-selling listings"
+    },
+    {
+     "q": "What does it cost and take to produce and deliver one unit?",
+     "category": "feasibility",
+     "evidence": "supplier quotes and platform fees"
+    },
+    {
+     "q": "Which platform or legal rules could stop the product?",
+     "category": "risk",
+     "evidence": "platform terms and official guidance"
+    }
+   ],
+   "out_of_scope": []
+  }
+ },
+ "query_planning": {
+  "qp-01": {
+   "queries": [
+    {
+     "query": "seating chart best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "seating chart number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "seating chart monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "seating chart buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "seating chart seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "seating chart consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "seating chart supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-02": {
+   "queries": [
+    {
+     "query": "pet portrait best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "pet portrait number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "pet portrait monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "pet portrait buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "pet portrait seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "pet portrait consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "pet portrait supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-03": {
+   "queries": [
+    {
+     "query": "logo best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "logo number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "logo monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "logo buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "logo seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "logo consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "logo supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-04": {
+   "queries": [
+    {
+     "query": "budget best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "budget number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "budget monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "budget buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "budget seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "budget consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "budget supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-05": {
+   "queries": [
+    {
+     "query": "cable organiser best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "cable organiser number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "cable organiser monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "cable organiser buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "cable organiser seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "cable organiser consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "cable organiser supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-06": {
+   "queries": [
+    {
+     "query": "personalised best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "personalised number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "personalised monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "personalised buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "personalised seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "personalised consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "personalised supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-07": {
+   "queries": [
+    {
+     "query": "sourdough best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "sourdough number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "sourdough monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "sourdough buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "sourdough seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "sourdough consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "sourdough supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-08": {
+   "queries": [
+    {
+     "query": "cutting board best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "cutting board number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "cutting board monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "cutting board buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "cutting board seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "cutting board consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "cutting board supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-09": {
+   "queries": [
+    {
+     "query": "resume best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "resume number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "resume monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "resume buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "resume seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "resume consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "resume supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-10": {
+   "queries": [
+    {
+     "query": "colouring book best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "colouring book number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "colouring book monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "colouring book buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "colouring book seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "colouring book consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "colouring book supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-11": {
+   "queries": [
+    {
+     "query": "houseplant best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "houseplant number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "houseplant monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "houseplant buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "houseplant seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "houseplant consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "houseplant supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-12": {
+   "queries": [
+    {
+     "query": "preset best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "preset number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "preset monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "preset buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "preset seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "preset consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "preset supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-13": {
+   "queries": [
+    {
+     "query": "soy candle best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "soy candle number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "soy candle monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "soy candle buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "soy candle seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "soy candle consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "soy candle supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-14": {
+   "queries": [
+    {
+     "query": "cut file best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "cut file number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "cut file monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "cut file buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "cut file seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "cut file consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "cut file supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-15": {
+   "queries": [
+    {
+     "query": "flashcard best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "flashcard number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "flashcard monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "flashcard buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "flashcard seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "flashcard consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "flashcard supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-16": {
+   "queries": [
+    {
+     "query": "mechanical keyboard best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "mechanical keyboard number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "mechanical keyboard monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "mechanical keyboard buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "mechanical keyboard seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "mechanical keyboard consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "mechanical keyboard supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-17": {
+   "queries": [
+    {
+     "query": "homeschool best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "homeschool number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "homeschool monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "homeschool buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "homeschool seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "homeschool consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "homeschool supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-18": {
+   "queries": [
+    {
+     "query": "neon sign best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "neon sign number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "neon sign monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "neon sign buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "neon sign seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "neon sign consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "neon sign supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-19": {
+   "queries": [
+    {
+     "query": "newsletter best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "newsletter number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "newsletter monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "newsletter buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "newsletter seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "newsletter consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "newsletter supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  },
+  "qp-20": {
+   "queries": [
+    {
+     "query": "dog walk best sellers",
+     "channel": "marketplace",
+     "purpose": "top listings and prices"
+    },
+    {
+     "query": "dog walk number of listings",
+     "channel": "marketplace",
+     "purpose": "competition"
+    },
+    {
+     "query": "dog walk monthly search volume",
+     "channel": "web",
+     "purpose": "demand"
+    },
+    {
+     "query": "dog walk buyers complaints forum",
+     "channel": "community",
+     "purpose": "customer signal"
+    },
+    {
+     "query": "dog walk seller experience group",
+     "channel": "community",
+     "purpose": "seller-side facts"
+    },
+    {
+     "query": "dog walk consumer regulation guidance",
+     "channel": "official",
+     "purpose": "legal risk"
+    },
+    {
+     "query": "dog walk supplier price list",
+     "channel": "primary_source",
+     "purpose": "unit cost"
+    }
+   ]
+  }
+ },
+ "evidence_extraction": {
+  "ex-01": {
+   "facts": [
+    {
+     "claim": "Search term \"wedding seating chart template\": 18,400 searches in August 2026 on CraftMarket, up from 12,900 in August 2025.",
+     "quote": "Search term \"wedding seating chart template\": 18,400 searches in August 2026 on CraftMarket, up from 12,900 in August 2025.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Prices of the top 20 listings range from $4.50 to $14.00; the median is $8.00.",
+     "quote": "Prices of the top 20 listings range from $4.50 to $14.00; the median is $8.00.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "An estimated 2,300 shops list seating-chart templates on CraftMarket, the newsletter writes, citing a third-party tracker.",
+     "quote": "An estimated 2,300 shops list seating-chart templates on CraftMarket, the newsletter writes, citing a third-party tracker.",
+     "value": null,
+     "date": null,
+     "qualifier": "estimated"
+    }
+   ]
+  },
+  "ex-02": {
+   "facts": [
+    {
+     "claim": "An 11 oz ceramic mug with full-colour print costs $6.20 per unit including packaging; production takes 3 business days.",
+     "quote": "An 11 oz ceramic mug with full-colour print costs $6.20 per unit including packaging; production takes 3 business days.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Approximately 41,000 monthly searches for \"custom pet mug\" across tracked marketplaces in Q2 2026.",
+     "quote": "Approximately 41,000 monthly searches for \"custom pet mug\" across tracked marketplaces in Q2 2026.",
+     "value": null,
+     "date": null,
+     "qualifier": "Approximately"
+    },
+    {
+     "claim": "The 30 best-selling custom pet mugs are priced between $18.00 and $32.00.",
+     "quote": "The 30 best-selling custom pet mugs are priced between $18.00 and $32.00.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  },
+  "ex-03": {
+   "facts": [
+    {
+     "claim": "The registry lists 6,840 independent beer and bottle shops as of 31 March 2026.",
+     "quote": "The registry lists 6,840 independent beer and bottle shops as of 31 March 2026.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Of 310 member shops surveyed, 27% plan to rebrand within 12 months.",
+     "quote": "Of 310 member shops surveyed, 27% plan to rebrand within 12 months.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Freelance logo packages for small retailers typically cost between $350 and $1,200.",
+     "quote": "Freelance logo packages for small retailers typically cost between $350 and $1,200.",
+     "value": null,
+     "date": null,
+     "qualifier": "typically"
+    }
+   ]
+  },
+  "ex-04": {
+   "facts": [
+    {
+     "claim": "The gallery shows 1,480 templates tagged \"budget\"; 37 of them have more than 500 downloads.",
+     "quote": "The gallery shows 1,480 templates tagged \"budget\"; 37 of them have more than 500 downloads.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Paid budget templates are priced from $5 to $29; 62% of the tagged templates are free.",
+     "quote": "Paid budget templates are priced from $5 to $29; 62% of the tagged templates are free.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "One guest claims his budget template earns \"about $9,000 a month\"; no statement or screenshot was shown.",
+     "quote": "One guest claims his budget template earns \"about $9,000 a month\"; no statement or screenshot was shown.",
+     "value": null,
+     "date": null,
+     "qualifier": "about"
+    }
+   ]
+  },
+  "ex-05": {
+   "facts": [
+    {
+     "claim": "One organiser takes 2 h 40 min to print and uses 38 g of filament; 3 of 50 test prints failed.",
+     "quote": "One organiser takes 2 h 40 min to print and uses 38 g of filament; 3 of 50 test prints failed.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "PLA filament: $19.90 per 1 kg spool.",
+     "quote": "PLA filament: $19.90 per 1 kg spool.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Comparable organisers sell for $9.00 to $16.50; the best seller shows 2,870 sales since 2023.",
+     "quote": "Comparable organisers sell for $9.00 to $16.50; the best seller shows 2,870 sales since 2023.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  },
+  "ex-06": {
+   "facts": [
+    {
+     "claim": "A 28-page hardcover costs $11.40 per copy at quantity 1 and $8.90 at quantity 50; delivery in 6 to 9 business days.",
+     "quote": "A 28-page hardcover costs $11.40 per copy at quantity 1 and $8.90 at quantity 50; delivery in 6 to 9 business days.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "The report estimates the personalised children's book segment at $520 million worldwide in 2025.",
+     "quote": "The report estimates the personalised children's book segment at $520 million worldwide in 2025.",
+     "value": null,
+     "date": null,
+     "qualifier": "estimates"
+    },
+    {
+     "claim": "Among 1,004 parents, 34% bought a personalised book in the last two years; 71% of those paid $25 or more.",
+     "quote": "Among 1,004 parents, 34% bought a personalised book in the last two years; 71% of those paid $25 or more.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  },
+  "ex-07": {
+   "facts": [
+    {
+     "claim": "Dried starter cultures sold to consumers must carry an allergen label and a batch number.",
+     "quote": "Dried starter cultures sold to consumers must carry an allergen label and a batch number.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "BakeBox sells its starter kit for $24.00 plus $5.50 shipping.",
+     "quote": "BakeBox sells its starter kit for $24.00 plus $5.50 shipping.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Posters report that about one in four mailed starters arrived dead in summer.",
+     "quote": "Posters report that about one in four mailed starters arrived dead in summer.",
+     "value": null,
+     "date": null,
+     "qualifier": "about"
+    }
+   ]
+  },
+  "ex-08": {
+   "facts": [
+    {
+     "claim": "The LP-40 engraver costs $1,899; the manufacturer states an engraving time of 6 minutes for a 20 x 30 cm board.",
+     "quote": "The LP-40 engraver costs $1,899; the manufacturer states an engraving time of 6 minutes for a 20 x 30 cm board.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Blank bamboo boards cost $4.80 each in cases of 24.",
+     "quote": "Blank bamboo boards cost $4.80 each in cases of 24.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Personalised boards are listed at $28 to $65; listings with more than 1,000 sales cluster at $34 to $39.",
+     "quote": "Personalised boards are listed at $28 to $65; listings with more than 1,000 sales cluster at $34 to $39.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  },
+  "ex-09": {
+   "facts": [
+    {
+     "claim": "194,500 openings for registered nurses are projected each year from 2024 to 2034.",
+     "quote": "194,500 openings for registered nurses are projected each year from 2024 to 2034.",
+     "value": null,
+     "date": null,
+     "qualifier": "projected"
+    },
+    {
+     "claim": "\"nurse resume template\" returns 3,912 listings; the first page is dominated by 5 shops.",
+     "quote": "\"nurse resume template\" returns 3,912 listings; the first page is dominated by 5 shops.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "First-page listings cost $6.99 to $15.99.",
+     "quote": "First-page listings cost $6.99 to $15.99.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  },
+  "ex-10": {
+   "facts": [
+    {
+     "claim": "From 1 July 2026 publishers must declare AI-generated content; undeclared titles may be removed.",
+     "quote": "From 1 July 2026 publishers must declare AI-generated content; undeclared titles may be removed.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "A 60-page paperback listed at $7.99 yields a royalty of $2.14 per copy.",
+     "quote": "A 60-page paperback listed at $7.99 yields a royalty of $2.14 per copy.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "The category \"adult colouring\" holds roughly 86,000 titles; the tracker estimates the #100 title sells 14 copies a day.",
+     "quote": "The category \"adult colouring\" holds roughly 86,000 titles; the tracker estimates the #100 title sells 14 copies a day.",
+     "value": null,
+     "date": null,
+     "qualifier": "roughly"
+    }
+   ]
+  },
+  "ex-11": {
+   "facts": [
+    {
+     "claim": "LeafCrate charges $29 per month; GreenPost charges $35 per month with free shipping.",
+     "quote": "LeafCrate charges $29 per month; GreenPost charges $35 per month with free shipping.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Median monthly churn for hobby boxes was 11.2% in 2025.",
+     "quote": "Median monthly churn for hobby boxes was 11.2% in 2025.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Parcels up to 2 kg cost $7.40; live plants are accepted Monday to Wednesday only.",
+     "quote": "Parcels up to 2 kg cost $7.40; live plants are accepted Monday to Wednesday only.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  },
+  "ex-12": {
+   "facts": [
+    {
+     "claim": "Preset packs in the store cost $12 to $49; bundles of 100 or more presets average $39.",
+     "quote": "Preset packs in the store cost $12 to $49; bundles of 100 or more presets average $39.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "The store lists 7,250 preset packs; the top 10 creators hold 46% of all reviews.",
+     "quote": "The store lists 7,250 preset packs; the top 10 creators hold 46% of all reviews.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Preset sales on creator stores fell by an estimated 18% between 2024 and 2025.",
+     "quote": "Preset sales on creator stores fell by an estimated 18% between 2024 and 2025.",
+     "value": null,
+     "date": null,
+     "qualifier": "estimated"
+    }
+   ]
+  },
+  "ex-13": {
+   "facts": [
+    {
+     "claim": "Soy wax costs $3.10 per kg in 20 kg boxes; an 8 oz jar with lid costs $1.25; fragrance oil costs $28 per 500 ml.",
+     "quote": "Soy wax costs $3.10 per kg in 20 kg boxes; an 8 oz jar with lid costs $1.25; fragrance oil costs $28 per 500 ml.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "CraftMarket charges a 6.5% transaction fee plus $0.20 per listing.",
+     "quote": "CraftMarket charges a 6.5% transaction fee plus $0.20 per listing.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "8 oz soy candles are listed from $12 to $26; the median of the first 40 results is $18.",
+     "quote": "8 oz soy candles are listed from $12 to $26; the median of the first 40 results is $18.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  },
+  "ex-14": {
+   "facts": [
+    {
+     "claim": "Our own shop: 1,206 visits and 58 orders for cut-file bundles in August 2026.",
+     "quote": "Our own shop: 1,206 visits and 58 orders for cut-file bundles in August 2026.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Bundles of 50 to 200 files sell for $2.50 to $9.00.",
+     "quote": "Bundles of 50 to 200 files sell for $2.50 to $9.00.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Files that contain trademarked characters may not be sold; repeat infringement closes the shop.",
+     "quote": "Files that contain trademarked characters may not be sold; repeat infringement closes the shop.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  },
+  "ex-15": {
+   "facts": [
+    {
+     "claim": "Of 2,150 adult learners surveyed, 48% use paper flashcards at least weekly.",
+     "quote": "Of 2,150 adult learners surveyed, 48% use paper flashcards at least weekly.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Printable Spanish decks cost $3.00 to $11.50.",
+     "quote": "Printable Spanish decks cost $3.00 to $11.50.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "\"spanish flashcards printable\" returns 842 listings; 19 have more than 100 reviews.",
+     "quote": "\"spanish flashcards printable\" returns 842 listings; 19 have more than 100 reviews.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  },
+  "ex-16": {
+   "facts": [
+    {
+     "claim": "We bought 12 used boards for $31 on average and spent 1.5 hours refurbishing each.",
+     "quote": "We bought 12 used boards for $31 on average and spent 1.5 hours refurbishing each.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Refurbished boards of the same models sold for $68 to $115 in the last 90 days; 143 sales were recorded.",
+     "quote": "Refurbished boards of the same models sold for $68 to $115 in the last 90 days; 143 sales were recorded.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Buyers say they pay more when the listing includes a typing-sound video.",
+     "quote": "Buyers say they pay more when the listing includes a typing-sound video.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  },
+  "ex-17": {
+   "facts": [
+    {
+     "claim": "An estimated 3.4 million children were homeschooled in the 2025-26 school year.",
+     "quote": "An estimated 3.4 million children were homeschooled in the 2025-26 school year.",
+     "value": null,
+     "date": null,
+     "qualifier": "estimated"
+    },
+    {
+     "claim": "Printable homeschool planners cost $5 to $22; undated planners make up most of the first page.",
+     "quote": "Printable homeschool planners cost $5 to $22; undated planners make up most of the first page.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Many members write that they want a planner that covers several children on one page.",
+     "quote": "Many members write that they want a planner that covers several children on one page.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  },
+  "ex-18": {
+   "facts": [
+    {
+     "claim": "A 60 cm sign costs $48 ex works; air freight adds $22; lead time is 10 to 14 days.",
+     "quote": "A 60 cm sign costs $48 ex works; air freight adds $22; lead time is 10 to 14 days.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "SignShop sells 60 cm custom signs for $149 to $219.",
+     "quote": "SignShop sells 60 cm custom signs for $149 to $219.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Illuminated signs are subject to an import duty of 5.7%.",
+     "quote": "Illuminated signs are subject to an import duty of 5.7%.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  },
+  "ex-19": {
+   "facts": [
+    {
+     "claim": "512,000 motorhomes were registered as of 31 March 2026.",
+     "quote": "512,000 motorhomes were registered as of 31 March 2026.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "RoadLife Letter states it has \"over 9,000 paying subscribers\" at $7 per month.",
+     "quote": "RoadLife Letter states it has \"over 9,000 paying subscribers\" at $7 per month.",
+     "value": null,
+     "date": null,
+     "qualifier": "over"
+    },
+    {
+     "claim": "Free-to-paid conversion for hobby newsletters is typically 2% to 5%.",
+     "quote": "Free-to-paid conversion for hobby newsletters is typically 2% to 5%.",
+     "value": null,
+     "date": null,
+     "qualifier": "typically"
+    }
+   ]
+  },
+  "ex-20": {
+   "facts": [
+    {
+     "claim": "The trade body counts 38,200 registered dog-walking businesses, 81% of them sole traders.",
+     "quote": "The trade body counts 38,200 registered dog-walking businesses, 81% of them sole traders.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "\"dog walking flyer template\" returns 268 listings; none includes a booking form.",
+     "quote": "\"dog walking flyer template\" returns 268 listings; none includes a booking form.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    },
+    {
+     "claim": "Flyer templates cost $3.50 to $9.00.",
+     "quote": "Flyer templates cost $3.50 to $9.00.",
+     "value": null,
+     "date": null,
+     "qualifier": null
+    }
+   ]
+  }
+ },
+ "source_assessment": {
+  "sa-01": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": "S3",
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 4
+  },
+  "sa-02": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-03": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": "S2",
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "primary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 4
+  },
+  "sa-04": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "primary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-05": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-06": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-07": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": "S4",
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 4
+  },
+  "sa-08": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-09": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-10": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-11": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-12": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": "S3",
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 4
+  },
+  "sa-13": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-14": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-15": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-16": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-17": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": "S1",
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 4
+  },
+  "sa-18": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  },
+  "sa-19": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "secondary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": "S2",
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 4
+  },
+  "sa-20": {
+   "sources": [
+    {
+     "id": "S1",
+     "kind": "primary",
+     "strength": "moderate",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S2",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S3",
+     "kind": "primary",
+     "strength": "strong",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S4",
+     "kind": "primary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    },
+    {
+     "id": "S5",
+     "kind": "secondary",
+     "strength": "weak",
+     "duplicate_of": null,
+     "reason": "As described in the source entry."
+    }
+   ],
+   "independent_count": 5
+  }
+ },
+ "contradiction_detection": {
+  "cd-01": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-02": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-03": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-04": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-05": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-06": {
+   "contradictions": [
+    {
+     "a": "S2",
+     "b": "S5",
+     "about": "the two sources state incompatible things"
+    }
+   ],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-07": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-08": {
+   "contradictions": [
+    {
+     "a": "S1",
+     "b": "S5",
+     "about": "the two sources state incompatible things"
+    }
+   ],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-09": {
+   "contradictions": [
+    {
+     "a": "S4",
+     "b": "S5",
+     "about": "the two sources state incompatible things"
+    }
+   ],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-10": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-11": {
+   "contradictions": [
+    {
+     "a": "S2",
+     "b": "S5",
+     "about": "the two sources state incompatible things"
+    }
+   ],
+   "resolvable": true,
+   "resolution": "The publisher's later correction stands.",
+   "note": "No further evidence in the file."
+  },
+  "cd-12": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-13": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-14": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-15": {
+   "contradictions": [
+    {
+     "a": "S1",
+     "b": "S4",
+     "about": "the two sources state incompatible things"
+    }
+   ],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-16": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-17": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-18": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-19": {
+   "contradictions": [],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  },
+  "cd-20": {
+   "contradictions": [
+    {
+     "a": "S4",
+     "b": "S5",
+     "about": "the two sources state incompatible things"
+    }
+   ],
+   "resolvable": false,
+   "resolution": null,
+   "note": "No further evidence in the file."
+  }
+ },
+ "opportunity_analysis": {
+  "oa-01": {
+   "demand": {
+    "finding": "Search term \"wedding seating chart template\": 18,400 searches in August 2026 on CraftMarket, up from 12,900 in August 2025.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "An estimated 2,300 shops list seating-chart templates on CraftMarket, the newsletter writes, citing a third-party tracker.",
+    "evidence": [
+     "S3",
+     "S5"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "Prices of the top 20 listings range from $4.50 to $14.00; the median is $8.00.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Three brides in the thread say most templates break when the guest list passes 150 names.",
+    "evidence": [
+     "S4"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "risk": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   }
+  },
+  "oa-02": {
+   "demand": {
+    "finding": "Approximately 41,000 monthly searches for \"custom pet mug\" across tracked marketplaces in Q2 2026.",
+    "evidence": [
+     "S2",
+     "S4"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "The 30 best-selling custom pet mugs are priced between $18.00 and $32.00.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "The 30 best-selling custom pet mugs are priced between $18.00 and $32.00.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "In a poll with 212 votes, 58% said they would pay more than $25 for a mug with their own pet's portrait.",
+    "evidence": [
+     "S5"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "An 11 oz ceramic mug with full-colour print costs $6.20 per unit including packaging; production takes 3 business days.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "risk": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   }
+  },
+  "oa-03": {
+   "demand": {
+    "finding": "The registry lists 6,840 independent beer and bottle shops as of 31 March 2026.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "A search for \"brewery logo\" returns 1,150 active gigs; a search for \"beer store logo\" returns 64.",
+    "evidence": [
+     "S5"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "Freelance logo packages for small retailers typically cost between $350 and $1,200.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Of 310 member shops surveyed, 27% plan to rebrand within 12 months.",
+    "evidence": [
+     "S2",
+     "S4"
+    ],
+    "status": "supported"
+   },
+   "feasibility": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "risk": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   }
+  },
+  "oa-04": {
+   "demand": {
+    "finding": "One guest claims his budget template earns \"about $9,000 a month\"; no statement or screenshot was shown.",
+    "evidence": [
+     "S3",
+     "S4",
+     "S5"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "The gallery shows 1,480 templates tagged \"budget\"; 37 of them have more than 500 downloads.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "Paid budget templates are priced from $5 to $29; 62% of the tagged templates are free.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "feasibility": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "risk": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   }
+  },
+  "oa-05": {
+   "demand": {
+    "finding": "Comparable organisers sell for $9.00 to $16.50; the best seller shows 2,870 sales since 2023.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "Comparable organisers sell for $9.00 to $16.50; the best seller shows 2,870 sales since 2023.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "Comparable organisers sell for $9.00 to $16.50; the best seller shows 2,870 sales since 2023.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Several posters complain that adhesive-backed organisers fall off after a few weeks.",
+    "evidence": [
+     "S4"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "One organiser takes 2 h 40 min to print and uses 38 g of filament; 3 of 50 test prints failed.",
+    "evidence": [
+     "S1",
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "risk": {
+    "finding": "The article warns that a popular organiser design is covered by a registered design owned by Loopwerk GmbH.",
+    "evidence": [
+     "S5"
+    ],
+    "status": "weak"
+   }
+  },
+  "oa-06": {
+   "demand": {
+    "finding": "The report estimates the personalised children's book segment at $520 million worldwide in 2025.",
+    "evidence": [
+     "S2",
+     "S5"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "StoryMe lists its personalised hardcover at $34.99 and its softcover at $24.99.",
+    "evidence": [
+     "S4"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "StoryMe lists its personalised hardcover at $34.99 and its softcover at $24.99.",
+    "evidence": [
+     "S4"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Among 1,004 parents, 34% bought a personalised book in the last two years; 71% of those paid $25 or more.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "feasibility": {
+    "finding": "A 28-page hardcover costs $11.40 per copy at quantity 1 and $8.90 at quantity 50; delivery in 6 to 9 business days.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "risk": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   }
+  },
+  "oa-07": {
+   "demand": {
+    "finding": "\"sourdough starter kit\": 9,900 monthly searches in August 2026, down from 27,100 in August 2021.",
+    "evidence": [
+     "S4",
+     "S5"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "BakeBox sells its starter kit for $24.00 plus $5.50 shipping.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "BakeBox sells its starter kit for $24.00 plus $5.50 shipping.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Posters report that about one in four mailed starters arrived dead in summer.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "Posters report that about one in four mailed starters arrived dead in summer.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "weak"
+   },
+   "risk": {
+    "finding": "Dried starter cultures sold to consumers must carry an allergen label and a batch number.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   }
+  },
+  "oa-08": {
+   "demand": {
+    "finding": "Personalised boards are listed at $28 to $65; listings with more than 1,000 sales cluster at $34 to $39.",
+    "evidence": [
+     "S3",
+     "S4"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "Personalised boards are listed at $28 to $65; listings with more than 1,000 sales cluster at $34 to $39.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "Personalised boards are listed at $28 to $65; listings with more than 1,000 sales cluster at $34 to $39.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "feasibility": {
+    "finding": "The LP-40 engraver costs $1,899; the manufacturer states an engraving time of 6 minutes for a 20 x 30 cm board.",
+    "evidence": [
+     "S1",
+     "S2",
+     "S5"
+    ],
+    "status": "supported"
+   },
+   "risk": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   }
+  },
+  "oa-09": {
+   "demand": {
+    "finding": "194,500 openings for registered nurses are projected each year from 2024 to 2034.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "\"nurse resume template\" returns 3,912 listings; the first page is dominated by 5 shops.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "First-page listings cost $6.99 to $15.99.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Two recruiters in the thread say hospital applicant systems reject resumes with columns and graphics.",
+    "evidence": [
+     "S4",
+     "S5"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "risk": {
+    "finding": "Two recruiters in the thread say hospital applicant systems reject resumes with columns and graphics.",
+    "evidence": [
+     "S4"
+    ],
+    "status": "weak"
+   }
+  },
+  "oa-10": {
+   "demand": {
+    "finding": "The blogger claims a colouring book \"can easily earn $3,000 a month\"; the post links to his course.",
+    "evidence": [
+     "S5"
+    ],
+    "status": "weak"
+   },
+   "competition": {
+    "finding": "The category \"adult colouring\" holds roughly 86,000 titles; the tracker estimates the #100 title sells 14 copies a day.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "A 60-page paperback listed at $7.99 yields a royalty of $2.14 per copy.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "feasibility": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "risk": {
+    "finding": "From 1 July 2026 publishers must declare AI-generated content; undeclared titles may be removed.",
+    "evidence": [
+     "S1",
+     "S4"
+    ],
+    "status": "supported"
+   }
+  },
+  "oa-11": {
+   "demand": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "competition": {
+    "finding": "LeafCrate charges $29 per month; GreenPost charges $35 per month with free shipping.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "LeafCrate charges $29 per month; GreenPost charges $35 per month with free shipping.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "In a group poll with 96 votes, 41% said they had cancelled a plant box because plants arrived damaged.",
+    "evidence": [
+     "S4"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "Parcels up to 2 kg cost $7.40; live plants are accepted Monday to Wednesday only.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "risk": {
+    "finding": "Median monthly churn for hobby boxes was 11.2% in 2025.",
+    "evidence": [
+     "S2",
+     "S5"
+    ],
+    "status": "supported"
+   }
+  },
+  "oa-12": {
+   "demand": {
+    "finding": "Preset sales on creator stores fell by an estimated 18% between 2024 and 2025.",
+    "evidence": [
+     "S3",
+     "S4"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "The store lists 7,250 preset packs; the top 10 creators hold 46% of all reviews.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "Preset packs in the store cost $12 to $49; bundles of 100 or more presets average $39.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Several photographers write that they now build presets themselves with the app's AI tool.",
+    "evidence": [
+     "S5"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "risk": {
+    "finding": "Several photographers write that they now build presets themselves with the app's AI tool.",
+    "evidence": [
+     "S5",
+     "S3"
+    ],
+    "status": "supported"
+   }
+  },
+  "oa-13": {
+   "demand": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "competition": {
+    "finding": "A seller estimates \"tens of thousands\" of candle shops on CraftMarket.",
+    "evidence": [
+     "S5"
+    ],
+    "status": "weak"
+   },
+   "pricing": {
+    "finding": "8 oz soy candles are listed from $12 to $26; the median of the first 40 results is $18.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "feasibility": {
+    "finding": "Soy wax costs $3.10 per kg in 20 kg boxes; an 8 oz jar with lid costs $1.25; fragrance oil costs $28 per 500 ml.",
+    "evidence": [
+     "S1",
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "risk": {
+    "finding": "Candles sold to consumers must carry a fire-safety warning label.",
+    "evidence": [
+     "S4"
+    ],
+    "status": "supported"
+   }
+  },
+  "oa-14": {
+   "demand": {
+    "finding": "Our own shop: 1,206 visits and 58 orders for cut-file bundles in August 2026.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "The host says the niche is \"completely saturated\" but gives no numbers.",
+    "evidence": [
+     "S4"
+    ],
+    "status": "weak"
+   },
+   "pricing": {
+    "finding": "Bundles of 50 to 200 files sell for $2.50 to $9.00.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Buyers in the thread ask for layered files that are ready for three-colour vinyl.",
+    "evidence": [
+     "S5"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "risk": {
+    "finding": "Files that contain trademarked characters may not be sold; repeat infringement closes the shop.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   }
+  },
+  "oa-15": {
+   "demand": {
+    "finding": "Of 2,150 adult learners surveyed, 48% use paper flashcards at least weekly.",
+    "evidence": [
+     "S1",
+     "S4"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "\"spanish flashcards printable\" returns 842 listings; 19 have more than 100 reviews.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "Printable Spanish decks cost $3.00 to $11.50.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Learners ask for decks sorted by verb tense rather than by topic.",
+    "evidence": [
+     "S5"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "risk": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   }
+  },
+  "oa-16": {
+   "demand": {
+    "finding": "Refurbished boards of the same models sold for $68 to $115 in the last 90 days; 143 sales were recorded.",
+    "evidence": [
+     "S2",
+     "S5"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "Refurbished boards of the same models sold for $68 to $115 in the last 90 days; 143 sales were recorded.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "Refurbished boards of the same models sold for $68 to $115 in the last 90 days; 143 sales were recorded.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Buyers say they pay more when the listing includes a typing-sound video.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "We bought 12 used boards for $31 on average and spent 1.5 hours refurbishing each.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "risk": {
+    "finding": "Sellers of refurbished electronics must offer a 12-month warranty.",
+    "evidence": [
+     "S4"
+    ],
+    "status": "supported"
+   }
+  },
+  "oa-17": {
+   "demand": {
+    "finding": "An estimated 3.4 million children were homeschooled in the 2025-26 school year.",
+    "evidence": [
+     "S1",
+     "S4",
+     "S5"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "Printable homeschool planners cost $5 to $22; undated planners make up most of the first page.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "Printable homeschool planners cost $5 to $22; undated planners make up most of the first page.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Many members write that they want a planner that covers several children on one page.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "risk": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   }
+  },
+  "oa-18": {
+   "demand": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "competition": {
+    "finding": "SignShop sells 60 cm custom signs for $149 to $219.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "SignShop sells 60 cm custom signs for $149 to $219.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Planners complain that signs arrive cracked in about one of ten orders.",
+    "evidence": [
+     "S4"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "A 60 cm sign costs $48 ex works; air freight adds $22; lead time is 10 to 14 days.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "risk": {
+    "finding": "Illuminated signs are subject to an import duty of 5.7%.",
+    "evidence": [
+     "S3",
+     "S5"
+    ],
+    "status": "supported"
+   }
+  },
+  "oa-19": {
+   "demand": {
+    "finding": "512,000 motorhomes were registered as of 31 March 2026.",
+    "evidence": [
+     "S1",
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "RoadLife Letter states it has \"over 9,000 paying subscribers\" at $7 per month.",
+    "evidence": [
+     "S2",
+     "S5"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "RoadLife Letter states it has \"over 9,000 paying subscribers\" at $7 per month.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Members say they would pay for verified campsite reviews, not for general news.",
+    "evidence": [
+     "S4"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "risk": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   }
+  },
+  "oa-20": {
+   "demand": {
+    "finding": "The trade body counts 38,200 registered dog-walking businesses, 81% of them sole traders.",
+    "evidence": [
+     "S1"
+    ],
+    "status": "supported"
+   },
+   "competition": {
+    "finding": "\"dog walking flyer template\" returns 268 listings; none includes a booking form.",
+    "evidence": [
+     "S2"
+    ],
+    "status": "supported"
+   },
+   "pricing": {
+    "finding": "Flyer templates cost $3.50 to $9.00.",
+    "evidence": [
+     "S3"
+    ],
+    "status": "supported"
+   },
+   "customer_signal": {
+    "finding": "Walkers write that most new clients come from neighbourhood apps, not from flyers.",
+    "evidence": [
+     "S4",
+     "S5"
+    ],
+    "status": "weak"
+   },
+   "feasibility": {
+    "finding": "UNKNOWN",
+    "evidence": [],
+    "status": "unknown"
+   },
+   "risk": {
+    "finding": "Walkers write that most new clients come from neighbourhood apps, not from flyers.",
+    "evidence": [
+     "S4"
+    ],
+    "status": "weak"
+   }
+  }
+ },
+ "evidence_summary": {
+  "es-01": {
+   "summary": "The file supports: Search term \"wedding seating chart template\": 18,400 searches in August 2026 on CraftMarket, up from 12,900 in August 2025. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "Search term \"wedding seating chart template\": 18,400 searches in August 2026 on CraftMarket, up from 12,900 in August 2025.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "Prices of the top 20 listings range from $4.50 to $14.00; the median is $8.00.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Three brides in the thread say most templates break when the guest list passes 150 names.",
+    "An estimated 2,300 shops list seating-chart templates on CraftMarket, WeddingBiz Weekly reports.",
+    "150 / break / guest list"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-02": {
+   "summary": "The file supports: An 11 oz ceramic mug with full-colour print costs $6.20 per unit including packaging; production takes 3 business days. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "An 11 oz ceramic mug with full-colour print costs $6.20 per unit including packaging; production takes 3 business days.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "Approximately 41,000 monthly searches for \"custom pet mug\" across tracked marketplaces in Q2 2026.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Pet-themed gifts are \"exploding\", the article says, without giving figures.",
+    "In a poll with 212 votes, 58% said they would pay more than $25 for a mug with their own pet's portrait.",
+    "exploding / without / no figures / GiftTrends"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-03": {
+   "summary": "The file supports: The registry lists 6,840 independent beer and bottle shops as of 31 March 2026. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "The registry lists 6,840 independent beer and bottle shops as of 31 March 2026.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "Of 310 member shops surveyed, 27% plan to rebrand within 12 months.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Of 310 member shops surveyed, 27% plan to rebrand within 12 months, the BrewRetail Association said.",
+    "typically"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-04": {
+   "summary": "The file supports: The gallery shows 1,480 templates tagged \"budget\"; 37 of them have more than 500 downloads. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "The gallery shows 1,480 templates tagged \"budget\"; 37 of them have more than 500 downloads.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "Paid budget templates are priced from $5 to $29; 62% of the tagged templates are free.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "One guest claims his budget template earns \"about $9,000 a month\"; no statement or screenshot was shown.",
+    "A seller writes that her budget template made $310 in July 2026 with 44 sales.",
+    "$9,000 / 9,000"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-05": {
+   "summary": "The file supports: One organiser takes 2 h 40 min to print and uses 38 g of filament; 3 of 50 test prints failed. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "One organiser takes 2 h 40 min to print and uses 38 g of filament; 3 of 50 test prints failed.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "PLA filament: $19.90 per 1 kg spool.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Several posters complain that adhesive-backed organisers fall off after a few weeks.",
+    "The article warns that a popular organiser design is covered by a registered design owned by Loopwerk GmbH.",
+    "registered design / Loopwerk"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-06": {
+   "summary": "The file supports: A 28-page hardcover costs $11.40 per copy at quantity 1 and $8.90 at quantity 50; delivery in 6 to 9 business days. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "A 28-page hardcover costs $11.40 per copy at quantity 1 and $8.90 at quantity 50; delivery in 6 to 9 business days.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "The report estimates the personalised children's book segment at $520 million worldwide in 2025.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "$520 million / $380 million / 520 / 380 / market size"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-07": {
+   "summary": "The file supports: Dried starter cultures sold to consumers must carry an allergen label and a batch number. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "Dried starter cultures sold to consumers must carry an allergen label and a batch number.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "BakeBox sells its starter kit for $24.00 plus $5.50 shipping.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Posters report that about one in four mailed starters arrived dead in summer.",
+    "\"sourdough starter kit\": 9,900 monthly searches in August 2026, down from 27,100 in August 2021, per SearchPulse.",
+    "one in four / arrived dead"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-08": {
+   "summary": "The file supports: The LP-40 engraver costs $1,899; the manufacturer states an engraving time of 6 minutes for a 20 x 30 cm board. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "The LP-40 engraver costs $1,899; the manufacturer states an engraving time of 6 minutes for a 20 x 30 cm board.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "Blank bamboo boards cost $4.80 each in cases of 24.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "The author says engraved boards are \"the easiest $5k month you'll ever make\" and offers a paid course.",
+    "A reviewer measured 14 minutes per 20 x 30 cm board on the LP-40 at the recommended power setting.",
+    "6 minutes / 14 minutes / engraving time"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-09": {
+   "summary": "The file supports: 194,500 openings for registered nurses are projected each year from 2024 to 2034. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "194,500 openings for registered nurses are projected each year from 2024 to 2034.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "\"nurse resume template\" returns 3,912 listings; the first page is dominated by 5 shops.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Two recruiters in the thread say hospital applicant systems reject resumes with columns and graphics.",
+    "The presenter says nurses \"always\" need a creative, colourful resume to stand out.",
+    "columns / graphics / colourful / reject"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-10": {
+   "summary": "The file supports: From 1 July 2026 publishers must declare AI-generated content; undeclared titles may be removed. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "From 1 July 2026 publishers must declare AI-generated content; undeclared titles may be removed.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "A 60-page paperback listed at $7.99 yields a royalty of $2.14 per copy.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Four authors report having colouring books removed in August without explanation.",
+    "The blogger claims a colouring book \"can easily earn $3,000 a month\"; the post links to his course.",
+    "$3,000 / 3,000"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-11": {
+   "summary": "The file supports: LeafCrate charges $29 per month; GreenPost charges $35 per month with free shipping. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "LeafCrate charges $29 per month; GreenPost charges $35 per month with free shipping.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "Median monthly churn for hobby boxes was 11.2% in 2025.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "In a group poll with 96 votes, 41% said they had cancelled a plant box because plants arrived damaged.",
+    "41% / damaged / 96"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-12": {
+   "summary": "The file supports: Preset packs in the store cost $12 to $49; bundles of 100 or more presets average $39. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "Preset packs in the store cost $12 to $49; bundles of 100 or more presets average $39.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "The store lists 7,250 preset packs; the top 10 creators hold 46% of all reviews.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Preset sales on creator stores fell by an estimated 18% between 2024 and 2025, says PhotoBiz Report.",
+    "Several photographers write that they now build presets themselves with the app's AI tool.",
+    "18%"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-13": {
+   "summary": "The file supports: Soy wax costs $3.10 per kg in 20 kg boxes; an 8 oz jar with lid costs $1.25; fragrance oil costs $28 per 500 ml. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "Soy wax costs $3.10 per kg in 20 kg boxes; an 8 oz jar with lid costs $1.25; fragrance oil costs $28 per 500 ml.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "CraftMarket charges a 6.5% transaction fee plus $0.20 per listing.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "A seller estimates \"tens of thousands\" of candle shops on CraftMarket.",
+    "tens of thousands"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-14": {
+   "summary": "The file supports: Our own shop: 1,206 visits and 58 orders for cut-file bundles in August 2026. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "Our own shop: 1,206 visits and 58 orders for cut-file bundles in August 2026.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "Bundles of 50 to 200 files sell for $2.50 to $9.00.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "The host says the niche is \"completely saturated\" but gives no numbers.",
+    "Buyers in the thread ask for layered files that are ready for three-colour vinyl.",
+    "saturated"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-15": {
+   "summary": "The file supports: Of 2,150 adult learners surveyed, 48% use paper flashcards at least weekly. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "Of 2,150 adult learners surveyed, 48% use paper flashcards at least weekly.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "Printable Spanish decks cost $3.00 to $11.50.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Learners ask for decks sorted by verb tense rather than by topic.",
+    "48% / 21%"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-16": {
+   "summary": "The file supports: We bought 12 used boards for $31 on average and spent 1.5 hours refurbishing each. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "We bought 12 used boards for $31 on average and spent 1.5 hours refurbishing each.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "Refurbished boards of the same models sold for $68 to $115 in the last 90 days; 143 sales were recorded.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Buyers say they pay more when the listing includes a typing-sound video.",
+    "The blog predicts demand for refurbished keyboards \"will double by 2027\" without naming a source.",
+    "double by 2027"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-17": {
+   "summary": "The file supports: An estimated 3.4 million children were homeschooled in the 2025-26 school year. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "An estimated 3.4 million children were homeschooled in the 2025-26 school year.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "Printable homeschool planners cost $5 to $22; undated planners make up most of the first page.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Many members write that they want a planner that covers several children on one page.",
+    "An estimated 3.4 million children were homeschooled in the 2025-26 school year, the Education Department said.",
+    "several children / one page"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-18": {
+   "summary": "The file supports: A 60 cm sign costs $48 ex works; air freight adds $22; lead time is 10 to 14 days. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "A 60 cm sign costs $48 ex works; air freight adds $22; lead time is 10 to 14 days.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "SignShop sells 60 cm custom signs for $149 to $219.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Planners complain that signs arrive cracked in about one of ten orders.",
+    "12% / draft"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-19": {
+   "summary": "The file supports: 512,000 motorhomes were registered as of 31 March 2026. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "512,000 motorhomes were registered as of 31 March 2026.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "RoadLife Letter states it has \"over 9,000 paying subscribers\" at $7 per month.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Members say they would pay for verified campsite reviews, not for general news.",
+    "RoadLife Letter has \"over 9,000 paying subscribers\", its founder told MediaInsider.",
+    "9,000 / typically"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  },
+  "es-20": {
+   "summary": "The file supports: The trade body counts 38,200 registered dog-walking businesses, 81% of them sole traders. Other points are uncertain or unknown; see the lists.",
+   "supported": [
+    {
+     "claim": "The trade body counts 38,200 registered dog-walking businesses, 81% of them sole traders.",
+     "sources": [
+      "S1"
+     ]
+    },
+    {
+     "claim": "\"dog walking flyer template\" returns 268 listings; none includes a booking form.",
+     "sources": [
+      "S2"
+     ]
+    }
+   ],
+   "uncertain": [
+    "Walkers write that most new clients come from neighbourhood apps, not from flyers.",
+    "The post says flyers are \"still the number one way\" dog walkers find clients; no data is given.",
+    "neighbourhood apps / number one way / flyers"
+   ],
+   "unknown": [
+    "monthly sales of this product"
+   ]
+  }
+ },
+ "opportunity_card": {
+  "oc-01": {
+   "title": "printable wedding seating charts",
+   "product": "printable wedding seating charts",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 4.5,
+    "high": 14,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-02": {
+   "title": "custom pet portrait mugs",
+   "product": "custom pet portrait mugs",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 18,
+    "high": 32,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-03": {
+   "title": "logo design packages for independent beer stores",
+   "product": "logo design packages for independent beer stores",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 350,
+    "high": 1200,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-04": {
+   "title": "budget-planning templates for a note-taking app",
+   "product": "budget-planning templates for a note-taking app",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 5,
+    "high": 29,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-05": {
+   "title": "3D-printed desk cable organisers",
+   "product": "3D-printed desk cable organisers",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 9,
+    "high": 16.5,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-06": {
+   "title": "personalised children's storybooks",
+   "product": "personalised children's storybooks",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 24.99,
+    "high": 34.99,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-07": {
+   "title": "sourdough starter kits",
+   "product": "sourdough starter kits",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 24,
+    "high": 24,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-08": {
+   "title": "laser-engraved cutting boards",
+   "product": "laser-engraved cutting boards",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 28,
+    "high": 65,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-09": {
+   "title": "resume templates for nurses",
+   "product": "resume templates for nurses",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 6.99,
+    "high": 15.99,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-10": {
+   "title": "AI-illustrated colouring books",
+   "product": "AI-illustrated colouring books",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 7.99,
+    "high": 7.99,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-11": {
+   "title": "houseplant care subscription box",
+   "product": "houseplant care subscription box",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 29,
+    "high": 35,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-12": {
+   "title": "photo-editing preset packs",
+   "product": "photo-editing preset packs",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 12,
+    "high": 49,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-13": {
+   "title": "hand-poured soy candles",
+   "product": "hand-poured soy candles",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 12,
+    "high": 26,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-14": {
+   "title": "cut files for craft cutting machines",
+   "product": "cut files for craft cutting machines",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 2.5,
+    "high": 9,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-15": {
+   "title": "language flashcard decks",
+   "product": "language flashcard decks",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 3,
+    "high": 11.5,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-16": {
+   "title": "refurbished mechanical keyboards",
+   "product": "refurbished mechanical keyboards",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 68,
+    "high": 115,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-17": {
+   "title": "printable homeschool planners",
+   "product": "printable homeschool planners",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 5,
+    "high": 22,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-18": {
+   "title": "custom LED neon-style signs",
+   "product": "custom LED neon-style signs",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 149,
+    "high": 219,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-19": {
+   "title": "paid newsletter for motorhome owners",
+   "product": "paid newsletter for motorhome owners",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 7,
+    "high": 7,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  },
+  "oc-20": {
+   "title": "dog-walking flyer and booking kit",
+   "product": "dog-walking flyer and booking kit",
+   "target_customer": "UNKNOWN",
+   "price_range": {
+    "low": 3.5,
+    "high": 9,
+    "currency": "USD"
+   },
+   "demand_signal": "UNKNOWN",
+   "competition_level": "UNKNOWN",
+   "monthly_sales_estimate": "UNKNOWN",
+   "production_method": "UNKNOWN",
+   "main_risk": "UNKNOWN",
+   "evidence_ids": [
+    "S1"
+   ],
+   "confidence": "low"
+  }
+ }
+}

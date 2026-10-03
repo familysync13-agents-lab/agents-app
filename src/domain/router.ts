@@ -164,6 +164,17 @@ export const WORKERS: Record<string, WorkerDef> = {
   },
 };
 
+/*
+ * EVALUATION CANDIDATES. Models under qualification that are NOT workers: they appear in no route, so the Router can never select
+ * them. Their evidence is recorded and reported exactly like a worker's; adding one to a route is an owner decision.
+ */
+export const CANDIDATES: Record<string, { id: string; model: string; kind: "semantic" | "code"; note: string }> = {
+  "cand-qwen38": { id: "cand-qwen38", model: "qwen3.8:27b", kind: "semantic", note: "evaluation only: semantic and research classes" },
+  "cand-devstral": { id: "cand-devstral", model: "devstral-small-2:24b", kind: "code", note: "evaluation only: coding classes" },
+};
+/** The exact model a worker or an evaluation candidate runs. */
+export const modelOf = (id: string): string | undefined => WORKERS[id]?.model ?? CANDIDATES[id]?.model;
+
 /** The trusted path per class, and which alternatives may be considered for it (in order). */
 export const ROUTES: Record<AnyTaskClass, { trusted: string; alternatives: string[] }> = {
   classification: { trusted: "claude-code", alternatives: ["local-llm"] },
@@ -201,7 +212,7 @@ export type QualStatus = { status: "unqualified" | "shadow" | "qualified" | "rej
 
 /** Qualification of one worker for one task class, from recorded evidence only (never from reputation). */
 export function qualification(records: QualRecord[], worker: string, taskClass: string): QualStatus {
-  const model = WORKERS[worker]?.model;
+  const model = modelOf(worker);
   const rs = records.filter((r) => r.worker === worker && r.taskClass === taskClass && r.agree !== null && !r.voided && r.mode !== "production" && (r.model == null || r.model === model));
   if (rs.length === 0) return { status: "unqualified", samples: 0, agreement: null };
   const agreement = rs.filter((r) => r.agree === true && r.valid === true).length / rs.length;

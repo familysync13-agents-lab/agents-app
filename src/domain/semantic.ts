@@ -220,6 +220,16 @@ Rules:
 - Never change or weaken tests, and never special-case test inputs. Read-only reference files must not be returned.
 - If the task cannot be done within the files you may change, return {"files": [], "notes": "<why>"}.`;
 
+/** The edit-based coding interface (a separate qualification path from whole-file output). */
+export const PATCH_SYSTEM = `You are a careful TypeScript engineer making one small, file-scoped change in an existing project.
+Answer with JSON only: {"edits": [{"path": "<path>", "search": "<exact existing text>", "replace": "<new text>"}], "notes": "<one sentence: what you changed>"}.
+Rules:
+- Each edit replaces one passage. "search" must be copied EXACTLY from the current file (same spacing, quotes and line breaks), be contiguous, and be long enough to occur exactly once in the file - include whole lines. "replace" is the text that takes its place.
+- Make the smallest edit that does the task. Touch nothing else: no reformatting, no renaming, no quote or comment changes, no edits to other functions.
+- Edit only files you were told you may change. Never change or weaken tests, and never special-case test inputs.
+- TypeScript is strict: no implicit any, handle undefined. Follow the conventions visible in the file.
+- If the task cannot be done within the files you may change, return {"edits": [], "notes": "<why>"}.`;
+
 const SMALL_FILE = /^(src|tests)\/[A-Za-z0-9_./()[\]@-]+\.(ts|tsx)$/;
 /**
  * Deterministic classification: is this plan task SMALL_CODE? Only a task the plan itself confines to at most three named source

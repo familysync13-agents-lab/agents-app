@@ -27,7 +27,7 @@ async function main() {
   // the Router's rule table (read-only): the ten primary classes, or with all:true also the local-worker classes
   if (op === "route_table") out({ ok: true, routes: (req as { all?: boolean }).all ? await routeTableAll(db) : await routeTable(db) });
   // qualification harness of the local workers: run the pinned cases of a class, read the evidence, verify, void
-  if (op === "qualify_run") out({ ok: true, ...(await qualifyRun(db, String((req as { class?: string }).class), { ids: (req as { ids?: string[] }).ids, repo: (req as { repo?: string }).repo })) });
+  if (op === "qualify_run") out({ ok: true, ...(await qualifyRun(db, String((req as { class?: string }).class), { ids: (req as { ids?: string[] }).ids, repo: (req as { repo?: string }).repo, worker: (req as { worker?: string }).worker })) });
   if (op === "qualify_status") out({ ok: true, status: await qualifyStatus(db), batches: await db.select().from(qualificationBatches).orderBy(desc(qualificationBatches.id)).limit(12) });
   if (op === "qualify_verify") out({ ok: true, ...(await qualifyVerify(db, (req as { class?: string }).class)) });
   if (op === "qualify_void") {

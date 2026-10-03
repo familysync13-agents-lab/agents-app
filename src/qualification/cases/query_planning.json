@@ -1,0 +1,252 @@
+{
+ "class": "query_planning",
+ "version": 1,
+ "pack": "research",
+ "statement": "Plan non-redundant search queries across marketplace, web, community, official and primary-source channels.",
+ "cases": [
+  {
+   "id": "qp-01",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r01",
+   "input": "Business question: Should we add printable wedding seating-chart templates to our digital-download shop this quarter?\nProduct: printable wedding seating charts",
+   "expect": {
+    "terms": [
+     "seating chart",
+     "wedding"
+    ]
+   }
+  },
+  {
+   "id": "qp-02",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r02",
+   "input": "Business question: Is a print-on-demand line of custom pet portrait mugs worth launching before the holiday season?\nProduct: custom pet portrait mugs",
+   "expect": {
+    "terms": [
+     "pet portrait",
+     "mug"
+    ]
+   }
+  },
+  {
+   "id": "qp-03",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r03",
+   "input": "Business question: Can we sell fixed-price logo design packages to independent beer and bottle shops?\nProduct: logo design packages for independent beer stores",
+   "expect": {
+    "terms": [
+     "logo",
+     "beer"
+    ]
+   }
+  },
+  {
+   "id": "qp-04",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r04",
+   "input": "Business question: Is there room for another paid budget-planning template for the NoteGrid app?\nProduct: budget-planning templates for a note-taking app",
+   "expect": {
+    "terms": [
+     "budget",
+     "template"
+    ]
+   }
+  },
+  {
+   "id": "qp-05",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r05",
+   "input": "Business question: Should we produce and sell 3D-printed desk cable organisers from our two printers?\nProduct: 3D-printed desk cable organisers",
+   "expect": {
+    "terms": [
+     "cable organiser",
+     "3D-printed",
+     "cable organizer",
+     "3D printed"
+    ]
+   }
+  },
+  {
+   "id": "qp-06",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r06",
+   "input": "Business question: Is a personalised children's storybook product viable for us at a $30 price point?\nProduct: personalised children's storybooks",
+   "expect": {
+    "terms": [
+     "personalised",
+     "storybook",
+     "personalized"
+    ]
+   }
+  },
+  {
+   "id": "qp-07",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r07",
+   "input": "Business question: Would a mail-order sourdough starter kit be a sensible first physical product?\nProduct: sourdough starter kits",
+   "expect": {
+    "terms": [
+     "sourdough",
+     "starter kit"
+    ]
+   }
+  },
+  {
+   "id": "qp-08",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r08",
+   "input": "Business question: Should we buy a laser engraver to sell personalised cutting boards?\nProduct: laser-engraved cutting boards",
+   "expect": {
+    "terms": [
+     "cutting board",
+     "engraved"
+    ]
+   }
+  },
+  {
+   "id": "qp-09",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r09",
+   "input": "Business question: Is a resume-template bundle aimed at nurses a good niche for our template shop?\nProduct: resume templates for nurses",
+   "expect": {
+    "terms": [
+     "resume",
+     "nurse",
+     "nursing"
+    ]
+   }
+  },
+  {
+   "id": "qp-10",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r10",
+   "input": "Business question: Should we publish a series of colouring books through a print-on-demand book platform?\nProduct: AI-illustrated colouring books",
+   "expect": {
+    "terms": [
+     "colouring book",
+     "coloring book"
+    ]
+   }
+  },
+  {
+   "id": "qp-11",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r11",
+   "input": "Business question: Is a monthly houseplant-care subscription box viable in our region?\nProduct: houseplant care subscription box",
+   "expect": {
+    "terms": [
+     "houseplant",
+     "subscription"
+    ]
+   }
+  },
+  {
+   "id": "qp-12",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r12",
+   "input": "Business question: Should we release a paid preset pack for the LumaEdit photo app?\nProduct: photo-editing preset packs",
+   "expect": {
+    "terms": [
+     "preset"
+    ]
+   }
+  },
+  {
+   "id": "qp-13",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r13",
+   "input": "Business question: Can a hand-poured soy candle line reach a 60% gross margin on a craft marketplace?\nProduct: hand-poured soy candles",
+   "expect": {
+    "terms": [
+     "soy candle",
+     "candle"
+    ]
+   }
+  },
+  {
+   "id": "qp-14",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r14",
+   "input": "Business question: Is selling themed cut-file bundles for craft cutting machines still worthwhile?\nProduct: cut files for craft cutting machines",
+   "expect": {
+    "terms": [
+     "cut file",
+     "SVG"
+    ]
+   }
+  },
+  {
+   "id": "qp-15",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r15",
+   "input": "Business question: Should we sell printable Spanish flashcard decks for adult beginners?\nProduct: language flashcard decks",
+   "expect": {
+    "terms": [
+     "flashcard",
+     "Spanish"
+    ]
+   }
+  },
+  {
+   "id": "qp-16",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r16",
+   "input": "Business question: Can we build a side business refurbishing and reselling mechanical keyboards?\nProduct: refurbished mechanical keyboards",
+   "expect": {
+    "terms": [
+     "mechanical keyboard",
+     "refurbished",
+     "keyboard"
+    ]
+   }
+  },
+  {
+   "id": "qp-17",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r17",
+   "input": "Business question: Should we create a printable homeschool planner for the next school year?\nProduct: printable homeschool planners",
+   "expect": {
+    "terms": [
+     "homeschool",
+     "planner"
+    ]
+   }
+  },
+  {
+   "id": "qp-18",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r18",
+   "input": "Business question: Is reselling custom LED neon-style signs from an overseas workshop a workable business?\nProduct: custom LED neon-style signs",
+   "expect": {
+    "terms": [
+     "neon sign",
+     "LED"
+    ]
+   }
+  },
+  {
+   "id": "qp-19",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r19",
+   "input": "Business question: Would a paid weekly newsletter for motorhome owners find enough subscribers?\nProduct: paid newsletter for motorhome owners",
+   "expect": {
+    "terms": [
+     "newsletter",
+     "motorhome"
+    ]
+   }
+  },
+  {
+   "id": "qp-20",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r20",
+   "input": "Business question: Should we sell a ready-made flyer and booking kit to independent dog walkers?\nProduct: dog-walking flyer and booking kit",
+   "expect": {
+    "terms": [
+     "dog walk",
+     "flyer"
+    ]
+   }
+  }
+ ]
+}

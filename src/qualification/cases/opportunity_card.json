@@ -1,0 +1,353 @@
+{
+ "class": "opportunity_card",
+ "version": 1,
+ "pack": "research",
+ "statement": "Fill an Opportunity Card exactly to schema, with UNKNOWN wherever the file is silent.",
+ "cases": [
+  {
+   "id": "oc-01",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r01",
+   "input": "Business question: Should we add printable wedding seating-chart templates to our digital-download shop this quarter?\nProduct: printable wedding seating charts\n\nSources:\n[S1] CraftMarket seller dashboard export - marketplace data export, 2026-08-31\nSearch term \"wedding seating chart template\": 18,400 searches in August 2026 on CraftMarket, up from 12,900 in August 2025.\n[S2] CraftMarket listing pages (top 20 results) - marketplace listings, 2026-09-02\nPrices of the top 20 listings range from $4.50 to $14.00; the median is $8.00.\n[S3] WeddingBiz Weekly - trade newsletter, 2026-07-15\nAn estimated 2,300 shops list seating-chart templates on CraftMarket, the newsletter writes, citing a third-party tracker.\n[S4] PlannerTalk forum thread - community forum, 2026-06-20\nThree brides in the thread say most templates break when the guest list passes 150 names.\n[S5] DigitalSeller Blog - blog post, 2026-07-18\nAn estimated 2,300 shops list seating-chart templates on CraftMarket, WeddingBiz Weekly reports.",
+   "expect": {
+    "prices": [
+     [
+      4.5,
+      14
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-02",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r02",
+   "input": "Business question: Is a print-on-demand line of custom pet portrait mugs worth launching before the holiday season?\nProduct: custom pet portrait mugs\n\nSources:\n[S1] PrintHub supplier price list - supplier price list, 2026-09-01\nAn 11 oz ceramic mug with full-colour print costs $6.20 per unit including packaging; production takes 3 business days.\n[S2] ShopStat category report - analytics report, 2026-08-20\nApproximately 41,000 monthly searches for \"custom pet mug\" across tracked marketplaces in Q2 2026.\n[S3] CraftMarket listing pages - marketplace listings, 2026-09-03\nThe 30 best-selling custom pet mugs are priced between $18.00 and $32.00.\n[S4] GiftTrends Magazine - magazine article, 2026-05-10\nPet-themed gifts are \"exploding\", the article says, without giving figures.\n[S5] PetOwners subreddit-style community poll - community poll, 2026-08-11\nIn a poll with 212 votes, 58% said they would pay more than $25 for a mug with their own pet's portrait.",
+   "expect": {
+    "prices": [
+     [
+      18,
+      32
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-03",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r03",
+   "input": "Business question: Can we sell fixed-price logo design packages to independent beer and bottle shops?\nProduct: logo design packages for independent beer stores\n\nSources:\n[S1] National Retail Registry - official statistics, 2026-03-31\nThe registry lists 6,840 independent beer and bottle shops as of 31 March 2026.\n[S2] BrewRetail Association survey - industry survey, 2026-04-22\nOf 310 member shops surveyed, 27% plan to rebrand within 12 months.\n[S3] DesignRates Index - pricing index, 2026-06-01\nFreelance logo packages for small retailers typically cost between $350 and $1,200.\n[S4] CraftBeer Daily - news article, 2026-04-25\nOf 310 member shops surveyed, 27% plan to rebrand within 12 months, the BrewRetail Association said.\n[S5] FreelanceBoard gig listings - marketplace listings, 2026-08-30\nA search for \"brewery logo\" returns 1,150 active gigs; a search for \"beer store logo\" returns 64.",
+   "expect": {
+    "prices": [
+     [
+      350,
+      1200
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-04",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r04",
+   "input": "Business question: Is there room for another paid budget-planning template for the NoteGrid app?\nProduct: budget-planning templates for a note-taking app\n\nSources:\n[S1] NoteGrid template gallery - marketplace listings, 2026-09-05\nThe gallery shows 1,480 templates tagged \"budget\"; 37 of them have more than 500 downloads.\n[S2] NoteGrid template gallery - marketplace listings, 2026-09-05\nPaid budget templates are priced from $5 to $29; 62% of the tagged templates are free.\n[S3] TemplateMakers podcast transcript - podcast transcript, 2026-02-14\nOne guest claims his budget template earns \"about $9,000 a month\"; no statement or screenshot was shown.\n[S4] IndieCreators forum - community forum, 2026-08-02\nA seller writes that her budget template made $310 in July 2026 with 44 sales.\n[S5] NoteGrid press release - press release, 2026-01-20\nNoteGrid reports 4.1 million monthly active users as of December 2025.",
+   "expect": {
+    "prices": [
+     [
+      5,
+      29
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-05",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r05",
+   "input": "Business question: Should we produce and sell 3D-printed desk cable organisers from our two printers?\nProduct: 3D-printed desk cable organisers\n\nSources:\n[S1] Own print log - internal measurement, 2026-08-28\nOne organiser takes 2 h 40 min to print and uses 38 g of filament; 3 of 50 test prints failed.\n[S2] FilamentDirect invoice - supplier invoice, 2026-08-12\nPLA filament: $19.90 per 1 kg spool.\n[S3] CraftMarket listing pages - marketplace listings, 2026-09-04\nComparable organisers sell for $9.00 to $16.50; the best seller shows 2,870 sales since 2023.\n[S4] DeskSetup community thread - community forum, 2026-07-09\nSeveral posters complain that adhesive-backed organisers fall off after a few weeks.\n[S5] MakerNews - news article, 2025-11-03\nThe article warns that a popular organiser design is covered by a registered design owned by Loopwerk GmbH.",
+   "expect": {
+    "prices": [
+     [
+      9,
+      16.5
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-06",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r06",
+   "input": "Business question: Is a personalised children's storybook product viable for us at a $30 price point?\nProduct: personalised children's storybooks\n\nSources:\n[S1] BookPress print quote - supplier quote, 2026-08-19\nA 28-page hardcover costs $11.40 per copy at quantity 1 and $8.90 at quantity 50; delivery in 6 to 9 business days.\n[S2] KidLit Market Monitor - analytics report, 2026-05-30\nThe report estimates the personalised children's book segment at $520 million worldwide in 2025.\n[S3] ParentCircle survey - consumer survey, 2026-06-12\nAmong 1,004 parents, 34% bought a personalised book in the last two years; 71% of those paid $25 or more.\n[S4] StoryMe competitor site - competitor website, 2026-09-01\nStoryMe lists its personalised hardcover at $34.99 and its softcover at $24.99.\n[S5] PublishingToday - news article, 2026-06-02\nThe personalised children's book segment was worth $380 million worldwide in 2025, PublishingToday writes, citing no source.",
+   "expect": {
+    "prices": [
+     [
+      24.99,
+      34.99
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-07",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r07",
+   "input": "Business question: Would a mail-order sourdough starter kit be a sensible first physical product?\nProduct: sourdough starter kits\n\nSources:\n[S1] Food Safety Office guidance note - official guidance, 2026-02-01\nDried starter cultures sold to consumers must carry an allergen label and a batch number.\n[S2] BakeBox competitor site - competitor website, 2026-09-02\nBakeBox sells its starter kit for $24.00 plus $5.50 shipping.\n[S3] HomeBaker forum - community forum, 2026-07-21\nPosters report that about one in four mailed starters arrived dead in summer.\n[S4] SearchPulse keyword tool - keyword tool, 2026-08-31\n\"sourdough starter kit\": 9,900 monthly searches in August 2026, down from 27,100 in August 2021.\n[S5] FoodieWire - syndicated article, 2026-09-01\n\"sourdough starter kit\": 9,900 monthly searches in August 2026, down from 27,100 in August 2021, per SearchPulse.",
+   "expect": {
+    "prices": [
+     [
+      24,
+      24
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-08",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r08",
+   "input": "Business question: Should we buy a laser engraver to sell personalised cutting boards?\nProduct: laser-engraved cutting boards\n\nSources:\n[S1] LaserPro product page - supplier product page, 2026-08-25\nThe LP-40 engraver costs $1,899; the manufacturer states an engraving time of 6 minutes for a 20 x 30 cm board.\n[S2] WoodSupply wholesale list - supplier price list, 2026-08-25\nBlank bamboo boards cost $4.80 each in cases of 24.\n[S3] CraftMarket listing pages - marketplace listings, 2026-09-03\nPersonalised boards are listed at $28 to $65; listings with more than 1,000 sales cluster at $34 to $39.\n[S4] GiftSeller Insider - blog post, 2026-03-09\nThe author says engraved boards are \"the easiest $5k month you'll ever make\" and offers a paid course.\n[S5] MakerSpace user review - user review, 2026-06-17\nA reviewer measured 14 minutes per 20 x 30 cm board on the LP-40 at the recommended power setting.",
+   "expect": {
+    "prices": [
+     [
+      28,
+      65
+     ],
+     [
+      34,
+      39
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-09",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r09",
+   "input": "Business question: Is a resume-template bundle aimed at nurses a good niche for our template shop?\nProduct: resume templates for nurses\n\nSources:\n[S1] Labour Statistics Bureau - official statistics, 2026-04-15\n194,500 openings for registered nurses are projected each year from 2024 to 2034.\n[S2] CraftMarket search results - marketplace listings, 2026-09-04\n\"nurse resume template\" returns 3,912 listings; the first page is dominated by 5 shops.\n[S3] CraftMarket search results - marketplace listings, 2026-09-04\nFirst-page listings cost $6.99 to $15.99.\n[S4] NurseLife community - community forum, 2026-08-08\nTwo recruiters in the thread say hospital applicant systems reject resumes with columns and graphics.\n[S5] CareerCoach YouTube transcript - video transcript, 2026-01-30\nThe presenter says nurses \"always\" need a creative, colourful resume to stand out.",
+   "expect": {
+    "prices": [
+     [
+      6.99,
+      15.99
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-10",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r10",
+   "input": "Business question: Should we publish a series of colouring books through a print-on-demand book platform?\nProduct: AI-illustrated colouring books\n\nSources:\n[S1] PagePress publisher terms - platform policy, 2026-07-01\nFrom 1 July 2026 publishers must declare AI-generated content; undeclared titles may be removed.\n[S2] PagePress royalty calculator - platform calculator, 2026-09-01\nA 60-page paperback listed at $7.99 yields a royalty of $2.14 per copy.\n[S3] BookRank tracker - analytics tool, 2026-09-02\nThe category \"adult colouring\" holds roughly 86,000 titles; the tracker estimates the #100 title sells 14 copies a day.\n[S4] SelfPubHub forum - community forum, 2026-08-14\nFour authors report having colouring books removed in August without explanation.\n[S5] PassiveIncomeNow - blog post, 2026-03-22\nThe blogger claims a colouring book \"can easily earn $3,000 a month\"; the post links to his course.",
+   "expect": {
+    "prices": [
+     [
+      7.99,
+      7.99
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-11",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r11",
+   "input": "Business question: Is a monthly houseplant-care subscription box viable in our region?\nProduct: houseplant care subscription box\n\nSources:\n[S1] LeafCrate competitor site - competitor website, 2026-09-01\nLeafCrate charges $29 per month; GreenPost charges $35 per month with free shipping.\n[S2] SubscriptionMetrics benchmark - industry benchmark, 2026-03-15\nMedian monthly churn for hobby boxes was 11.2% in 2025.\n[S3] RegionPost rate card - official rate card, 2026-01-01\nParcels up to 2 kg cost $7.40; live plants are accepted Monday to Wednesday only.\n[S4] PlantParents group poll - community poll, 2026-08-19\nIn a group poll with 96 votes, 41% said they had cancelled a plant box because plants arrived damaged.\n[S5] SubscriptionMetrics benchmark (2026 update) - industry benchmark, 2026-08-30\nCorrection: median monthly churn for hobby boxes in 2025 was 13.8%, not 11.2% as published in March.",
+   "expect": {
+    "prices": [
+     [
+      29,
+      35
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-12",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r12",
+   "input": "Business question: Should we release a paid preset pack for the LumaEdit photo app?\nProduct: photo-editing preset packs\n\nSources:\n[S1] LumaEdit creator store - marketplace listings, 2026-09-05\nPreset packs in the store cost $12 to $49; bundles of 100 or more presets average $39.\n[S2] LumaEdit creator store - marketplace listings, 2026-09-05\nThe store lists 7,250 preset packs; the top 10 creators hold 46% of all reviews.\n[S3] PhotoBiz Report - analytics report, 2026-04-11\nPreset sales on creator stores fell by an estimated 18% between 2024 and 2025.\n[S4] CreatorEconomy Digest - newsletter, 2026-04-13\nPreset sales on creator stores fell by an estimated 18% between 2024 and 2025, says PhotoBiz Report.\n[S5] ShutterTalk forum - community forum, 2026-07-30\nSeveral photographers write that they now build presets themselves with the app's AI tool.",
+   "expect": {
+    "prices": [
+     [
+      12,
+      49
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-13",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r13",
+   "input": "Business question: Can a hand-poured soy candle line reach a 60% gross margin on a craft marketplace?\nProduct: hand-poured soy candles\n\nSources:\n[S1] WaxWorks supplier price list - supplier price list, 2026-08-20\nSoy wax costs $3.10 per kg in 20 kg boxes; an 8 oz jar with lid costs $1.25; fragrance oil costs $28 per 500 ml.\n[S2] CraftMarket fee schedule - platform fee schedule, 2026-07-01\nCraftMarket charges a 6.5% transaction fee plus $0.20 per listing.\n[S3] CraftMarket listing pages - marketplace listings, 2026-09-02\n8 oz soy candles are listed from $12 to $26; the median of the first 40 results is $18.\n[S4] CandleMakers Guild safety sheet - official guidance, 2025-10-10\nCandles sold to consumers must carry a fire-safety warning label.\n[S5] CraftSeller forum - community forum, 2026-08-05\nA seller estimates \"tens of thousands\" of candle shops on CraftMarket.",
+   "expect": {
+    "prices": [
+     [
+      12,
+      26
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-14",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r14",
+   "input": "Business question: Is selling themed cut-file bundles for craft cutting machines still worthwhile?\nProduct: cut files for craft cutting machines\n\nSources:\n[S1] CraftMarket seller dashboard export - marketplace data export, 2026-08-31\nOur own shop: 1,206 visits and 58 orders for cut-file bundles in August 2026.\n[S2] CraftMarket listing pages - marketplace listings, 2026-09-03\nBundles of 50 to 200 files sell for $2.50 to $9.00.\n[S3] CutterCo licence terms - platform policy, 2026-05-01\nFiles that contain trademarked characters may not be sold; repeat infringement closes the shop.\n[S4] CraftBiz podcast transcript - podcast transcript, 2026-06-06\nThe host says the niche is \"completely saturated\" but gives no numbers.\n[S5] CutFans community - community forum, 2026-08-22\nBuyers in the thread ask for layered files that are ready for three-colour vinyl.",
+   "expect": {
+    "prices": [
+     [
+      2.5,
+      9
+     ]
+    ],
+    "sales": [
+     58,
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-15",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r15",
+   "input": "Business question: Should we sell printable Spanish flashcard decks for adult beginners?\nProduct: language flashcard decks\n\nSources:\n[S1] LinguaStats survey - consumer survey, 2026-02-18\nOf 2,150 adult learners surveyed, 48% use paper flashcards at least weekly.\n[S2] CraftMarket listing pages - marketplace listings, 2026-09-04\nPrintable Spanish decks cost $3.00 to $11.50.\n[S3] CraftMarket listing pages - marketplace listings, 2026-09-04\n\"spanish flashcards printable\" returns 842 listings; 19 have more than 100 reviews.\n[S4] EdTech Monitor - news article, 2026-02-20\nOnly 21% of adult learners still use paper flashcards weekly, EdTech Monitor reports from an app-usage panel of 900 users.\n[S5] LearnSpanish community - community forum, 2026-07-02\nLearners ask for decks sorted by verb tense rather than by topic.",
+   "expect": {
+    "prices": [
+     [
+      3,
+      11.5
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-16",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r16",
+   "input": "Business question: Can we build a side business refurbishing and reselling mechanical keyboards?\nProduct: refurbished mechanical keyboards\n\nSources:\n[S1] Own purchase records - internal measurement, 2026-08-30\nWe bought 12 used boards for $31 on average and spent 1.5 hours refurbishing each.\n[S2] SwapBay sold listings - marketplace data export, 2026-08-30\nRefurbished boards of the same models sold for $68 to $115 in the last 90 days; 143 sales were recorded.\n[S3] KeebTalk community - community forum, 2026-08-12\nBuyers say they pay more when the listing includes a typing-sound video.\n[S4] Consumer Protection Agency notice - official guidance, 2026-01-15\nSellers of refurbished electronics must offer a 12-month warranty.\n[S5] TechResale Blog - blog post, 2026-05-05\nThe blog predicts demand for refurbished keyboards \"will double by 2027\" without naming a source.",
+   "expect": {
+    "prices": [
+     [
+      68,
+      115
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-17",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r17",
+   "input": "Business question: Should we create a printable homeschool planner for the next school year?\nProduct: printable homeschool planners\n\nSources:\n[S1] Education Department census - official statistics, 2026-05-12\nAn estimated 3.4 million children were homeschooled in the 2025-26 school year.\n[S2] CraftMarket listing pages - marketplace listings, 2026-09-04\nPrintable homeschool planners cost $5 to $22; undated planners make up most of the first page.\n[S3] HomeschoolMoms group - community forum, 2026-08-25\nMany members write that they want a planner that covers several children on one page.\n[S4] CraftMarket seller dashboard export - marketplace data export, 2026-08-31\nSearch term \"homeschool planner printable\": 7,300 searches in July 2026 and 11,800 in August 2026.\n[S5] EduNews - news article, 2026-05-13\nAn estimated 3.4 million children were homeschooled in the 2025-26 school year, the Education Department said.",
+   "expect": {
+    "prices": [
+     [
+      5,
+      22
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-18",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r18",
+   "input": "Business question: Is reselling custom LED neon-style signs from an overseas workshop a workable business?\nProduct: custom LED neon-style signs\n\nSources:\n[S1] GlowWorks workshop quote - supplier quote, 2026-08-27\nA 60 cm sign costs $48 ex works; air freight adds $22; lead time is 10 to 14 days.\n[S2] SignShop competitor site - competitor website, 2026-09-01\nSignShop sells 60 cm custom signs for $149 to $219.\n[S3] Customs Authority tariff table - official statistics, 2026-01-01\nIlluminated signs are subject to an import duty of 5.7%.\n[S4] EventPlanners community - community forum, 2026-08-03\nPlanners complain that signs arrive cracked in about one of ten orders.\n[S5] TradeWatch - news article, 2026-08-29\nIlluminated signs will be subject to an import duty of 12% from 1 January 2027, TradeWatch reports, citing a draft regulation.",
+   "expect": {
+    "prices": [
+     [
+      149,
+      219
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-19",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r19",
+   "input": "Business question: Would a paid weekly newsletter for motorhome owners find enough subscribers?\nProduct: paid newsletter for motorhome owners\n\nSources:\n[S1] Vehicle Licensing Agency - official statistics, 2026-03-31\n512,000 motorhomes were registered as of 31 March 2026.\n[S2] RoadLife Letter public page - competitor website, 2026-09-02\nRoadLife Letter states it has \"over 9,000 paying subscribers\" at $7 per month.\n[S3] NewsletterBench - industry benchmark, 2026-02-10\nFree-to-paid conversion for hobby newsletters is typically 2% to 5%.\n[S4] CamperForum - community forum, 2026-07-17\nMembers say they would pay for verified campsite reviews, not for general news.\n[S5] MediaInsider - news article, 2026-09-03\nRoadLife Letter has \"over 9,000 paying subscribers\", its founder told MediaInsider.",
+   "expect": {
+    "prices": [
+     [
+      7,
+      7
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  },
+  {
+   "id": "oc-20",
+   "source": "controlled (synthetic product-opportunity scenario; all publishers and figures invented)",
+   "scenario": "r20",
+   "input": "Business question: Should we sell a ready-made flyer and booking kit to independent dog walkers?\nProduct: dog-walking flyer and booking kit\n\nSources:\n[S1] PetCare Trade Body report - industry survey, 2026-03-20\nThe trade body counts 38,200 registered dog-walking businesses, 81% of them sole traders.\n[S2] CraftMarket listing pages - marketplace listings, 2026-09-04\n\"dog walking flyer template\" returns 268 listings; none includes a booking form.\n[S3] CraftMarket listing pages - marketplace listings, 2026-09-04\nFlyer templates cost $3.50 to $9.00.\n[S4] DogWalkers United group - community forum, 2026-08-16\nWalkers write that most new clients come from neighbourhood apps, not from flyers.\n[S5] SmallBiz Tips - blog post, 2026-04-04\nThe post says flyers are \"still the number one way\" dog walkers find clients; no data is given.",
+   "expect": {
+    "prices": [
+     [
+      3.5,
+      9
+     ]
+    ],
+    "sales": [
+     "UNKNOWN"
+    ]
+   }
+  }
+ ]
+}
