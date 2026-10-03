@@ -47,6 +47,15 @@
    "files": {
     "oracle/T4/check.mjs": "6cba30ef3e79935d261ea544f81aeb8946db38745290eef065b3e172aed7f720"
    }
+  },
+  {
+   "id": "A4",
+   "at": "2026-10-03T01:53:04Z",
+   "kind": "oracle-update-superseded",
+   "reason": "Agents App: the owner-approved contract of T5 (sha256 91a856df8677f163fbf38b08ce45ae6e8fe14a5ed3d89fae535b6cbf371b0924) supersedes part of T4 (AC5): AC5: The check uses getByRole('link', { name: 'New intent', exact: true }). Playwright matches the accessible name, which is New intent for Demo Project because of aria-label, rather than the visible New intent text. The exact-name selector returns zero matches even though the required visible link exists in the correctly selected panel and works. This is a harness selector defect, not an application violation or environment timeout.\n  observed in the application: Reproduced T4:AC5's 15000ms selector timeout with /work/T4-check.mjs. Independently signed in through /auth/preview with Chromium a The contract text of T4 is kept as the historical record; its check now follows the superseding contract for the superseded behaviour and is otherwise unchanged.",
+   "files": {
+    "oracle/T4/check.mjs": "7a57e635a22271aa865014c1a9fa363e7e3851c9c5707ad55f27ac5826ddce9a"
+   }
   }
  ]
 }
