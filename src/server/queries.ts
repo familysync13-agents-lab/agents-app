@@ -1,6 +1,6 @@
 import "server-only";
 import { and, desc, eq, gt, inArray, like, notInArray, sql } from "drizzle-orm";
-import { getDb } from "@/db/client";
+import { getDb, type Db } from "@/db/client";
 import {
   activity,
   adminActions,
@@ -14,11 +14,14 @@ import {
   heartbeats,
   intentProposals,
   projects,
+  qualificationRecords,
   runs,
   tasks,
   transitions,
   type TaskState,
 } from "@/db/schema";
+import { qualification, route, ROUTES, TASK_CLASSES, WORKERS, type QualRecord } from "@/domain/router";
+import type { RoutingRow } from "@/components/routing-table";
 
 const TERMINAL: TaskState[] = ["ACCEPTED", "REJECTED", "ABANDONED"];
 
@@ -105,7 +108,52 @@ export async function systemPage() {
     .from(projects)
     .where(eq(projects.active, true))
     .orderBy(projects.name);
-  return { heartbeats: hb, backups: bk, audit, jobs, recentErrors, capabilities, system: await systemStatus() };
+  const workerRuns = await recentWorkerRuns(db);
+  const routing = await routingTable(db);
+  return { heartbeats: hb, backups: bk, audit, jobs, recentErrors, capabilities, workerRuns, routing, system: await systemStatus() };
+}
+
+/** The 20 most recently started worker runs (newest first) with their task key - the System page's execution ledger. Read-only. */
+export async function recentWorkerRuns(db?: Db) {
+  const d = db ?? (await getDb());
+  return d
+    .select({
+      id: runs.id,
+      taskId: runs.taskId,
+      key: tasks.key,
+      purpose: runs.purpose,
+      worker: runs.worker,
+      taskClass: runs.taskClass,
+      routeReason: runs.routeReason,
+      contextBytes: runs.contextBytes,
+    })
+    .from(runs)
+    .innerJoin(tasks, eq(tasks.id, runs.taskId))
+    .orderBy(desc(runs.startedAt), desc(runs.id))
+    .limit(20);
+}
+
+/**
+ * The Router's decision per task class for a standard-tier task with all enabled workers available, from the recorded qualification
+ * records only (the Router itself is not changed), with each alternative's status and sample count - the System page's routing card.
+ */
+export async function routingTable(db?: Db): Promise<RoutingRow[]> {
+  const d = db ?? (await getDb());
+  const records: QualRecord[] = await d
+    .select({ worker: qualificationRecords.worker, taskClass: qualificationRecords.taskClass, valid: qualificationRecords.valid, agree: qualificationRecords.agree })
+    .from(qualificationRecords);
+  return TASK_CLASSES.map((taskClass) => {
+    const decision = route({ taskClass, risk: "standard", records });
+    return {
+      taskClass,
+      worker: decision.worker,
+      reason: decision.reason,
+      alternatives: ROUTES[taskClass].alternatives.map((worker) => {
+        const q = qualification(records, worker, taskClass);
+        return { worker, status: WORKERS[worker]?.enabled ? q.status : ("disabled" as const), samples: q.samples };
+      }),
+    };
+  });
 }
 
 export async function overview() {
