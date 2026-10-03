@@ -1,0 +1,183 @@
+{
+ "assumptions": [
+  {
+   "basis": "existing behaviour",
+   "chosen": "Every active project (the same set the Command page's \"Projects\" panel lists), ordered by project name.",
+   "id": "A1",
+   "question": "Which projects count as \"each configured project\"?",
+   "reversible": true
+  },
+  {
+   "basis": "stated intent",
+   "chosen": "Detected values are shown as recorded in the profile (several languages joined with \", \"; capitalisation may be prettified, e.g. \"TypeScript\"); a build/test/lint/type-check capability shows its detected command; a capability, framework, package manager or language that was not detected shows \"Not detected\"; browser tests show \"Available\" or \"Not detected\"; a project with no profile yet shows \"No capability profile detected yet.\"",
+   "id": "A2",
+   "question": "How are values, missing capabilities and projects without a profile shown?",
+   "reversible": true
+  },
+  {
+   "basis": "existing behaviour",
+   "chosen": "The preview demo data gives the Demo Project a demonstration capability profile (values in the interface), following the existing pattern of preview-only demo tasks and decisions.",
+   "id": "A3",
+   "question": "The gate preview's Demo Project has no detected profile (no repository is contacted from a preview); how can the section be verified?",
+   "reversible": true
+  }
+ ],
+ "canary_routes": [
+  "/system",
+  "/",
+  "/decisions"
+ ],
+ "constraints": [
+  {
+   "id": "C1",
+   "kind": "regression",
+   "statement": "All existing content of /system remains present and working: the h1 \"System\", the status cards (heartbeats, \"Build\", \"Executor jobs\"), and the cards headed \"Backups\", \"Recent executor errors\" and \"Administrative operations (audit log)\".",
+   "trace": {
+    "ref": "do not break existing functionality",
+    "source": "intent"
+   },
+   "verify": "blackbox"
+  },
+  {
+   "id": "C2",
+   "kind": "prohibited",
+   "statement": "The demonstration capability profile of the Demo Project exists only in the gate preview's demo data (APP_ENV=preview); production never receives invented profile data, and a production project's profile is shown only as detected from its repository.",
+   "trace": {
+    "ref": "AC2: the preview must carry a known profile for AC2 to be checkable black-box, and that demo data must not leak into real projects",
+    "source": "necessary"
+   },
+   "verify": "static"
+  }
+ ],
+ "criteria": [
+  {
+   "given": "the gate preview with its demo data and the owner signed in via /auth/preview",
+   "id": "AC1",
+   "priority": "must",
+   "tags": [],
+   "then": "the page loads with HTTP 200 and shows an h2 heading \"Project Capabilities\"; within that section there is exactly one list item per active project, i.e. exactly one list item whose h3 heading text is \"Demo Project\"",
+   "trace": {
+    "ref": "Add a Project Capabilities section to the System page that shows the detected capability profile for each configured project",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /system"
+  },
+  {
+   "given": "the gate preview with its demo data (Demo Project's demo profile as stated in the interface) and the owner signed in",
+   "id": "AC2",
+   "priority": "must",
+   "tags": [],
+   "then": "its description list has the terms \"Language\", \"Framework\", \"Package manager\", \"Build\", \"Test\", \"Lint\", \"Type check\", \"Browser tests\" in this order, and the corresponding values: Language contains \"typescript\" (case-insensitive), Framework contains \"next\" (case-insensitive), Package manager contains \"npm\" (case-insensitive), Build is \"npm run build\", Test is \"npm run test\", Lint is \"npm run lint\" (each command shown exactly, surrounding whitespace ignored)",
+   "trace": {
+    "ref": "Show the detected language, framework, package manager, and available build, test, lint, type-check, and browser-test capabilities",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /system and reads the \"Demo Project\" list item in the \"Project Capabilities\" section"
+  },
+  {
+   "given": "the gate preview with its demo data, in which the Demo Project profile has no type-check command and has browser tests detected, and the owner signed in",
+   "id": "AC3",
+   "priority": "must",
+   "tags": [],
+   "then": "the \"Type check\" value is exactly \"Not detected\" and the \"Browser tests\" value is exactly \"Available\" (surrounding whitespace ignored)",
+   "trace": {
+    "ref": "available build, test, lint, type-check, and browser-test capabilities",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /system and reads the \"Type check\" and \"Browser tests\" values of the \"Demo Project\" list item"
+  },
+  {
+   "given": "the gate preview with its demo data and the owner signed in",
+   "id": "AC4",
+   "priority": "must",
+   "tags": [],
+   "then": "the page still shows the h1 \"System\", the status cards labelled \"Build\" and \"Executor jobs\", and the card headings \"Backups\", \"Recent executor errors\" and \"Administrative operations (audit log)\"; the browser console shows no uncaught errors",
+   "trace": {
+    "ref": "do not break existing functionality",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /system"
+  },
+  {
+   "given": "the gate preview with its demo data and the owner signed in",
+   "id": "AC5",
+   "priority": "must",
+   "tags": [],
+   "then": "each page loads with HTTP 200 and shows its h1 heading (\"Decisions\" on /decisions, \"Demo Project\" on /projects/demo), and the \"Projects\" panel of / still lists \"Demo Project\" with its \"New intent\" link to /projects/demo/new (the demo profile data does not change other pages)",
+   "trace": {
+    "ref": "T0 and T1 contracts: Decisions page, Command page Projects panel and New intent shortcut must keep working",
+    "source": "project"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /, /decisions and /projects/demo"
+  },
+  {
+   "given": "an active project whose capability profile has not been detected yet (no profile recorded)",
+   "id": "AC6",
+   "priority": "should",
+   "tags": [],
+   "then": "the project still has its list item with its name as h3 in the \"Project Capabilities\" section, showing \"No capability profile detected yet.\", and the page loads without error",
+   "trace": {
+    "ref": "for each configured project",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /system"
+  },
+  {
+   "id": "AC7",
+   "priority": "should",
+   "refs": [
+    "/system",
+    "src/app/(app)/system/page.tsx",
+    "src/components/ui.tsx"
+   ],
+   "statement": "The \"Project Capabilities\" section uses the existing System page look (Card with CardHeader, muted labels, monospace for commands, ok/muted tones for available/not-detected), is readable without horizontal page scrolling at a 375px-wide viewport and on desktop, and stays consistent with the page's live refresh.",
+   "tags": [],
+   "trace": {
+    "ref": "Keep it consistent with the existing System page",
+    "source": "intent"
+   },
+   "type": "experience"
+  }
+ ],
+ "id": "T4",
+ "intent_sha256": "ab181c0557a8746679c22e5b5e59a46a283781c3cdbac6644292cca87dffdb9d",
+ "interface": {
+  "ui": "Sign-in for the gate preview: GET /auth/preview (redirects to / with an owner session). System page: route /system, page title \"System · Agents\", h1 \"System\" (unchanged). NEW section: a card with heading (h2) \"Project Capabilities\" placed on /system after the existing status cards. Inside it, one list item (li) per active project, ordered by project name; each list item contains a heading (h3) whose text is the project name (preview: \"Demo Project\") and a description list (dl) of term/definition pairs (dt = label, dd = value) with exactly these labels in this order: \"Language\", \"Framework\", \"Package manager\", \"Build\", \"Test\", \"Lint\", \"Type check\", \"Browser tests\". Values: Language = the detected languages joined with \", \"; Framework / Package manager = the detected value; Build / Test / Lint / Type check = the detected command; Browser tests = \"Available\" when browser tests were detected; any value that was not detected = \"Not detected\". Value text matches the recorded profile value case-insensitively (display capitalisation such as \"TypeScript\" or \"Next.js\" is allowed as long as the recorded value is contained case-insensitively); commands are shown exactly as recorded. A project with no detected profile shows the text \"No capability profile detected yet.\" in its list item instead of the description list. Preview demo profile of \"Demo Project\" (slug \"demo\"): languages [\"typescript\"], framework \"next\", package manager \"npm\", build \"npm run build\", test \"npm run test\", lint \"npm run lint\", type check not detected (null), browser tests detected (true). Existing cards on /system keep their headings: \"Backups\", \"Recent executor errors\", \"Administrative operations (audit log)\"; status cards \"Build\" and \"Executor jobs\"."
+ },
+ "non_goals": [
+  "Changing how capability profiles are detected (detection rules, which files are read, when a profile is refreshed) or what is stored in the database.",
+  "Triggering, refreshing or editing a capability profile from the UI; the section is read-only and adds no buttons or forms.",
+  "Showing capability profiles anywhere other than the System page (e.g. Command page, project page, task page) or exposing them in the API under /api/v0.",
+  "Requiring the other profile fields (commit, database, tooling, Dockerfile check stage, list of unknowns) to be shown; they may be shown but are not part of this task.",
+  "Listing deactivated projects; registering, editing or removing projects.",
+  "Changing the existing System page cards, tables, live refresh, sign-in, sessions or authorization."
+ ],
+ "open_questions": [],
+ "policies": [
+  "policy.json"
+ ],
+ "scope": {
+  "paths": [
+   "**"
+  ],
+  "summary": "The System page (/system) gets a new read-only section headed \"Project Capabilities\" that shows, for each configured (active) project, the capability profile Agents App has detected from that project's repository: the detected language, framework and package manager, and the available build, test, lint, type-check and browser-test capabilities (the detected command, or that the capability was not detected). A project for which no profile has been detected yet is still listed and says so. The section follows the look of the existing System page cards, and all existing System page content (status cards, Backups, Recent executor errors, Administrative operations audit log) keeps working unchanged. For black-box verification the gate preview's Demo Project carries a demonstration capability profile with the values stated in the interface."
+ },
+ "tier": "standard",
+ "title": "Project capabilities on the System page",
+ "traces_to": [
+  "OWNER-INTENT-T4"
+ ],
+ "version": 1
+}
