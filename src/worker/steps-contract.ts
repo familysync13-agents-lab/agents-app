@@ -404,6 +404,26 @@ export async function awaitGithubContract(ctx: TaskCtx): Promise<void> {
   return blockEvidence(ctx, `The gate rejected the contract PR #${prNo} (verdict ${g.verdict}).`, { pr: prNo, run: g.id }, { auto: false });
 }
 
+/**
+ * GitHub refuses a merge with "required status check is expected" when main moved after the PR was opened (the ruleset demands an
+ * up-to-date branch). That is neither a review question nor an infrastructure failure: bring the branch up to date, let the gate
+ * judge the new head, and continue (found in the first real runs: it was mis-read as "needs the owner's review").
+ * Returns true when it took over (the caller just returns).
+ */
+export const isBehind = (mr: Record<string, unknown> | undefined) => !!mr && Number(mr.status) === 405 && /status check .* (is )?expected|not up to date|out of date|behind/i.test(String(mr.message ?? ""));
+export async function behindMain(ctx: TaskCtx, c: ContractRow, prNo: number, mr: Record<string, unknown> | undefined): Promise<boolean> {
+  if (!isBehind(mr)) return false;
+  const u = await ctx.once("upd", "transport", () => ({ repo: ctx.project.repo, ops: [{ op: "update_branch", id: "u", pr: prNo }] }));
+  if (!u) return true;
+  const ur = u.status === "done" ? sub(u, "u") : undefined;
+  if (!ur?.ok || !ur.head_sha) return false;
+  const head = String(ur.head_sha);
+  await ctx.db.update(contracts).set({ prHead: head }).where(eq(contracts.id, c.id));
+  await ctx.log("system", `PR #${prNo} was behind main; brought up to date (head ${head.slice(0, 8)}). The gate judges the new head, then it is merged.`, { pr: prNo, head });
+  await ctx.goto("await_github_contract", { contractId: ctx.data.contractId ?? c.id, pr: prNo, head, members: ctx.data.members ?? null, resume: ctx.data.resume ?? null });
+  return true;
+}
+
 /** The repository itself (gate / ruleset) insists on the owner's review: only then is the owner asked, once. */
 export async function escalateGithub(ctx: TaskCtx, prNo: number, head: string, why: string) {
   if (ctx.data.escalated) return;
@@ -435,11 +455,16 @@ export async function contractMerge(ctx: TaskCtx): Promise<void> {
   const prNo = ctx.data.pr as number;
   const c = await currentContract(ctx);
   if (!c) return;
+  if (!ctx.data.pr && c.prNumber) {
+    // the step lost its data (an older recovery): the contract row knows its PR - continue from the PR's real state
+    return ctx.goto("await_github_contract", { contractId: c.id, pr: c.prNumber, head: c.prHead });
+  }
   if (!ctx.data.merged && ctx.data.auto) {
     const m = await ctx.once("merge", "transport", () => ({ repo: ctx.project.repo, ops: [{ op: "merge_system", id: "m", pr: prNo }] }));
     if (!m) return;
     const mr = m.status === "done" ? sub(m, "m") : undefined;
     if (m.status === "error" || !mr?.ok) {
+      if (await behindMain(ctx, c, prNo, mr)) return;
       if (mr && [405, 409, 422].includes(Number(mr.status))) {
         // the repository's ruleset still demands a review: fall back to the owner's approval (the trust boundary decides, not the app)
         const head = String(ctx.data.head);
@@ -476,6 +501,7 @@ export async function contractMerge(ctx: TaskCtx): Promise<void> {
     if (!m) return;
     const mr = m.status === "done" ? sub(m, "m") : undefined;
     if (m.status === "error" || !mr?.ok) {
+      if (await behindMain(ctx, c, prNo, mr)) return;
       await ctx.forget("merge");
       return harnessFailure(ctx, { ...m, error: m.error ?? JSON.stringify(mr ?? {}).slice(0, 300) }, "merge", "merging the approved contract PR");
     }

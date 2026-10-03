@@ -49,8 +49,8 @@ export async function buildStart(ctx: TaskCtx): Promise<void> {
     // deliberate stacking: build on the exact DONE head of the previous task; both are verified together by this task's gate run
     // (the previous task's criteria are regression criteria) and accepted with ONE owner approval of this task's PR
     await ctx.save({ stackParentId: parent.id });
-    await ctx.log("system", `Stacked on ${parent.key} (DONE at ${String(parent.headSha).slice(0, 8)}, awaiting acceptance): this task builds on its head and both are accepted together.`, { parent: parent.id, parent_head: parent.headSha });
-    await ctx.setData({ mainSha: parent.headSha });
+    if (!ctx.data.stackLogged) await ctx.log("system", `Stacked on ${parent.key} (DONE at ${String(parent.headSha).slice(0, 8)}, awaiting acceptance): this task builds on its head and both are accepted together.`, { parent: parent.id, parent_head: parent.headSha });
+    await ctx.setData({ mainSha: parent.headSha, stackLogged: true });
   }
   if (!parent) {
     // always build on the CURRENT main (other tasks or check amendments may have been merged since this contract was merged)
