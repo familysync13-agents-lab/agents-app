@@ -1,4 +1,5 @@
 import { NODES, NODE_HELP, NODE_LABEL, type FlowNode } from "@/domain/ops";
+import { shortenTitle } from "@/domain/text";
 import { cx } from "./ui";
 
 /*
@@ -180,9 +181,10 @@ export function FlowMap({ s, label }: { s: FlowState; label: string }) {
                 {s.active[n] ? " · working" : ""}
                 {n === "owner" && s.alert ? ` · ${s.alert} waiting for you` : ""}
               </text>
+              {/* whole words that fit the phone viewBox, "…" when shortened; the full help text stays available as the title */}
               <text x={x + 60} y={y + 16} fontSize={11} fill="var(--color-mute)">
-                {NODE_HELP[n].slice(0, 36)}
-                {NODE_HELP[n].length > 36 ? "…" : ""}
+                <title>{NODE_HELP[n]}</title>
+                {shortenTitle(NODE_HELP[n], 33)}
               </text>
             </g>
           );

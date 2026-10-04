@@ -12,6 +12,7 @@ import { stepInfo } from "@/components/steps";
 import { Ago, buttonPrimary, Card, CardHeader, cx, Empty, EvidenceChip, RoleTag, Sha, StateChip, type Role } from "@/components/ui";
 import { currentEvidencePackage, taskDetail } from "@/server/queries";
 import { requireOwner } from "@/server/auth";
+import { shortenTitle } from "@/domain/text";
 
 export const metadata = { title: "Task" };
 
@@ -79,7 +80,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
       <Card className={cx(s.waitingOnOwner || open.length ? "border-owner/40" : "")}>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4">
           <RoleTag role={nowRole} live={!!activeRun} />
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 break-words">
             <div className="font-medium">{t.step === "done" ? STATE_LABEL[t.state] : s.label}</div>
             {t.stateReason ? <div className="mt-0.5 text-sm text-mute">{t.stateReason}</div> : null}
           </div>
@@ -96,12 +97,12 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
         ))}
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_1fr]">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_1fr]">
+        <div className="min-w-0 space-y-6">
           <ContractPanel d={d} />
           <VerificationPanel d={d} />
         </div>
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <WorkPanel d={d} />
           <Timeline d={d} />
           <EvidencePackageCard pkg={pkg} />
@@ -113,7 +114,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
               <ul className="divide-y divide-line text-sm">
                 {d.artifacts.map((a) => (
                   <li key={a.id} className="flex items-center gap-3 px-5 py-2.5">
-                    <Link href={`/tasks/${t.id}/artifacts/${a.id}`} className="min-w-0 flex-1 truncate hover:text-accent">
+                    <Link href={`/tasks/${t.id}/artifacts/${a.id}`} className="min-w-0 flex-1 truncate hover:text-accent" title={a.name}>
                       {a.name}
                     </Link>
                     {a.workerAuthored ? <span className="text-xs text-mute">worker-authored</span> : null}
@@ -125,7 +126,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
           </Card>
           <AdminPanel d={d} />
           {approved?.mergeCommit || contract ? (
-            <p className="text-xs text-mute">
+            <p className="text-xs break-words text-mute">
               Intent recorded <Ago at={t.createdAt} />. Approved contract hash <Sha value={approved?.sha256} n={16} />.
             </p>
           ) : null}
@@ -162,26 +163,31 @@ function AtAGlance({ d }: { d: Detail }) {
   const routing = failureRouting(t, t.corrections);
   const attribution = d.evidence.find((e) => e.subject.startsWith("attribution:") && e.commitSha === head);
   const open = d.decisions.filter((x) => x.status === "open");
-  const cells: { k: string; v: React.ReactNode; tone?: string }[] = [
-    { k: "Being built", v: (contract?.body as { scope?: { summary?: string } } | undefined)?.scope?.summary?.slice(0, 180) ?? t.intent.slice(0, 180) },
+  const building = (contract?.body as { scope?: { summary?: string } } | undefined)?.scope?.summary ?? t.intent;
+  const asks = open.map((o) => o.title).join("; ");
+  // shortened values end with "…" (whole words only) and keep the full value as the cell's title
+  const cells: { k: string; v: React.ReactNode; tone?: string; full?: string }[] = [
+    { k: "Being built", v: shortenTitle(building, 180), full: building },
     { k: "Working now", v: run ? `${run.role === "builder" ? "Builder" : "Verifier"} - ${s.label}` : s.waitingOnOwner || t.step === "await_decision" ? "Waiting for you" : s.label },
-    { k: "Verified", v: head ? `${verified} of ${must.length} must-criteria at ${head.slice(0, 7)}` : "Nothing built yet", tone: head && verified === must.length && must.length > 0 ? "text-ok" : undefined },
+    { k: "Verified", v: head ? `${verified} of ${must.length} must-criteria at ${head.slice(0, 7)}` : "Nothing built yet", full: head ?? undefined, tone: head && verified === must.length && must.length > 0 ? "text-ok" : undefined },
     {
       k: "Failed / owner",
       v: routing ? `${PARTY[routing.party].label} → ${PARTY[routing.party].owner}` : failed.length ? `${failed.join(", ")} failed${attribution ? ` (${attribution.detail?.split(":")[0]?.toLowerCase()})` : ""}` : "Nothing failing",
       tone: routing || failed.length ? "text-warn" : "text-ink-2",
     },
     { k: "Self-correcting", v: routing ? (routing.selfCorrecting ? "Yes - no action needed" : "No - needs a decision") : "—", tone: routing?.selfCorrecting ? "text-verifier" : undefined },
-    { k: "Do I need to act?", v: open.length ? open.map((o) => o.title).join("; ").slice(0, 160) : "No", tone: open.length ? "text-owner" : "text-ok" },
+    { k: "Do I need to act?", v: open.length ? shortenTitle(asks, 160) : "No", full: open.length ? asks : undefined, tone: open.length ? "text-owner" : "text-ok" },
     { k: "Corrections", v: `${t.corrections} of ${d.project.maxCorrections + t.extraCorrections} (this contract version; check defects are never charged)` },
-    { k: "Reached main", v: t.mergeCommit ? `Yes - merged ${t.mergeCommit.slice(0, 8)}` : "Not yet", tone: t.mergeCommit ? "text-ok" : undefined },
+    { k: "Reached main", v: t.mergeCommit ? `Yes - merged ${t.mergeCommit.slice(0, 8)}` : "Not yet", full: t.mergeCommit ?? undefined, tone: t.mergeCommit ? "text-ok" : undefined },
   ];
   return (
-    <section aria-label="At a glance" className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 xl:grid-cols-4">
+    <section aria-label="At a glance" className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 xl:grid-cols-4">
       {cells.map((c) => (
-        <div key={c.k} className={cx("bg-panel px-4 py-3", c.k === "Being built" && "sm:col-span-2 xl:col-span-1")}>
+        <div key={c.k} className={cx("min-w-0 bg-panel px-4 py-3 break-words", c.k === "Being built" && "sm:col-span-2 xl:col-span-1")}>
           <div className="text-[11px] tracking-[0.16em] text-mute uppercase">{c.k}</div>
-          <div className={cx("mt-1 text-sm leading-snug", c.tone ?? "text-ink")}>{c.v}</div>
+          <div className={cx("mt-1 text-sm leading-snug", c.tone ?? "text-ink")} title={c.full}>
+            {c.v}
+          </div>
         </div>
       ))}
     </section>
@@ -190,7 +196,7 @@ function AtAGlance({ d }: { d: Detail }) {
 
 function AdminPanel({ d }: { d: Detail }) {
   const running = d.runs.filter((r) => r.status === "running").map((r) => ({ id: r.id, label: `${r.role} ${r.purpose} (run ${r.id})` }));
-  const reopenable = d.decisions.filter((x) => (x.kind === "block" || x.kind === "budget") && x.status !== "open").map((x) => ({ id: x.id, label: `#${x.id} ${x.title.slice(0, 60)}` }));
+  const reopenable = d.decisions.filter((x) => (x.kind === "block" || x.kind === "budget") && x.status !== "open").map((x) => ({ id: x.id, label: `#${x.id} ${shortenTitle(x.title, 60)}` }));
   return (
     <Card>
       <CardHeader title="Operations" meta="audited recovery actions" />
@@ -223,7 +229,7 @@ function Stepper({ d }: { d: Detail }) {
             key={st}
             aria-current={isCur ? "step" : undefined}
             className={cx(
-              "rounded-xl border px-3 py-2.5",
+              "min-w-0 rounded-xl border px-3 py-2.5 break-words",
               isCur ? "border-accent/60 bg-accent/10" : done ? "border-line bg-panel" : "border-line/60 bg-panel/40",
               blocked && i === lastReached && "border-owner/60 bg-owner/10",
             )}
@@ -237,7 +243,7 @@ function Stepper({ d }: { d: Detail }) {
         );
       })}
       {blocked || terminalBad ? (
-        <li className="col-span-3 rounded-xl border border-owner/50 bg-owner/10 px-3 py-2 text-sm text-owner sm:col-span-6">
+        <li className="col-span-3 rounded-xl border border-owner/50 bg-owner/10 px-3 py-2 text-sm break-words text-owner sm:col-span-6">
           {STATE_LABEL[cur]}: {d.task.stateReason}
         </li>
       ) : null}
@@ -248,7 +254,7 @@ function Stepper({ d }: { d: Detail }) {
 function OwnerAction({ d, dec }: { d: Detail; dec: Detail["decisions"][number] }) {
   const ctx = dec.context as Record<string, unknown>;
   const heading = (
-    <div className="mb-4">
+    <div className="mb-4 break-words">
       <div className="text-xs font-semibold tracking-wide text-owner uppercase">Your decision</div>
       <h2 className="mt-1 text-lg font-semibold">{dec.title}</h2>
       <p className="mt-1 max-w-3xl text-sm text-ink-2">{dec.why}</p>
@@ -267,7 +273,7 @@ function OwnerAction({ d, dec }: { d: Detail; dec: Detail["decisions"][number] }
     return (
       <div>
         {heading}
-        <p className="mb-4 text-sm text-mute">
+        <p className="mb-4 text-sm break-words text-mute">
           Review the contract below (v{c.version}, sha256 <Sha value={c.sha256} n={12} />) and the oracle that will judge it (sha256{" "}
           <Sha value={c.oracleSha256} n={12} />, written blind by the Verifier).
           {ctx.notes ? " The Verifier left notes (see Evidence files)." : ""}
@@ -314,7 +320,7 @@ function ContractPanel({ d }: { d: Detail }) {
     return (
       <Card>
         <CardHeader title="Contract" />
-        <div className="space-y-3 px-5 py-4 text-sm">
+        <div className="space-y-3 px-5 py-4 text-sm break-words">
           <div className="text-xs font-semibold tracking-wide text-mute uppercase">Your intent</div>
           <p className="whitespace-pre-wrap text-ink-2">{d.task.intent}</p>
           <p className="text-mute">The contract is being drafted from this intent.</p>
@@ -343,7 +349,7 @@ function ContractPanel({ d }: { d: Detail }) {
           </span>
         }
       />
-      <div className="space-y-4 px-5 py-4 text-sm">
+      <div className="space-y-4 px-5 py-4 text-sm break-words">
         {body.scope?.summary ? <p className="text-ink-2">{body.scope.summary}</p> : null}
         {!c.lint.ok ? (
           <div role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3.5 py-2.5 text-bad">
@@ -433,7 +439,7 @@ function VerificationPanel({ d }: { d: Detail }) {
       {!g ? (
         <Empty>No gate evaluation yet. The gate runs on the exact commit the Builder submits.</Empty>
       ) : (
-        <div className="space-y-4 px-5 py-4">
+        <div className="space-y-4 px-5 py-4 break-words">
           <div className="flex flex-wrap items-center gap-3">
             <RoleTag role="gate" />
             <span className={cx("rounded-lg px-2.5 py-1 font-mono text-sm font-semibold", g.kind === "pass" ? "bg-ok/15 text-ok" : g.kind === "blocked" ? "bg-warn/15 text-warn" : "bg-bad/15 text-bad")}>
@@ -460,7 +466,7 @@ function VerificationPanel({ d }: { d: Detail }) {
           ) : null}
         </div>
       )}
-      <div className="border-t border-line px-5 py-4">
+      <div className="border-t border-line px-5 py-4 break-words">
         <div className="mb-2 flex items-center gap-3">
           <RoleTag role="verifier" />
           <span className="text-sm text-ink-2">Independent check (blind, different vendor) · agent judgment, one evidence source</span>
@@ -538,7 +544,7 @@ function WorkPanel({ d }: { d: Detail }) {
       ) : (
         <ul className="divide-y divide-line">
           {d.runs.map((r) => (
-            <li key={r.id} className="px-5 py-3">
+            <li key={r.id} className="px-5 py-3 break-words">
               <div className="flex flex-wrap items-center gap-3">
                 <RoleTag role={r.role} live={r.status === "running"} />
                 <span className="text-sm font-medium">{PURPOSE[r.purpose] ?? r.purpose}</span>
@@ -577,11 +583,11 @@ function Timeline({ d }: { d: Detail }) {
       ) : (
         <ol className="max-h-[560px] space-y-0 overflow-y-auto px-5 py-3">
           {items.map((a) => (
-            <li key={a.id} className="grid grid-cols-[92px_1fr] gap-3 py-1.5 text-sm">
+            <li key={a.id} className="grid grid-cols-[92px_minmax(0,1fr)] gap-3 py-1.5 text-sm">
               <span className="pt-0.5 text-xs text-mute">
                 <Ago at={a.at} />
               </span>
-              <span>
+              <span className="break-words">
                 <RoleTag role={a.actor as Role} /> <span className="ml-1 text-ink-2">{a.message}</span>
               </span>
             </li>
