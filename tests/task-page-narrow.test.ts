@@ -4,6 +4,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { EvidencePackageCard } from "@/components/evidence-package";
 import { CardHeader } from "@/components/ui";
+import { FlowMap, type FlowState } from "@/components/flow-map";
+import { NODE_HELP, NODES } from "@/domain/ops";
+import { shortenTitle } from "@/domain/text";
 
 /*
  * T8: the task page fits a 375px-wide screen. No browser runs in the check stage, so these tests pin the layout rules that keep the
@@ -79,5 +82,41 @@ describe("task page at phone width", () => {
     expect(unprefixed(dl)).toContain("break-words");
     expect(dl).toContain("sm:grid-cols-[max-content_minmax(0,1fr)]");
     expect(h).toMatch(new RegExp(`<code class="[^"]*break-all[^"]*">${HASH}</code>`));
+  });
+
+  it('never cuts displayed text mid-word without an indication: long values are shortened with "…" and keep the full value', () => {
+    // no hard character cut of a text value other than short SHA forms (which carry the full value as a title)
+    for (const m of PAGE.matchAll(/(\w+(?:\.\w+|\??\.\w+)*)\.slice\(0, (\d+)\)/g))
+      expect(["head", "t.mergeCommit", "d.activity"], m[0]).toContain(m[1]);
+    expect(PAGE).toContain("shortenTitle(building, 180), full: building");
+    expect(PAGE).toContain('v: open.length ? shortenTitle(asks, 160) : "No", full: open.length ? asks : undefined');
+    expect(PAGE).toMatch(/title=\{c\.full\}/);
+    expect(PAGE).toContain("title={a.name}");
+    const long =
+      "Should reading progress be computed per book from the pages a reader marks as read, or per list from the number of books marked finished, and should it be visible to people who open the list through a share link or only to the owner of the list?";
+    const short = shortenTitle(long, 160);
+    expect(short.endsWith("…")).toBe(true);
+    expect(long.startsWith(short.slice(0, -1).trimEnd())).toBe(true);
+    expect(long[short.slice(0, -1).trimEnd().length]).toMatch(/\s/);
+  });
+
+  it('phone flow map: help text shortened at word boundaries with "…", full text kept as an SVG title', () => {
+    const s: FlowState = {
+      counts: { owner: 1, contract: 0, builder: 0, evidence: 0, gate: 0, verifier: 0, decision: 0 },
+      active: {},
+      alert: 1,
+      pulses: [],
+      correcting: false,
+      repairing: false,
+      resolved: 0,
+    };
+    const h = renderToStaticMarkup(createElement(FlowMap, { s, label: "Task T1" }));
+    for (const n of NODES) {
+      const full = NODE_HELP[n];
+      const shown = shortenTitle(full, 33);
+      expect(Array.from(shown).length).toBeLessThanOrEqual(33);
+      if (shown !== full) expect(full[shown.slice(0, -1).length]).toMatch(/\s/);
+      expect(h).toContain(`<title>${full.replace(/'/g, "&#x27;")}</title>${shown.replace(/'/g, "&#x27;")}</text>`);
+    }
   });
 });

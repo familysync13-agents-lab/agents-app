@@ -12,6 +12,7 @@ import { stepInfo } from "@/components/steps";
 import { Ago, buttonPrimary, Card, CardHeader, cx, Empty, EvidenceChip, RoleTag, Sha, StateChip, type Role } from "@/components/ui";
 import { currentEvidencePackage, taskDetail } from "@/server/queries";
 import { requireOwner } from "@/server/auth";
+import { shortenTitle } from "@/domain/text";
 
 export const metadata = { title: "Task" };
 
@@ -113,7 +114,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
               <ul className="divide-y divide-line text-sm">
                 {d.artifacts.map((a) => (
                   <li key={a.id} className="flex items-center gap-3 px-5 py-2.5">
-                    <Link href={`/tasks/${t.id}/artifacts/${a.id}`} className="min-w-0 flex-1 truncate hover:text-accent">
+                    <Link href={`/tasks/${t.id}/artifacts/${a.id}`} className="min-w-0 flex-1 truncate hover:text-accent" title={a.name}>
                       {a.name}
                     </Link>
                     {a.workerAuthored ? <span className="text-xs text-mute">worker-authored</span> : null}
@@ -162,26 +163,31 @@ function AtAGlance({ d }: { d: Detail }) {
   const routing = failureRouting(t, t.corrections);
   const attribution = d.evidence.find((e) => e.subject.startsWith("attribution:") && e.commitSha === head);
   const open = d.decisions.filter((x) => x.status === "open");
-  const cells: { k: string; v: React.ReactNode; tone?: string }[] = [
-    { k: "Being built", v: (contract?.body as { scope?: { summary?: string } } | undefined)?.scope?.summary?.slice(0, 180) ?? t.intent.slice(0, 180) },
+  const building = (contract?.body as { scope?: { summary?: string } } | undefined)?.scope?.summary ?? t.intent;
+  const asks = open.map((o) => o.title).join("; ");
+  // shortened values end with "…" (whole words only) and keep the full value as the cell's title
+  const cells: { k: string; v: React.ReactNode; tone?: string; full?: string }[] = [
+    { k: "Being built", v: shortenTitle(building, 180), full: building },
     { k: "Working now", v: run ? `${run.role === "builder" ? "Builder" : "Verifier"} - ${s.label}` : s.waitingOnOwner || t.step === "await_decision" ? "Waiting for you" : s.label },
-    { k: "Verified", v: head ? `${verified} of ${must.length} must-criteria at ${head.slice(0, 7)}` : "Nothing built yet", tone: head && verified === must.length && must.length > 0 ? "text-ok" : undefined },
+    { k: "Verified", v: head ? `${verified} of ${must.length} must-criteria at ${head.slice(0, 7)}` : "Nothing built yet", full: head ?? undefined, tone: head && verified === must.length && must.length > 0 ? "text-ok" : undefined },
     {
       k: "Failed / owner",
       v: routing ? `${PARTY[routing.party].label} → ${PARTY[routing.party].owner}` : failed.length ? `${failed.join(", ")} failed${attribution ? ` (${attribution.detail?.split(":")[0]?.toLowerCase()})` : ""}` : "Nothing failing",
       tone: routing || failed.length ? "text-warn" : "text-ink-2",
     },
     { k: "Self-correcting", v: routing ? (routing.selfCorrecting ? "Yes - no action needed" : "No - needs a decision") : "—", tone: routing?.selfCorrecting ? "text-verifier" : undefined },
-    { k: "Do I need to act?", v: open.length ? open.map((o) => o.title).join("; ").slice(0, 160) : "No", tone: open.length ? "text-owner" : "text-ok" },
+    { k: "Do I need to act?", v: open.length ? shortenTitle(asks, 160) : "No", full: open.length ? asks : undefined, tone: open.length ? "text-owner" : "text-ok" },
     { k: "Corrections", v: `${t.corrections} of ${d.project.maxCorrections + t.extraCorrections} (this contract version; check defects are never charged)` },
-    { k: "Reached main", v: t.mergeCommit ? `Yes - merged ${t.mergeCommit.slice(0, 8)}` : "Not yet", tone: t.mergeCommit ? "text-ok" : undefined },
+    { k: "Reached main", v: t.mergeCommit ? `Yes - merged ${t.mergeCommit.slice(0, 8)}` : "Not yet", full: t.mergeCommit ?? undefined, tone: t.mergeCommit ? "text-ok" : undefined },
   ];
   return (
     <section aria-label="At a glance" className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 xl:grid-cols-4">
       {cells.map((c) => (
         <div key={c.k} className={cx("min-w-0 bg-panel px-4 py-3 break-words", c.k === "Being built" && "sm:col-span-2 xl:col-span-1")}>
           <div className="text-[11px] tracking-[0.16em] text-mute uppercase">{c.k}</div>
-          <div className={cx("mt-1 text-sm leading-snug", c.tone ?? "text-ink")}>{c.v}</div>
+          <div className={cx("mt-1 text-sm leading-snug", c.tone ?? "text-ink")} title={c.full}>
+            {c.v}
+          </div>
         </div>
       ))}
     </section>
@@ -190,7 +196,7 @@ function AtAGlance({ d }: { d: Detail }) {
 
 function AdminPanel({ d }: { d: Detail }) {
   const running = d.runs.filter((r) => r.status === "running").map((r) => ({ id: r.id, label: `${r.role} ${r.purpose} (run ${r.id})` }));
-  const reopenable = d.decisions.filter((x) => (x.kind === "block" || x.kind === "budget") && x.status !== "open").map((x) => ({ id: x.id, label: `#${x.id} ${x.title.slice(0, 60)}` }));
+  const reopenable = d.decisions.filter((x) => (x.kind === "block" || x.kind === "budget") && x.status !== "open").map((x) => ({ id: x.id, label: `#${x.id} ${shortenTitle(x.title, 60)}` }));
   return (
     <Card>
       <CardHeader title="Operations" meta="audited recovery actions" />
