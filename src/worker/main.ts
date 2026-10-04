@@ -2,12 +2,16 @@ import { createDb } from "@/db/client";
 import { migrate } from "@/db/migrate";
 import { seedProjects } from "@/db/seed";
 import { tick } from "./orchestrator";
+import { sealBacklog } from "./evidence";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL is not configured");
 const db = await createDb(url);
 await migrate(db, url);
 await seedProjects(db);
+// Evidence phase: rows written before it are structured and sealed once (idempotent)
+const sealedNow = await sealBacklog(db);
+if (sealedNow) console.log(JSON.stringify({ evidence_backfilled: sealedNow }));
 console.log(JSON.stringify({ worker: "started", at: new Date().toISOString() }));
 
 let stopping = false;

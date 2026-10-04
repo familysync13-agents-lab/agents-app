@@ -15,6 +15,7 @@ import {
 import { sha256 } from "@/domain/contract";
 import { canTransition } from "@/domain/lifecycle";
 import { classifyDecision } from "@/domain/policy";
+import { recordEvidence } from "./evidence";
 
 export type Task = typeof tasks.$inferSelect;
 export type Project = typeof projects.$inferSelect;
@@ -123,8 +124,9 @@ export class TaskCtx {
     return a!.id;
   }
 
-  async evidence(e: Omit<typeof evidence.$inferInsert, "taskId">) {
-    await this.db.insert(evidence).values({ ...e, taskId: this.task.id });
+  /** Record one observation. Structure, criterion linkage, provenance and the integrity seal are added by the evidence store. */
+  async evidence(e: Omit<typeof evidence.$inferInsert, "taskId">): Promise<number> {
+    return recordEvidence(this.db, this.task, e);
   }
 
   /**

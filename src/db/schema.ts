@@ -265,6 +265,9 @@ export const gateResults = pgTable(
 
 export const EVIDENCE_STATUSES = ["verified", "partially_verified", "not_verified", "unknown", "waived"] as const;
 export type EvidenceStatus = (typeof EVIDENCE_STATUSES)[number];
+export const EVIDENCE_KINDS = ["criterion", "regression", "finding", "verifier_run", "attribution", "oracle_calibration", "oracle_validation", "oracle_mutation", "regression_oracle", "other"] as const;
+export type EvidenceKind = (typeof EVIDENCE_KINDS)[number];
+export type EvidenceScope = "task" | "plan_task" | "integrated";
 
 /** Typed, attributable, SHA-bound evidence (Architecture Baseline v0.1 section 9). */
 export const evidence = pgTable(
@@ -287,8 +290,60 @@ export const evidence = pgTable(
     severity: text("severity"),
     artifactId: integer("artifact_id"),
     createdAt: created(),
+    // ---- Evidence phase (structured evidence). Legacy rows are backfilled deterministically from subject/source (domain/evidence.ts).
+    /** what the row is evidence OF */
+    kind: text("kind").$type<EvidenceKind>(),
+    /** criterion linkage: the task whose contract owns the criterion ("T9") and the criterion or constraint id ("AC1", "C2") */
+    criterionTask: text("criterion_task"),
+    criterionId: text("criterion_id"),
+    contractVersion: integer("contract_version"),
+    /** the plan task (e.g. "T6.a") whose branch was judged; null for atomic work and for the integrated result */
+    planTask: text("plan_task"),
+    /** what the judged head was: one plan task, the whole task (atomic), or the integrated result of a decomposed contract */
+    scope: text("scope").$type<EvidenceScope>(),
+    /** provenance: who produced the observation ("gate", "verifier", "builder", "control-plane", "owner") and by which recorded act */
+    collector: text("collector"),
+    runId: integer("run_id"),
+    gateResultId: integer("gate_result_id"),
+    /** the check that produced it ("oracle:oracle/T9/check.mjs", "probe:lcp", ...) */
+    checkName: text("check_name"),
+    /** integrity: position and hash chain per task. recordSha256 = sha256(prevSha256 + canonical row); a changed or removed row breaks it */
+    seq: integer("seq"),
+    prevSha256: text("prev_sha256"),
+    recordSha256: text("record_sha256"),
+    /** "recorded" = sealed when the row was written; "backfilled" = a pre-existing row sealed by the Evidence migration */
+    sealed: text("sealed").$type<"recorded" | "backfilled">(),
   },
-  (t) => [index("evidence_task_idx").on(t.taskId)],
+  (t) => [index("evidence_task_idx").on(t.taskId), index("evidence_criterion_idx").on(t.criterionTask, t.criterionId)],
+);
+
+/**
+ * An evidence package: the computed, criterion-linked evidence state of one judged head (a plan task, an atomic task or the
+ * integrated result), assembled deterministically from evidence rows, gate results and artifacts. The body is an artifact
+ * (content-addressed); this row is its index and what Gate / Verifier / Decision are handed.
+ */
+export const evidencePackages = pgTable(
+  "evidence_packages",
+  {
+    id: serial("id").primaryKey(),
+    taskId: integer("task_id")
+      .notNull()
+      .references(() => tasks.id),
+    scope: text("scope").$type<EvidenceScope>().notNull(),
+    planTask: text("plan_task"),
+    headSha: text("head_sha").notNull(),
+    contractVersion: integer("contract_version"),
+    contractSha256: text("contract_sha256"),
+    /** complete = every in-scope must is verified or waived; incomplete = some are not; blocked = an in-scope must is Unknown; inconsistent = integrity or binding failure */
+    status: text("status").$type<"complete" | "incomplete" | "blocked" | "inconsistent">().notNull(),
+    summary: jsonb("summary").$type<Record<string, unknown>>().notNull(),
+    artifactId: integer("artifact_id").notNull(),
+    sha256: text("sha256").notNull(),
+    /** the step that asked for it: "gate" (after a gate verdict), "done" (before the acceptance decision), "audit" */
+    stage: text("stage").notNull(),
+    createdAt: created(),
+  },
+  (t) => [index("evidence_packages_task_idx").on(t.taskId, t.headSha)],
 );
 
 /** Stored evidence bodies (worker reports, block records, gate evidence JSON, oracle files). Content-addressed. */

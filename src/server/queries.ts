@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, gt, inArray, like, notInArray, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, like, notInArray, or, sql } from "drizzle-orm";
 import { getDb, type Db } from "@/db/client";
 import {
   activity,
@@ -75,7 +75,7 @@ export async function commandCenter() {
     ? await db
         .select({ taskId: evidence.taskId, detail: evidence.detail, commitSha: evidence.commitSha, id: evidence.id })
         .from(evidence)
-        .where(and(inArray(evidence.taskId, ids), like(evidence.subject, "attribution:%")))
+        .where(and(inArray(evidence.taskId, ids), or(eq(evidence.kind, "attribution"), like(evidence.subject, "attribution:%"))))
         .orderBy(desc(evidence.id))
     : [];
   const accepted = all.filter((t) => t.state === "ACCEPTED").slice(0, 8);

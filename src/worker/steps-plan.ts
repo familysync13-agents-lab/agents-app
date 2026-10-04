@@ -8,6 +8,7 @@ import type { TaskCtx } from "./context";
 import { b64, blockEvidence, harnessFailure, latestGate, mainSha, ownerApproved, pollDue, sub, unb64, vols } from "./common";
 import { currentContract, escalateGithub, isBehind } from "./steps-contract";
 import { finishSession, startSession } from "./sessions";
+import { latestPackage } from "./evidence";
 
 /*
  * Execution of a DECOMPOSED plan (Builder phase). A complex contract is split once (one level) by a planner session; the plan is
@@ -202,7 +203,9 @@ export async function planTaskDone(ctx: TaskCtx): Promise<void> {
   const cur = await planCursor(ctx);
   if (!cur?.current) return ctx.goto("acceptance_start", { head: ctx.data.head, checkRun: ctx.data.checkRun });
   const head = String(ctx.data.head);
-  await savePlan(ctx, cur, (t) => ({ ...t, status: "done", evidence: [...t.evidence, `check_run:${String(ctx.data.checkRun)}`, `pr:${ctx.task.prNumber}`, `branch:${ctx.task.branch}`, `head:${head}`] }));
+  // the plan task's evidence package was assembled when its gate verdict was collected (scope: this plan task)
+  const ep = await latestPackage(ctx.db, ctx.task.id, head);
+  await savePlan(ctx, cur, (t) => ({ ...t, status: "done", evidence: [...t.evidence, `check_run:${String(ctx.data.checkRun)}`, `pr:${ctx.task.prNumber}`, `branch:${ctx.task.branch}`, `head:${head}`, ...(ep ? [`evidence_package:${ep.id}`, `evidence_package_sha256:${ep.sha256}`] : [])] }));
   await ctx.transition("IN_PROGRESS", `Plan task ${cur.current.id} verified by the gate on the criteria it covers (${cur.current.covers.join(", ") || "none alone"}); ${cur.order.length - cur.index - 1} task(s) remain`, { plan_task: cur.current.id, head, pr: ctx.task.prNumber, check_run: ctx.data.checkRun });
   // the next task gets its own PR, its own Builder session and its own correction budget; it builds on this verified head
   await ctx.db.update(tasks).set({ prNumber: null, branch: null, builderSessionId: null, corrections: 0, extraCorrections: 0 }).where(eq(tasks.id, ctx.task.id));

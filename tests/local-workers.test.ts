@@ -113,7 +113,7 @@ describe("LW3 deterministic classification of coding work", () => {
 describe("LW4 the pinned case sets", () => {
   it("every class has 20 cases with unique ids; code cases stay inside the allowed source tree and are pinned to a commit", () => {
     const files = readdirSync("src/qualification/cases").filter((f) => f.endsWith(".json")).sort();
-    const research = ["contradiction_detection.json", "evidence_extraction.json", "evidence_summary.json", "opportunity_analysis.json", "opportunity_card.json", "query_planning.json", "research_planning.json", "source_assessment.json"];
+    const research = ["contradiction_detection.json", "evidence_extraction.json", "evidence_summary.json", "opportunity_analysis.json", "opportunity_card.json", "query_planning.json", "research_planning.json", "source_assessment.json", "finding_association.json"]; // evaluation packs (research; Evidence roles) have their own set shapes
     expect(files.filter((f) => !research.includes(f))).toEqual(["bounded_repair.json", "classification.json", "failure_triage.json", "log_summary.json", "small_code.json", "structured_extraction.json", "summarization.json"]);
     for (const f of files.filter((x) => !research.includes(x))) {
       const set = JSON.parse(readFileSync(`src/qualification/cases/${f}`, "utf8")) as { class: string; base?: string; cases: (SemanticCase & CodeCase)[] };

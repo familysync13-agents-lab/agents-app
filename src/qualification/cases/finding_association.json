@@ -1,0 +1,530 @@
+{
+ "class": "finding_association",
+ "version": 1,
+ "calibrated": 50,
+ "statement": "Link one finding of the independent Verifier to the acceptance criterion it reports as violated, or to none.",
+ "cases": [
+  {
+   "id": "fa-01",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an owner with lists B and A, when they click Sort A-Z, then A is listed before B.\nAC2: Given a sorted list index, when the owner reloads the page, then the chosen sort order is still applied.\nAC3: Given a signed-out visitor, when they request /lists, then they are redirected to /signed-out and no list data is in the response.\nAC4: Given an owner on /lists, when they type in the filter box, then only lists whose name contains the text are shown.\n\nFinding:\nSort A-Z leaves lists in creation order\nExpected: A before B\nObserved: B is listed before A after clicking Sort A-Z",
+   "expect": {
+    "criterion": "AC1",
+    "evidence": "B is listed before A after clicking Sort A-Z"
+   }
+  },
+  {
+   "id": "fa-02",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an owner with lists B and A, when they click Sort A-Z, then A is listed before B.\nAC2: Given a sorted list index, when the owner reloads the page, then the chosen sort order is still applied.\nAC3: Given a signed-out visitor, when they request /lists, then they are redirected to /signed-out and no list data is in the response.\nAC4: Given an owner on /lists, when they type in the filter box, then only lists whose name contains the text are shown.\n\nFinding:\nSort order is lost after reload\nExpected: the order chosen before the reload\nObserved: after reloading, the lists are back in creation order",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "after reloading, the lists are back in creation order"
+   }
+  },
+  {
+   "id": "fa-03",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an owner with lists B and A, when they click Sort A-Z, then A is listed before B.\nAC2: Given a sorted list index, when the owner reloads the page, then the chosen sort order is still applied.\nAC3: Given a signed-out visitor, when they request /lists, then they are redirected to /signed-out and no list data is in the response.\nAC4: Given an owner on /lists, when they type in the filter box, then only lists whose name contains the text are shown.\n\nFinding:\nList names visible without signing in\nExpected: redirect to /signed-out\nObserved: GET /lists without a session returns HTTP 200 with the names of three lists",
+   "expect": {
+    "criterion": "AC3",
+    "evidence": "returns HTTP 200 with the names of three lists"
+   }
+  },
+  {
+   "id": "fa-04",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an owner with lists B and A, when they click Sort A-Z, then A is listed before B.\nAC2: Given a sorted list index, when the owner reloads the page, then the chosen sort order is still applied.\nAC3: Given a signed-out visitor, when they request /lists, then they are redirected to /signed-out and no list data is in the response.\nAC4: Given an owner on /lists, when they type in the filter box, then only lists whose name contains the text are shown.\n\nFinding:\nFilter box matches descriptions, not names\nExpected: only lists whose name contains the text\nObserved: typing 'tax' also shows the list 'Reading' whose description mentions tax",
+   "expect": {
+    "criterion": "AC4",
+    "evidence": "also shows the list 'Reading' whose description mentions tax"
+   }
+  },
+  {
+   "id": "fa-05",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an owner with lists B and A, when they click Sort A-Z, then A is listed before B.\nAC2: Given a sorted list index, when the owner reloads the page, then the chosen sort order is still applied.\nAC3: Given a signed-out visitor, when they request /lists, then they are redirected to /signed-out and no list data is in the response.\nAC4: Given an owner on /lists, when they type in the filter box, then only lists whose name contains the text are shown.\n\nFinding:\nSort button has no visible focus ring\nExpected: a visible focus indicator on keyboard focus\nObserved: tabbing to Sort A-Z shows no outline",
+   "expect": {
+    "criterion": "none",
+    "evidence": "tabbing to Sort A-Z shows no outline"
+   }
+  },
+  {
+   "id": "fa-06",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an owner with lists B and A, when they click Sort A-Z, then A is listed before B.\nAC2: Given a sorted list index, when the owner reloads the page, then the chosen sort order is still applied.\nAC3: Given a signed-out visitor, when they request /lists, then they are redirected to /signed-out and no list data is in the response.\nAC4: Given an owner on /lists, when they type in the filter box, then only lists whose name contains the text are shown.\n\nFinding:\nUppercase names sort before lowercase\nExpected: apple before Banana\nObserved: Banana is listed before apple after Sort A-Z",
+   "expect": {
+    "criterion": "AC1",
+    "evidence": "Banana is listed before apple after Sort A-Z"
+   }
+  },
+  {
+   "id": "fa-07",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an owner with lists B and A, when they click Sort A-Z, then A is listed before B.\nAC2: Given a sorted list index, when the owner reloads the page, then the chosen sort order is still applied.\nAC3: Given a signed-out visitor, when they request /lists, then they are redirected to /signed-out and no list data is in the response.\nAC4: Given an owner on /lists, when they type in the filter box, then only lists whose name contains the text are shown.\n\nFinding:\nDeleting a list asks for no confirmation\nExpected: a confirmation before deleting\nObserved: clicking Delete removes the list immediately",
+   "expect": {
+    "criterion": "none",
+    "evidence": "clicking Delete removes the list immediately"
+   }
+  },
+  {
+   "id": "fa-08",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with a share link, when an anonymous visitor opens /s/{token}, then the list name and every book title and author are shown.\nAC2: Given a share page, then it contains no edit, delete or sort controls.\nAC3: Given the owner revokes the share link, when the old URL is opened, then the response is HTTP 404.\nAC4: Time to first byte of /s/{token}: at most 400 ms at the 95th percentile over 50 requests.\nAC5: Given a list description of up to 500 characters, when the share page is opened, then the full description is shown below the list name.\n\nFinding:\nAuthors missing on the share page\nExpected: title and author of every book\nObserved: the share page lists the three titles but no author names",
+   "expect": {
+    "criterion": "AC1",
+    "evidence": "lists the three titles but no author names"
+   }
+  },
+  {
+   "id": "fa-09",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with a share link, when an anonymous visitor opens /s/{token}, then the list name and every book title and author are shown.\nAC2: Given a share page, then it contains no edit, delete or sort controls.\nAC3: Given the owner revokes the share link, when the old URL is opened, then the response is HTTP 404.\nAC4: Time to first byte of /s/{token}: at most 400 ms at the 95th percentile over 50 requests.\nAC5: Given a list description of up to 500 characters, when the share page is opened, then the full description is shown below the list name.\n\nFinding:\nShare page shows the Sort by control\nExpected: no edit, delete or sort controls\nObserved: a 'Sort by' select and a Sort button are rendered on /s/{token}",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "a 'Sort by' select and a Sort button are rendered on /s/{token}"
+   }
+  },
+  {
+   "id": "fa-10",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with a share link, when an anonymous visitor opens /s/{token}, then the list name and every book title and author are shown.\nAC2: Given a share page, then it contains no edit, delete or sort controls.\nAC3: Given the owner revokes the share link, when the old URL is opened, then the response is HTTP 404.\nAC4: Time to first byte of /s/{token}: at most 400 ms at the 95th percentile over 50 requests.\nAC5: Given a list description of up to 500 characters, when the share page is opened, then the full description is shown below the list name.\n\nFinding:\nRevoked link still works\nExpected: HTTP 404 after revoking\nObserved: the old URL still returns HTTP 200 with the list",
+   "expect": {
+    "criterion": "AC3",
+    "evidence": "the old URL still returns HTTP 200 with the list"
+   }
+  },
+  {
+   "id": "fa-11",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with a share link, when an anonymous visitor opens /s/{token}, then the list name and every book title and author are shown.\nAC2: Given a share page, then it contains no edit, delete or sort controls.\nAC3: Given the owner revokes the share link, when the old URL is opened, then the response is HTTP 404.\nAC4: Time to first byte of /s/{token}: at most 400 ms at the 95th percentile over 50 requests.\nAC5: Given a list description of up to 500 characters, when the share page is opened, then the full description is shown below the list name.\n\nFinding:\nShare page is slow\nExpected: at most 400 ms at the 95th percentile\nObserved: 95th percentile time to first byte over 50 requests was 910 ms",
+   "expect": {
+    "criterion": "AC4",
+    "evidence": "95th percentile time to first byte over 50 requests was 910 ms"
+   }
+  },
+  {
+   "id": "fa-12",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with a share link, when an anonymous visitor opens /s/{token}, then the list name and every book title and author are shown.\nAC2: Given a share page, then it contains no edit, delete or sort controls.\nAC3: Given the owner revokes the share link, when the old URL is opened, then the response is HTTP 404.\nAC4: Time to first byte of /s/{token}: at most 400 ms at the 95th percentile over 50 requests.\nAC5: Given a list description of up to 500 characters, when the share page is opened, then the full description is shown below the list name.\n\nFinding:\nLong description is cut off\nExpected: the full 500-character description\nObserved: the description ends after 280 characters with an ellipsis",
+   "expect": {
+    "criterion": "AC5",
+    "evidence": "the description ends after 280 characters with an ellipsis"
+   }
+  },
+  {
+   "id": "fa-13",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with a share link, when an anonymous visitor opens /s/{token}, then the list name and every book title and author are shown.\nAC2: Given a share page, then it contains no edit, delete or sort controls.\nAC3: Given the owner revokes the share link, when the old URL is opened, then the response is HTTP 404.\nAC4: Time to first byte of /s/{token}: at most 400 ms at the 95th percentile over 50 requests.\nAC5: Given a list description of up to 500 characters, when the share page is opened, then the full description is shown below the list name.\n\nFinding:\nShare page title tag is generic\nExpected: the list name in the browser tab\nObserved: the tab title is 'Reading Lists' on every share page",
+   "expect": {
+    "criterion": "none",
+    "evidence": "the tab title is 'Reading Lists' on every share page"
+   }
+  },
+  {
+   "id": "fa-14",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with a share link, when an anonymous visitor opens /s/{token}, then the list name and every book title and author are shown.\nAC2: Given a share page, then it contains no edit, delete or sort controls.\nAC3: Given the owner revokes the share link, when the old URL is opened, then the response is HTTP 404.\nAC4: Time to first byte of /s/{token}: at most 400 ms at the 95th percentile over 50 requests.\nAC5: Given a list description of up to 500 characters, when the share page is opened, then the full description is shown below the list name.\n\nFinding:\nDelete button reachable on the share page\nExpected: no edit, delete or sort controls\nObserved: each book row has a Delete button that an anonymous visitor can click",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "each book row has a Delete button"
+   }
+  },
+  {
+   "id": "fa-15",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner opens /system, then a section headed 'Recent worker runs' shows a table with one row per run.\nAC2: Each run row shows the worker, the model, the task class and the duration in seconds.\nAC3: Given no runs exist, then the section shows the text 'No worker runs recorded yet.' instead of a table.\nAC4: Given a signed-out visitor requests /system, then they are redirected to /signed-out.\n\nFinding:\nRecent worker runs section is missing\nExpected: a section headed 'Recent worker runs' with a table\nObserved: /system has no heading 'Recent worker runs' and no table of runs",
+   "expect": {
+    "criterion": "AC1",
+    "evidence": "/system has no heading 'Recent worker runs'"
+   }
+  },
+  {
+   "id": "fa-16",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner opens /system, then a section headed 'Recent worker runs' shows a table with one row per run.\nAC2: Each run row shows the worker, the model, the task class and the duration in seconds.\nAC3: Given no runs exist, then the section shows the text 'No worker runs recorded yet.' instead of a table.\nAC4: Given a signed-out visitor requests /system, then they are redirected to /signed-out.\n\nFinding:\nRun rows do not show the model\nExpected: worker, model, task class and duration\nObserved: rows show worker, task class and duration; there is no model column",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "there is no model column"
+   }
+  },
+  {
+   "id": "fa-17",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner opens /system, then a section headed 'Recent worker runs' shows a table with one row per run.\nAC2: Each run row shows the worker, the model, the task class and the duration in seconds.\nAC3: Given no runs exist, then the section shows the text 'No worker runs recorded yet.' instead of a table.\nAC4: Given a signed-out visitor requests /system, then they are redirected to /signed-out.\n\nFinding:\nEmpty state shows an empty table\nExpected: the text 'No worker runs recorded yet.'\nObserved: with no runs the section renders a table with only a header row",
+   "expect": {
+    "criterion": "AC3",
+    "evidence": "renders a table with only a header row"
+   }
+  },
+  {
+   "id": "fa-18",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner opens /system, then a section headed 'Recent worker runs' shows a table with one row per run.\nAC2: Each run row shows the worker, the model, the task class and the duration in seconds.\nAC3: Given no runs exist, then the section shows the text 'No worker runs recorded yet.' instead of a table.\nAC4: Given a signed-out visitor requests /system, then they are redirected to /signed-out.\n\nFinding:\nSystem page readable when signed out\nExpected: redirect to /signed-out\nObserved: an anonymous GET /system returns HTTP 200 and the run table",
+   "expect": {
+    "criterion": "AC4",
+    "evidence": "an anonymous GET /system returns HTTP 200"
+   }
+  },
+  {
+   "id": "fa-19",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner opens /system, then a section headed 'Recent worker runs' shows a table with one row per run.\nAC2: Each run row shows the worker, the model, the task class and the duration in seconds.\nAC3: Given no runs exist, then the section shows the text 'No worker runs recorded yet.' instead of a table.\nAC4: Given a signed-out visitor requests /system, then they are redirected to /signed-out.\n\nFinding:\nDuration shown in milliseconds\nExpected: duration in seconds\nObserved: the duration column shows 5430 for a run that took 5.4 seconds",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "the duration column shows 5430"
+   }
+  },
+  {
+   "id": "fa-20",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner opens /system, then a section headed 'Recent worker runs' shows a table with one row per run.\nAC2: Each run row shows the worker, the model, the task class and the duration in seconds.\nAC3: Given no runs exist, then the section shows the text 'No worker runs recorded yet.' instead of a table.\nAC4: Given a signed-out visitor requests /system, then they are redirected to /signed-out.\n\nFinding:\nStatus cards overlap at 375px\nExpected: cards stack without overlapping on a phone\nObserved: at 375px width the Build and Tests cards overlap",
+   "expect": {
+    "criterion": "none",
+    "evidence": "at 375px width the Build and Tests cards overlap"
+   }
+  },
+  {
+   "id": "fa-21",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner opens /system, then a section headed 'Recent worker runs' shows a table with one row per run.\nAC2: Each run row shows the worker, the model, the task class and the duration in seconds.\nAC3: Given no runs exist, then the section shows the text 'No worker runs recorded yet.' instead of a table.\nAC4: Given a signed-out visitor requests /system, then they are redirected to /signed-out.\n\nFinding:\nRuns are not paginated\nExpected: pages of 50 runs\nObserved: all 1,200 runs are rendered on one page",
+   "expect": {
+    "criterion": "none",
+    "evidence": "all 1,200 runs are rendered on one page"
+   }
+  },
+  {
+   "id": "fa-22",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with three books, when the owner clicks Export CSV, then a file is downloaded whose first row is 'title,author,year'.\nAC2: Every book of the list appears as exactly one row of the file, in the order shown on the page.\nAC3: A title that contains a comma or a double quote is quoted according to RFC 4180.\nAC4: Given a list the user does not own, when they request its export URL, then the response is HTTP 403 and no file is sent.\nAC5: The export of a list with 5,000 books completes within 3 seconds.\n\nFinding:\nHeader row is missing\nExpected: first row 'title,author,year'\nObserved: the downloaded file starts directly with the first book",
+   "expect": {
+    "criterion": "AC1",
+    "evidence": "the downloaded file starts directly with the first book"
+   }
+  },
+  {
+   "id": "fa-23",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with three books, when the owner clicks Export CSV, then a file is downloaded whose first row is 'title,author,year'.\nAC2: Every book of the list appears as exactly one row of the file, in the order shown on the page.\nAC3: A title that contains a comma or a double quote is quoted according to RFC 4180.\nAC4: Given a list the user does not own, when they request its export URL, then the response is HTTP 403 and no file is sent.\nAC5: The export of a list with 5,000 books completes within 3 seconds.\n\nFinding:\nA book is exported twice\nExpected: exactly one row per book\nObserved: 'Dune' appears in rows 2 and 5 of the file",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "'Dune' appears in rows 2 and 5"
+   }
+  },
+  {
+   "id": "fa-24",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with three books, when the owner clicks Export CSV, then a file is downloaded whose first row is 'title,author,year'.\nAC2: Every book of the list appears as exactly one row of the file, in the order shown on the page.\nAC3: A title that contains a comma or a double quote is quoted according to RFC 4180.\nAC4: Given a list the user does not own, when they request its export URL, then the response is HTTP 403 and no file is sent.\nAC5: The export of a list with 5,000 books completes within 3 seconds.\n\nFinding:\nRows are in alphabetical order, not page order\nExpected: the order shown on the page\nObserved: the page shows Hobbit, Dune, Emma; the file has Dune, Emma, Hobbit",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "the file has Dune, Emma, Hobbit"
+   }
+  },
+  {
+   "id": "fa-25",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with three books, when the owner clicks Export CSV, then a file is downloaded whose first row is 'title,author,year'.\nAC2: Every book of the list appears as exactly one row of the file, in the order shown on the page.\nAC3: A title that contains a comma or a double quote is quoted according to RFC 4180.\nAC4: Given a list the user does not own, when they request its export URL, then the response is HTTP 403 and no file is sent.\nAC5: The export of a list with 5,000 books completes within 3 seconds.\n\nFinding:\nComma in a title breaks the columns\nExpected: the title quoted per RFC 4180\nObserved: the title 'War, and Peace' is written unquoted and splits into two columns",
+   "expect": {
+    "criterion": "AC3",
+    "evidence": "is written unquoted and splits into two columns"
+   }
+  },
+  {
+   "id": "fa-26",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with three books, when the owner clicks Export CSV, then a file is downloaded whose first row is 'title,author,year'.\nAC2: Every book of the list appears as exactly one row of the file, in the order shown on the page.\nAC3: A title that contains a comma or a double quote is quoted according to RFC 4180.\nAC4: Given a list the user does not own, when they request its export URL, then the response is HTTP 403 and no file is sent.\nAC5: The export of a list with 5,000 books completes within 3 seconds.\n\nFinding:\nOther users can export my list\nExpected: HTTP 403 and no file\nObserved: requesting another user's export URL downloads their books",
+   "expect": {
+    "criterion": "AC4",
+    "evidence": "requesting another user's export URL downloads their books"
+   }
+  },
+  {
+   "id": "fa-27",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with three books, when the owner clicks Export CSV, then a file is downloaded whose first row is 'title,author,year'.\nAC2: Every book of the list appears as exactly one row of the file, in the order shown on the page.\nAC3: A title that contains a comma or a double quote is quoted according to RFC 4180.\nAC4: Given a list the user does not own, when they request its export URL, then the response is HTTP 403 and no file is sent.\nAC5: The export of a list with 5,000 books completes within 3 seconds.\n\nFinding:\nLarge export times out\nExpected: within 3 seconds for 5,000 books\nObserved: the export of 5,000 books took 11.2 seconds",
+   "expect": {
+    "criterion": "AC5",
+    "evidence": "the export of 5,000 books took 11.2 seconds"
+   }
+  },
+  {
+   "id": "fa-28",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with three books, when the owner clicks Export CSV, then a file is downloaded whose first row is 'title,author,year'.\nAC2: Every book of the list appears as exactly one row of the file, in the order shown on the page.\nAC3: A title that contains a comma or a double quote is quoted according to RFC 4180.\nAC4: Given a list the user does not own, when they request its export URL, then the response is HTTP 403 and no file is sent.\nAC5: The export of a list with 5,000 books completes within 3 seconds.\n\nFinding:\nFile name has no date\nExpected: a file name containing the export date\nObserved: the file is always called export.csv",
+   "expect": {
+    "criterion": "none",
+    "evidence": "the file is always called export.csv"
+   }
+  },
+  {
+   "id": "fa-29",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a list with three books, when the owner clicks Export CSV, then a file is downloaded whose first row is 'title,author,year'.\nAC2: Every book of the list appears as exactly one row of the file, in the order shown on the page.\nAC3: A title that contains a comma or a double quote is quoted according to RFC 4180.\nAC4: Given a list the user does not own, when they request its export URL, then the response is HTTP 403 and no file is sent.\nAC5: The export of a list with 5,000 books completes within 3 seconds.\n\nFinding:\nExport button label is not translated\nExpected: the German label 'CSV exportieren' in the German locale\nObserved: the button reads 'Export CSV' in every locale",
+   "expect": {
+    "criterion": "none",
+    "evidence": "the button reads 'Export CSV' in every locale"
+   }
+  },
+  {
+   "id": "fa-30",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner submits the New intent form with a title and a description, then a task is created and shown at the top of the task list.\nAC2: Given the title is empty, when the form is submitted, then the message 'A title is required' is shown and no task is created.\nAC3: Given a description longer than 4,000 characters, then the form refuses it with the message 'Description is too long'.\nAC4: After a task is created, the form fields are empty again.\n\nFinding:\nNew task appears at the bottom\nExpected: the new task at the top of the list\nObserved: the created task is appended as the last row",
+   "expect": {
+    "criterion": "AC1",
+    "evidence": "the created task is appended as the last row"
+   }
+  },
+  {
+   "id": "fa-31",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner submits the New intent form with a title and a description, then a task is created and shown at the top of the task list.\nAC2: Given the title is empty, when the form is submitted, then the message 'A title is required' is shown and no task is created.\nAC3: Given a description longer than 4,000 characters, then the form refuses it with the message 'Description is too long'.\nAC4: After a task is created, the form fields are empty again.\n\nFinding:\nEmpty title creates a task\nExpected: the message 'A title is required' and no task\nObserved: submitting with an empty title creates a task named '(untitled)'",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "submitting with an empty title creates a task named '(untitled)'"
+   }
+  },
+  {
+   "id": "fa-32",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner submits the New intent form with a title and a description, then a task is created and shown at the top of the task list.\nAC2: Given the title is empty, when the form is submitted, then the message 'A title is required' is shown and no task is created.\nAC3: Given a description longer than 4,000 characters, then the form refuses it with the message 'Description is too long'.\nAC4: After a task is created, the form fields are empty again.\n\nFinding:\nOverlong description is accepted\nExpected: refusal with 'Description is too long'\nObserved: a 6,000-character description is saved without any message",
+   "expect": {
+    "criterion": "AC3",
+    "evidence": "a 6,000-character description is saved without any message"
+   }
+  },
+  {
+   "id": "fa-33",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner submits the New intent form with a title and a description, then a task is created and shown at the top of the task list.\nAC2: Given the title is empty, when the form is submitted, then the message 'A title is required' is shown and no task is created.\nAC3: Given a description longer than 4,000 characters, then the form refuses it with the message 'Description is too long'.\nAC4: After a task is created, the form fields are empty again.\n\nFinding:\nForm keeps the old values after submit\nExpected: empty fields after creation\nObserved: the title and description fields still contain the submitted text",
+   "expect": {
+    "criterion": "AC4",
+    "evidence": "still contain the submitted text"
+   }
+  },
+  {
+   "id": "fa-34",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner submits the New intent form with a title and a description, then a task is created and shown at the top of the task list.\nAC2: Given the title is empty, when the form is submitted, then the message 'A title is required' is shown and no task is created.\nAC3: Given a description longer than 4,000 characters, then the form refuses it with the message 'Description is too long'.\nAC4: After a task is created, the form fields are empty again.\n\nFinding:\nWrong validation text for an empty title\nExpected: 'A title is required'\nObserved: the message shown is 'Invalid input'",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "the message shown is 'Invalid input'"
+   }
+  },
+  {
+   "id": "fa-35",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner submits the New intent form with a title and a description, then a task is created and shown at the top of the task list.\nAC2: Given the title is empty, when the form is submitted, then the message 'A title is required' is shown and no task is created.\nAC3: Given a description longer than 4,000 characters, then the form refuses it with the message 'Description is too long'.\nAC4: After a task is created, the form fields are empty again.\n\nFinding:\nSubmitting twice creates two tasks\nExpected: one task per submission even on a double click\nObserved: double-clicking Create produces two identical tasks",
+   "expect": {
+    "criterion": "none",
+    "evidence": "double-clicking Create produces two identical tasks"
+   }
+  },
+  {
+   "id": "fa-36",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner submits the New intent form with a title and a description, then a task is created and shown at the top of the task list.\nAC2: Given the title is empty, when the form is submitted, then the message 'A title is required' is shown and no task is created.\nAC3: Given a description longer than 4,000 characters, then the form refuses it with the message 'Description is too long'.\nAC4: After a task is created, the form fields are empty again.\n\nFinding:\nDescription field is not resizable\nExpected: a resizable textarea\nObserved: the description textarea has a fixed height of three lines",
+   "expect": {
+    "criterion": "none",
+    "evidence": "has a fixed height of three lines"
+   }
+  },
+  {
+   "id": "fa-37",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an invoice with lines of 10.00 and 2.50, then the displayed total is 12.50.\nAC2: Given a line with a 19% tax rate, then the tax amount of the line is shown rounded to two decimals.\nAC3: Given an invoice is marked paid, then its lines can no longer be edited.\nAC4: Given a customer deletes their account, then the customer's name and e-mail address are removed from stored invoices.\nAC5: Given a user who is not an accountant opens /invoices/{id}/edit, then the response is HTTP 403.\n\nFinding:\nTotal is off by one cent\nExpected: 12.50\nObserved: the total shows 12.49 for lines of 10.00 and 2.50",
+   "expect": {
+    "criterion": "AC1",
+    "evidence": "the total shows 12.49"
+   }
+  },
+  {
+   "id": "fa-38",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an invoice with lines of 10.00 and 2.50, then the displayed total is 12.50.\nAC2: Given a line with a 19% tax rate, then the tax amount of the line is shown rounded to two decimals.\nAC3: Given an invoice is marked paid, then its lines can no longer be edited.\nAC4: Given a customer deletes their account, then the customer's name and e-mail address are removed from stored invoices.\nAC5: Given a user who is not an accountant opens /invoices/{id}/edit, then the response is HTTP 403.\n\nFinding:\nTax shown with four decimals\nExpected: tax rounded to two decimals\nObserved: the tax of a 19% line is displayed as 1.8981",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "displayed as 1.8981"
+   }
+  },
+  {
+   "id": "fa-39",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an invoice with lines of 10.00 and 2.50, then the displayed total is 12.50.\nAC2: Given a line with a 19% tax rate, then the tax amount of the line is shown rounded to two decimals.\nAC3: Given an invoice is marked paid, then its lines can no longer be edited.\nAC4: Given a customer deletes their account, then the customer's name and e-mail address are removed from stored invoices.\nAC5: Given a user who is not an accountant opens /invoices/{id}/edit, then the response is HTTP 403.\n\nFinding:\nPaid invoice can still be edited\nExpected: lines locked once paid\nObserved: the quantity of a line on a paid invoice can be changed and saved",
+   "expect": {
+    "criterion": "AC3",
+    "evidence": "can be changed and saved"
+   }
+  },
+  {
+   "id": "fa-40",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an invoice with lines of 10.00 and 2.50, then the displayed total is 12.50.\nAC2: Given a line with a 19% tax rate, then the tax amount of the line is shown rounded to two decimals.\nAC3: Given an invoice is marked paid, then its lines can no longer be edited.\nAC4: Given a customer deletes their account, then the customer's name and e-mail address are removed from stored invoices.\nAC5: Given a user who is not an accountant opens /invoices/{id}/edit, then the response is HTTP 403.\n\nFinding:\nDeleted customer's e-mail remains on invoices\nExpected: name and e-mail removed\nObserved: after the account is deleted, invoice 1042 still shows anna@example.org",
+   "expect": {
+    "criterion": "AC4",
+    "evidence": "invoice 1042 still shows anna@example.org"
+   }
+  },
+  {
+   "id": "fa-41",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an invoice with lines of 10.00 and 2.50, then the displayed total is 12.50.\nAC2: Given a line with a 19% tax rate, then the tax amount of the line is shown rounded to two decimals.\nAC3: Given an invoice is marked paid, then its lines can no longer be edited.\nAC4: Given a customer deletes their account, then the customer's name and e-mail address are removed from stored invoices.\nAC5: Given a user who is not an accountant opens /invoices/{id}/edit, then the response is HTTP 403.\n\nFinding:\nSales staff can open the edit page\nExpected: HTTP 403 for non-accountants\nObserved: a user with the sales role gets HTTP 200 on /invoices/7/edit",
+   "expect": {
+    "criterion": "AC5",
+    "evidence": "a user with the sales role gets HTTP 200 on /invoices/7/edit"
+   }
+  },
+  {
+   "id": "fa-42",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an invoice with lines of 10.00 and 2.50, then the displayed total is 12.50.\nAC2: Given a line with a 19% tax rate, then the tax amount of the line is shown rounded to two decimals.\nAC3: Given an invoice is marked paid, then its lines can no longer be edited.\nAC4: Given a customer deletes their account, then the customer's name and e-mail address are removed from stored invoices.\nAC5: Given a user who is not an accountant opens /invoices/{id}/edit, then the response is HTTP 403.\n\nFinding:\nInvoice PDF uses the wrong logo\nExpected: the current company logo\nObserved: the PDF shows the logo used before the rebranding",
+   "expect": {
+    "criterion": "none",
+    "evidence": "the PDF shows the logo used before the rebranding"
+   }
+  },
+  {
+   "id": "fa-43",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an invoice with lines of 10.00 and 2.50, then the displayed total is 12.50.\nAC2: Given a line with a 19% tax rate, then the tax amount of the line is shown rounded to two decimals.\nAC3: Given an invoice is marked paid, then its lines can no longer be edited.\nAC4: Given a customer deletes their account, then the customer's name and e-mail address are removed from stored invoices.\nAC5: Given a user who is not an accountant opens /invoices/{id}/edit, then the response is HTTP 403.\n\nFinding:\nCurrency symbol missing in the total\nExpected: a currency symbol next to the total\nObserved: the total is shown as 12.50 without EUR",
+   "expect": {
+    "criterion": "none",
+    "evidence": "the total is shown as 12.50 without EUR"
+   }
+  },
+  {
+   "id": "fa-44",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a project with a recorded capability profile, then the Project Capabilities table shows its language, framework and package manager.\nAC2: Given the profile records no test command, then the Tests cell shows 'Not available'.\nAC3: Given two active projects, then the table has exactly two rows, ordered by project name.\n\nFinding:\nPackage manager column is empty\nExpected: language, framework and package manager\nObserved: the Demo Project row shows typescript and next but an empty package manager cell",
+   "expect": {
+    "criterion": "AC1",
+    "evidence": "an empty package manager cell"
+   }
+  },
+  {
+   "id": "fa-45",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a project with a recorded capability profile, then the Project Capabilities table shows its language, framework and package manager.\nAC2: Given the profile records no test command, then the Tests cell shows 'Not available'.\nAC3: Given two active projects, then the table has exactly two rows, ordered by project name.\n\nFinding:\nMissing test command shows a dash\nExpected: 'Not available'\nObserved: the Tests cell shows '-' when the profile has no test command",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "the Tests cell shows '-'"
+   }
+  },
+  {
+   "id": "fa-46",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a project with a recorded capability profile, then the Project Capabilities table shows its language, framework and package manager.\nAC2: Given the profile records no test command, then the Tests cell shows 'Not available'.\nAC3: Given two active projects, then the table has exactly two rows, ordered by project name.\n\nFinding:\nArchived project is listed\nExpected: exactly two rows for two active projects\nObserved: the table has three rows; the third is an archived project",
+   "expect": {
+    "criterion": "AC3",
+    "evidence": "the table has three rows"
+   }
+  },
+  {
+   "id": "fa-47",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a project with a recorded capability profile, then the Project Capabilities table shows its language, framework and package manager.\nAC2: Given the profile records no test command, then the Tests cell shows 'Not available'.\nAC3: Given two active projects, then the table has exactly two rows, ordered by project name.\n\nFinding:\nRows ordered by creation date\nExpected: ordered by project name\nObserved: Zeta (created first) is listed above Alpha",
+   "expect": {
+    "criterion": "AC3",
+    "evidence": "Zeta (created first) is listed above Alpha"
+   }
+  },
+  {
+   "id": "fa-48",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a project with a recorded capability profile, then the Project Capabilities table shows its language, framework and package manager.\nAC2: Given the profile records no test command, then the Tests cell shows 'Not available'.\nAC3: Given two active projects, then the table has exactly two rows, ordered by project name.\n\nFinding:\nTable has no caption\nExpected: a caption for screen readers\nObserved: the Project Capabilities table has no caption element",
+   "expect": {
+    "criterion": "none",
+    "evidence": "has no caption element"
+   }
+  },
+  {
+   "id": "fa-49",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given books titled 'Dune' and 'Dune Messiah', when the owner searches for 'dune', then both are listed.\nAC2: Search is case-insensitive and ignores leading and trailing spaces.\nAC3: Given no book matches, then the text 'No books found' is shown.\nAC4: Given a search term shorter than two characters, then no request is sent and the hint 'Type at least 2 characters' is shown.\n\nFinding:\nSecond match is missing\nExpected: both 'Dune' and 'Dune Messiah'\nObserved: searching 'dune' lists only 'Dune'",
+   "expect": {
+    "criterion": "AC1",
+    "evidence": "searching 'dune' lists only 'Dune'"
+   }
+  },
+  {
+   "id": "fa-50",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given books titled 'Dune' and 'Dune Messiah', when the owner searches for 'dune', then both are listed.\nAC2: Search is case-insensitive and ignores leading and trailing spaces.\nAC3: Given no book matches, then the text 'No books found' is shown.\nAC4: Given a search term shorter than two characters, then no request is sent and the hint 'Type at least 2 characters' is shown.\n\nFinding:\nSearch is case-sensitive\nExpected: matches regardless of case\nObserved: searching 'DUNE' finds nothing while 'Dune' finds the book",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "searching 'DUNE' finds nothing"
+   }
+  },
+  {
+   "id": "fa-51",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given books titled 'Dune' and 'Dune Messiah', when the owner searches for 'dune', then both are listed.\nAC2: Search is case-insensitive and ignores leading and trailing spaces.\nAC3: Given no book matches, then the text 'No books found' is shown.\nAC4: Given a search term shorter than two characters, then no request is sent and the hint 'Type at least 2 characters' is shown.\n\nFinding:\nNo message for an empty result\nExpected: 'No books found'\nObserved: a search without matches shows a blank area",
+   "expect": {
+    "criterion": "AC3",
+    "evidence": "shows a blank area"
+   }
+  },
+  {
+   "id": "fa-52",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given books titled 'Dune' and 'Dune Messiah', when the owner searches for 'dune', then both are listed.\nAC2: Search is case-insensitive and ignores leading and trailing spaces.\nAC3: Given no book matches, then the text 'No books found' is shown.\nAC4: Given a search term shorter than two characters, then no request is sent and the hint 'Type at least 2 characters' is shown.\n\nFinding:\nOne-letter search sends a request\nExpected: no request and the hint\nObserved: typing 'd' sends GET /search?q=d and shows results",
+   "expect": {
+    "criterion": "AC4",
+    "evidence": "typing 'd' sends GET /search?q=d"
+   }
+  },
+  {
+   "id": "fa-53",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given books titled 'Dune' and 'Dune Messiah', when the owner searches for 'dune', then both are listed.\nAC2: Search is case-insensitive and ignores leading and trailing spaces.\nAC3: Given no book matches, then the text 'No books found' is shown.\nAC4: Given a search term shorter than two characters, then no request is sent and the hint 'Type at least 2 characters' is shown.\n\nFinding:\nTrailing space breaks the search\nExpected: spaces ignored\nObserved: searching 'dune ' with a trailing space finds nothing",
+   "expect": {
+    "criterion": "AC2",
+    "evidence": "with a trailing space finds nothing"
+   }
+  },
+  {
+   "id": "fa-54",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given books titled 'Dune' and 'Dune Messiah', when the owner searches for 'dune', then both are listed.\nAC2: Search is case-insensitive and ignores leading and trailing spaces.\nAC3: Given no book matches, then the text 'No books found' is shown.\nAC4: Given a search term shorter than two characters, then no request is sent and the hint 'Type at least 2 characters' is shown.\n\nFinding:\nSearch results are not highlighted\nExpected: the matching text highlighted\nObserved: result titles show no highlight of the search term",
+   "expect": {
+    "criterion": "none",
+    "evidence": "show no highlight of the search term"
+   }
+  },
+  {
+   "id": "fa-55",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an owner with lists B and A, when they click Sort A-Z, then A is listed before B.\nAC2: Given a sorted list index, when the owner reloads the page, then the chosen sort order is still applied.\nAC3: Given a signed-out visitor, when they request /lists, then they are redirected to /signed-out and no list data is in the response.\nAC4: Given an owner on /lists, when they type in the filter box, then only lists whose name contains the text are shown.\n\nFinding:\nFilter is case-sensitive only for umlauts\nExpected: a consistent result for 'Ä' and 'ä'\nObserved: the filter finds 'Ärzte' for 'Ä' but not for 'ä'",
+   "expect": {
+    "criterion": "none",
+    "evidence": "but not for 'ä'"
+   }
+  },
+  {
+   "id": "fa-56",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given a project with a recorded capability profile, then the Project Capabilities table shows its language, framework and package manager.\nAC2: Given the profile records no test command, then the Tests cell shows 'Not available'.\nAC3: Given two active projects, then the table has exactly two rows, ordered by project name.\n\nFinding:\nFramework shown as 'Not detected' although recorded\nExpected: the recorded framework\nObserved: the profile records next, the cell shows 'Not detected'",
+   "expect": {
+    "criterion": "AC1",
+    "evidence": "the cell shows 'Not detected'"
+   }
+  },
+  {
+   "id": "fa-57",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given the owner submits the New intent form with a title and a description, then a task is created and shown at the top of the task list.\nAC2: Given the title is empty, when the form is submitted, then the message 'A title is required' is shown and no task is created.\nAC3: Given a description longer than 4,000 characters, then the form refuses it with the message 'Description is too long'.\nAC4: After a task is created, the form fields are empty again.\n\nFinding:\nCreated task is missing from the list until reload\nExpected: the task shown at the top of the list after creation\nObserved: the list is unchanged after submitting; the task appears only after a reload",
+   "expect": {
+    "criterion": "AC1",
+    "evidence": "the task appears only after a reload"
+   }
+  },
+  {
+   "id": "fa-58",
+   "source": "controlled",
+   "input": "Criteria:\nAC1: Given an invoice with lines of 10.00 and 2.50, then the displayed total is 12.50.\nAC2: Given a line with a 19% tax rate, then the tax amount of the line is shown rounded to two decimals.\nAC3: Given an invoice is marked paid, then its lines can no longer be edited.\nAC4: Given a customer deletes their account, then the customer's name and e-mail address are removed from stored invoices.\nAC5: Given a user who is not an accountant opens /invoices/{id}/edit, then the response is HTTP 403.\n\nFinding:\nTotal ignores a negative line\nExpected: the sum of all lines\nObserved: lines of 10.00 and -2.50 give a total of 10.00",
+   "expect": {
+    "criterion": "none",
+    "evidence": "give a total of 10.00"
+   }
+  }
+ ]
+}

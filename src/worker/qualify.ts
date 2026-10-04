@@ -5,7 +5,8 @@ import type { Db } from "@/db/client";
 import { activity, artifacts, executorJobs, qualificationBatches, qualificationRecords, runs } from "@/db/schema";
 import { sha256 } from "@/domain/contract";
 import { ALL_TASK_CLASSES, CANDIDATES, CODE_CLASSES, classifyFailure, HOLDOUT, modelOf, PROMOTABLE, promotion, QUALIFY, qualification, ROUTES, route, SEMANTIC_CLASSES, WORKERS, type AnyTaskClass, type CodeClass, type QualRecord, type Risk, type SemanticClass } from "@/domain/router";
-import { RESEARCH, RESEARCH_CLASSES, type ResearchClass } from "@/domain/research";
+import { RESEARCH, RESEARCH_CLASSES, type ResearchClass as ResearchOnly } from "@/domain/research";
+import { EVIDENCE_ROLE, EVIDENCE_ROLES, type EvidenceRole } from "@/domain/evidence-roles";
 import { boundInput, CODE_SYSTEM, PATCH_SYSTEM, SEMANTIC, semanticGate, type SemanticSpec } from "@/domain/semantic";
 
 /*
@@ -21,7 +22,13 @@ import { boundInput, CODE_SYSTEM, PATCH_SYSTEM, SEMANTIC, semanticGate, type Sem
 type Json = Record<string, unknown>;
 const DIR = () => path.join(process.cwd(), "src", "qualification", "cases");
 const isProdSemantic = (c: string): c is SemanticClass => (SEMANTIC_CLASSES as readonly string[]).includes(c);
-const isResearch = (c: string): c is ResearchClass => (RESEARCH_CLASSES as readonly string[]).includes(c);
+/**
+ * Evaluation packs: classes with their own instruction, gate and Verifier rubric that are in NO route - the research pack and the
+ * Evidence roles. They share one harness path ("pack" below is historically named isResearch).
+ */
+type ResearchClass = ResearchOnly | EvidenceRole;
+const PACK: Record<string, SemanticSpec & { rubric: string }> = { ...RESEARCH, ...EVIDENCE_ROLE };
+const isResearch = (c: string): c is ResearchClass => (RESEARCH_CLASSES as readonly string[]).includes(c) || (EVIDENCE_ROLES as readonly string[]).includes(c);
 /** bounded text-in / JSON-out classes: the production semantic classes and the research pack */
 const isSemantic = (c: string): c is SemanticClass | ResearchClass => isProdSemantic(c) || isResearch(c);
 /**
@@ -33,14 +40,14 @@ export type PatchClass = (typeof PATCH_CLASSES)[number];
 const isPatch = (c: string): c is PatchClass => (PATCH_CLASSES as readonly string[]).includes(c);
 const PATCH_BASE: Record<PatchClass, CodeClass> = { patch_repair: "bounded_repair", patch_small_code: "small_code" };
 const isCode = (c: string): c is CodeClass | PatchClass => (CODE_CLASSES as readonly string[]).includes(c) || isPatch(c);
-const specOf = (c: SemanticClass | ResearchClass): SemanticSpec => (isResearch(c) ? RESEARCH[c] : SEMANTIC[c]);
+const specOf = (c: SemanticClass | ResearchClass): SemanticSpec => (isResearch(c) ? PACK[c]! : SEMANTIC[c]);
 /** every class that has a qualification harness */
-export const HARNESS_CLASSES: readonly string[] = [...SEMANTIC_CLASSES, ...RESEARCH_CLASSES, ...CODE_CLASSES, ...PATCH_CLASSES];
+export const HARNESS_CLASSES: readonly string[] = [...SEMANTIC_CLASSES, ...RESEARCH_CLASSES, ...EVIDENCE_ROLES, ...CODE_CLASSES, ...PATCH_CLASSES];
 export const HARNESS_VOL = "agents-qf-1";
 
 export interface SemanticCase { id: string; source: string; input: string; expect: Json }
 export interface CodeCase { id: string; source: string; instruction: string; scope: string[]; context?: string[]; setup?: { path: string; find: string; replace: string }[]; hidden?: { path: string; content: string }[]; pretest?: string[]; tests: string[] | "all" }
-export interface CaseSet<T> { class: string; version: number; statement: string; base?: string; cases: T[]; sha: string }
+export interface CaseSet<T> { class: string; version: number; statement: string; base?: string; /** when set: the run uses the first N cases whose reference the independent Verifier accepted (calibration before any model run) */ calibrated?: number; cases: T[]; sha: string }
 
 export function loadCaseSet<T = SemanticCase | CodeCase>(cls: string, holdout = false): CaseSet<T> {
   // the edit-based classes use the SAME pinned tasks as the whole-file classes (one file, one sha): only the interface differs
@@ -76,13 +83,14 @@ export async function qualifyRun(db: Db, cls: string, opts: { ids?: string[]; re
   const had = await db.select({ caseId: qualificationRecords.caseId }).from(qualificationRecords).where(and(eq(qualificationRecords.worker, worker), eq(qualificationRecords.taskClass, cls), eq(qualificationRecords.model, model), eq(qualificationRecords.caseSetSha256, set.sha), eq(qualificationRecords.voided, false)));
   const done = new Set(had.map((h) => h.caseId));
   let pool = set.cases;
-  if (opts.holdout) {
-    // the holdout runs the first HOLDOUT.size cases (file order) whose reference the independent Verifier accepted in calibration
+  const need = opts.holdout ? HOLDOUT.size : (set.calibrated ?? 0);
+  if (need) {
+    // a calibrated set (every holdout; a pinned set that declares it) runs the first N cases (file order) whose reference the independent Verifier accepted
     const refs = await db.select({ caseId: qualificationRecords.caseId, verifier: qualificationRecords.verifier }).from(qualificationRecords).where(and(eq(qualificationRecords.worker, REFERENCE), eq(qualificationRecords.taskClass, cls), eq(qualificationRecords.caseSetSha256, set.sha), eq(qualificationRecords.voided, false)));
     const verdict = new Map(refs.map((r) => [r.caseId, r.verifier]));
     if (set.cases.some((c) => !verdict.get(c.id))) throw new Error("the holdout references are not calibrated yet (run holdout_reference and wait for the Verifier)");
-    pool = set.cases.filter((c) => verdict.get(c.id) === "pass").slice(0, HOLDOUT.size);
-    if (pool.length < HOLDOUT.size) throw new Error(`only ${pool.length} holdout cases have a reference the Verifier accepted (need ${HOLDOUT.size})`);
+    pool = set.cases.filter((c) => verdict.get(c.id) === "pass").slice(0, need);
+    if (pool.length < need) throw new Error(`only ${pool.length} cases have a reference the Verifier accepted (need ${need})`);
   }
   const todo = pool.filter((c) => !done.has(c.id) && (!opts.ids || opts.ids.includes(c.id)));
   if (todo.length && isCode(cls)) await db.insert(executorJobs).values({ op: "worktree", params: { vol: HARNESS_VOL, repo: opts.repo ?? "agents-app", ref: set.base } });
@@ -168,9 +176,9 @@ Create the directory /work/out if needed. Do not create or change anything else.
 /** The research gate: structural problems make an output invalid; reference problems make a valid output disagree. */
 function researchGate(cls: ResearchClass, input: string, out: unknown, expect: Json | null) {
   if (!out || typeof out !== "object" || Array.isArray(out)) return { pass: false, valid: false, problems: ["[schema] output is not a JSON object"] };
-  const structural = RESEARCH[cls].structural(input, out as Json);
+  const structural = PACK[cls]!.structural(input, out as Json);
   if (structural.length) return { pass: false, valid: false, problems: structural };
-  const dis = expect ? RESEARCH[cls].agree(out as Json, expect) : [];
+  const dis = expect ? PACK[cls]!.agree(out as Json, expect) : [];
   return { pass: dis.length === 0, valid: true, problems: dis };
 }
 
@@ -210,7 +218,7 @@ async function batchItems(db: Db, b: typeof qualificationBatches.$inferSelect): 
       const input = j ? String(p.prompt ?? "") : boundInput(r.taskClass, loadCaseSet<SemanticCase>(r.taskClass, true).cases.find((c) => c.id === r.caseId)?.input ?? "");
       items.push({ id: `r${r.id}`, instruction: SEMANTIC[r.taskClass].system, input, output: r.output });
     } else if (isCode(r.taskClass)) items.push({ id: `r${r.id}`, task: String(p.instruction ?? "").slice(0, 6000), diff: String((r.output as Json | null)?.diff ?? "").slice(0, 30000) });
-    else if (isResearch(r.taskClass)) items.push({ id: `r${r.id}`, task: loadCaseSetSafe(r.taskClass)?.statement ?? r.taskClass, rubric: RESEARCH[r.taskClass].rubric, input: String(p.prompt ?? ""), output: r.output });
+    else if (isResearch(r.taskClass)) items.push({ id: `r${r.id}`, task: loadCaseSetSafe(r.taskClass)?.statement ?? r.taskClass, rubric: PACK[r.taskClass]!.rubric, input: j ? String(p.prompt ?? "") : (loadCaseSetSafe(r.taskClass)?.cases as SemanticCase[] | undefined)?.find((c) => c.id === r.caseId)?.input.slice(0, PACK[r.taskClass]!.maxInput) ?? "", output: r.output });
     else items.push({ id: `r${r.id}`, instruction: loadCaseSetSafe(r.taskClass)?.statement ?? r.taskClass, input: String(p.prompt ?? ""), output: r.output });
   }
   return items;
@@ -364,6 +372,20 @@ export const REFERENCE = "reference";
  * the instruction; such a case is repaired or replaced before the candidate runs (never after).
  */
 export async function holdoutReference(db: Db, cls: string): Promise<{ inserted: number; caseSet: string }> {
+  if (isResearch(cls)) {
+    // a calibrated pinned set of an evaluation pack (e.g. an Evidence role): same calibration, on the pinned set itself
+    const set = loadCaseSet<SemanticCase>(cls);
+    if (!set.calibrated) throw new Error(`the case set of ${cls} is not a calibrated set`);
+    const had = new Set((await db.select({ caseId: qualificationRecords.caseId }).from(qualificationRecords).where(and(eq(qualificationRecords.worker, REFERENCE), eq(qualificationRecords.taskClass, cls), eq(qualificationRecords.caseSetSha256, set.sha), eq(qualificationRecords.voided, false)))).map((h) => h.caseId));
+    const todo = set.cases.filter((c) => !had.has(c.id));
+    for (const c of todo) {
+      const input = c.input.slice(0, PACK[cls]!.maxInput);
+      const g = researchGate(cls, input, c.expect, c.expect);
+      if (!g.pass) throw new Error(`reference ${c.id} does not pass its own gate: ${g.problems.join("; ")}`);
+      await db.insert(qualificationRecords).values({ worker: REFERENCE, taskClass: cls, mode: "harness", inputSha256: sha256(input), expected: JSON.stringify(c.expect), output: c.expect, valid: true, gate: true, model: REFERENCE, caseId: c.id, caseSetSha256: set.sha, contextBytes: input.length, note: "reference output of the pinned case (calibration of the Verifier, no model involved)" });
+    }
+    return { inserted: todo.length, caseSet: set.sha.slice(0, 12) };
+  }
   if (!isProdSemantic(cls)) throw new Error(`no holdout for class ${cls}`);
   const set = loadCaseSet<SemanticCase>(cls, true);
   const had = new Set((await db.select({ caseId: qualificationRecords.caseId }).from(qualificationRecords).where(and(eq(qualificationRecords.worker, REFERENCE), eq(qualificationRecords.taskClass, cls), eq(qualificationRecords.caseSetSha256, set.sha), eq(qualificationRecords.voided, false)))).map((h) => h.caseId));

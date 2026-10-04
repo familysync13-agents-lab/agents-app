@@ -43,6 +43,13 @@
       "when": 1791011684013,
       "tag": "0005_local_workers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791075219222,
+      "tag": "0006_evidence",
+      "breakpoints": true
     }
   ]
 }

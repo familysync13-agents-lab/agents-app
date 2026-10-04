@@ -12,6 +12,7 @@ import { planBranch, planCursor, savePlan } from "./steps-plan";
 import { TaskCtx } from "./context";
 import { currentContract, isBehind } from "./steps-contract";
 import { workerOptions, blockEvidence, harnessFailure, latestGate, mainSha, ownerApproved, pollDue, PROTECTED, sub, unb64, vols } from "./common";
+import { assemblePackage } from "./evidence";
 import { finishSession, startSession } from "./sessions";
 import { codeRoute, repairInstruction, repairPlan, shadowCode, shadowSmallCode, smallCodeTask } from "./steps-local";
 
@@ -298,11 +299,22 @@ export async function gateCollect(ctx: TaskCtx): Promise<void> {
         contractSha256: ev.contract_sha256 ?? null,
         detail: `${c.regression ? "regression · " : ""}${c.check}${c.detail ? ` · ${c.detail}` : ""}`.slice(0, 2000),
         artifactId: art,
+        kind: c.regression ? "regression" : "criterion",
+        checkName: c.check,
       });
     await ctx.log("gate", `Gate verdict for ${head.slice(0, 8)}: ${verdict}${ev.reasons?.length ? ` (${ev.reasons.join("; ").slice(0, 200)})` : ""}`, { check_run: checkRun, verdict });
   }
-  const fact = { check_run: checkRun, head, verdict };
+  // the evidence package of this head: criterion status computed from the rows bound to it, integrity checked (deterministic)
+  const ep = await assemblePackage(ctx.db, ctx.task, { head, stage: "gate" });
+  if (existing.length === 0) await ctx.log("system", `Evidence package for ${head.slice(0, 8)}: ${ep.pkg.status} (${ep.pkg.summary.must.verified} of ${ep.pkg.summary.must_total} required criteria verified${ep.pkg.body.plan_task ? `, plan task ${ep.pkg.body.plan_task}` : ep.pkg.body.scope === "integrated" ? ", integrated result" : ""}).`, { evidence_package: ep.id, sha256: ep.sha256, artifact: ep.artifactId });
+  const fact = { check_run: checkRun, head, verdict, evidence_package: ep.id };
+  // evidence that cannot be trusted stops everything, whatever the verdict says
+  if (!ep.pkg.body.integrity.chain_ok || ep.pkg.body.integrity.artifacts_bad.length)
+    return blockEvidence(ctx, `Evidence integrity check failed for ${head.slice(0, 8)}: ${ep.pkg.body.inconsistencies.join("; ").slice(0, 300)}`, fact, { auto: false });
   if (kind === "pass") {
+    // a passing verdict must be carried by criterion evidence bound to this head: a verdict alone is a claim
+    if (ep.pkg.status !== "complete")
+      return blockEvidence(ctx, `The gate reported ${verdict}, but the evidence bound to ${head.slice(0, 8)} is ${ep.pkg.status}: ${[...ep.pkg.body.inconsistencies, ...ep.pkg.body.gaps].join("; ").slice(0, 400)}`, fact, { auto: false });
     // an agent's claim is never enough: DONE requires the gate's DONE for this exact head, bound to the approved contract
     const c = await currentContract(ctx);
     if (c && ev.contract_sha256 && ev.contract_sha256 !== c.sha256)
@@ -396,7 +408,7 @@ async function routeBuilderClaim(ctx: TaskCtx, claim: string, art: number): Prom
   const prior = await ctx.db
     .select({ id: evidence.id })
     .from(evidence)
-    .where(and(eq(evidence.taskId, ctx.task.id), eq(evidence.commitSha, head), like(evidence.subject, "attribution:%")));
+    .where(and(eq(evidence.taskId, ctx.task.id), eq(evidence.commitSha, head), eq(evidence.kind, "attribution")));
   if (prior.length) return false; // already arbitrated for this head: the claim goes to the owner
   const [g] = await ctx.db.select().from(gateResults).where(and(eq(gateResults.taskId, ctx.task.id), eq(gateResults.headSha, head))).orderBy(desc(gateResults.id)).limit(1);
   if (!g || g.kind !== "candidate_failure") return false;
@@ -537,12 +549,18 @@ export async function markDone(ctx: TaskCtx): Promise<void> {
   // a decomposed contract is fulfilled only by its integrated result, verified against the ORIGINAL contract - never by tasks alone
   const blockers = await planBlockers(ctx.db, ctx.task.id);
   if (blockers.length) return blockEvidence(ctx, `The contract is not fulfilled yet: ${blockers.join("; ")}.`, { head: ctx.task.headSha, plan: true }, { auto: false });
+  // the final evidence package (gate + independent Verifier evidence of this head) is what the acceptance decision rests on
+  const ep = await assemblePackage(ctx.db, ctx.task, { head: g.headSha, stage: "done" });
+  if (ep.pkg.status !== "complete")
+    return blockEvidence(ctx, `DONE requires complete evidence for ${g.headSha.slice(0, 8)}; the evidence package is ${ep.pkg.status}: ${[...ep.pkg.body.inconsistencies, ...ep.pkg.body.gaps].join("; ").slice(0, 400)}`, { head: g.headSha, evidence_package: ep.id }, { auto: false });
   await ctx.transition("DONE", `All must-criteria verified by the gate for ${g.headSha.slice(0, 8)}${ctx.data.acceptance ? "; independent Verifier check found no blocking defect" : ""}`, {
     gate_result: g.id,
     check_run: g.checkRunId,
     head: g.headSha,
     contract_sha256: g.contractSha256,
     acceptance: ctx.data.acceptance ?? null,
+    evidence_package: ep.id,
+    evidence_package_sha256: ep.sha256,
   });
   const parent = ctx.task.stackParentId ? (await ctx.db.select().from(tasks).where(eq(tasks.id, ctx.task.stackParentId)))[0] : undefined;
   if (parent && parent.state === "ACCEPTED") {
@@ -567,7 +585,7 @@ export async function markDone(ctx: TaskCtx): Promise<void> {
       { id: "reject", label: "Reject the result", consequence: "The PR is closed; nothing is merged." },
     ],
     recommendation: "github",
-    context: { pr: ctx.task.prNumber, head: ctx.task.headSha, repo: ctx.project.repo, org: ctx.project.org, stack: together ? [parent!.id, ctx.task.id] : null },
+    context: { pr: ctx.task.prNumber, head: ctx.task.headSha, repo: ctx.project.repo, org: ctx.project.org, stack: together ? [parent!.id, ctx.task.id] : null, evidencePackage: { id: ep.id, sha256: ep.sha256, artifactId: ep.artifactId, status: ep.pkg.status } },
   });
   await ctx.goto("await_acceptance", { head: ctx.task.headSha });
 }

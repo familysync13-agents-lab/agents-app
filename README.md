@@ -27,6 +27,33 @@ The app never holds a GitHub token, the App key, or a Claude/Codex credential. I
 - A worker's closing chat message is stored for debugging only and never used for state: only `.bakeoff/REPORT.md`, `.bakeoff/BLOCKED.json` and `.bakeoff/contract.json` count.
 - DONE requires a passing gate result for the exact PR head bound to the approved contract hash; evidence statuses are Verified / Partially verified / Not verified / Unknown / Waived — Unknown is never upgraded.
 
+## Evidence
+
+Evidence lives in one table (`evidence`) and is written only through the evidence store (`src/worker/evidence.ts`; rules in
+`src/domain/evidence.ts`). Everything below is deterministic software; no model collects, links, seals or judges evidence.
+
+- **Structure and criterion linkage.** Every row has a kind (criterion, regression, finding, verifier run, attribution, oracle
+  calibration / validation / mutation, regression oracle) and, where it applies, the task and criterion id it belongs to. Linkage is
+  by id, never by matching text. A finding the Verifier did not tie to a criterion stays unlinked.
+- **Provenance.** Collector (gate, verifier, builder, control plane, owner), the worker run or gate result behind the row, the check
+  that produced it, the contract version, and the plan task or integrated result the judged head belongs to.
+- **Integrity.** A hash chain per task over the canonical row, including the hash of the artifact it points to. An edited, removed,
+  inserted or reordered row, or a changed artifact body, is detected. Rows from before this phase are sealed as `backfilled`.
+- **Status.** The status of a criterion is computed (Verified, Partially verified, Not verified, Unknown, Waived): only evidence bound
+  to the judged head and the approved contract version counts; the latest observation decides; agent judgment alone never satisfies
+  a must-criterion; a blocking independent finding against a verified criterion makes it Partially verified.
+- **Packages.** For every judged head an evidence package is assembled and stored (`evidence_packages`, body as an artifact): one per
+  plan task on the criteria in its scope, one for an atomic task, one for the integrated result against the whole contract. It names
+  gaps and inconsistencies and carries a handoff section for Gate, Verifier (criterion ids and evidence requirements only) and Decision.
+- **Enforcement.** A passing gate verdict that the package of the same head does not carry, or evidence that fails its integrity
+  check, blocks the task. DONE and the acceptance decision cite the final package and its hash.
+
+Operator checks (`src/admin/cli.ts`): `evidence_audit` (integrity of every task), `evidence_package` (package of a head),
+`evidence_replay` (every recorded gate verdict against the package of its head).
+
+Local-model roles on evidence (`src/domain/evidence-roles.ts`) are qualified separately from every Builder class and are evaluation
+only until approved: `finding_association` (link an unlinked Verifier finding to the criterion it reports as violated, or to none).
+
 ## Development
 
 ```
