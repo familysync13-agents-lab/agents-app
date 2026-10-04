@@ -1,0 +1,235 @@
+{
+ "assumptions": [
+  {
+   "basis": "existing behaviour",
+   "chosen": "The latest stored package for the task's current head (as the control loop's own latestPackage reads it). Status is the recorded status word exactly (\"complete\", \"incomplete\", \"blocked\", \"inconsistent\"). The required-criteria line is \"{verified} of {total}\", where total is the package's recorded number of must-criteria in its scope and verified is the recorded number of those with status Verified (waived ones are not counted as verified). The Verifier line is the package's recorded Verifier status identifier exactly (one of \"no_defect_found\", \"no_defect_found_partial_coverage\", \"defects\", \"findings\", \"unknown\", \"not_run\"), optionally followed by a human-readable label. The package hash is the recorded SHA-256 in full (64 lowercase hex characters).",
+   "id": "A1",
+   "question": "Which package is \"the evidence package of the task's current head\" when several are stored for that head (plan task / integrated scope, gate / done / audit stage), and how are its values written?",
+   "reversible": true
+  },
+  {
+   "basis": "stated intent",
+   "chosen": "In all these cases the card is still present with its heading and shows exactly the text \"No evidence package yet.\" and none of the four values; a package of an earlier head is never shown as the current one.",
+   "id": "A2",
+   "question": "What does the card say when the task has no evidence package for its current head, including a task without a head and a task whose only packages belong to earlier heads?",
+   "reversible": true
+  },
+  {
+   "basis": "existing behaviour",
+   "chosen": "Like the other preview demo data (APP_ENV=preview only, idempotent also on a preview database seeded earlier): demo task T3 gets the demonstration head 3333333333333333333333333333333333333333 and one stored evidence package for that head with status \"incomplete\", 3 must-criteria in scope of which 2 are Verified, Verifier status \"not_run\", and the recorded package hash ea3524e95164fa82395285b83ee8e5d34a7beced8fd0f31d4c774562be0e5b19. Demo tasks T1 and T2 have no package. Nothing else of the demo data changes.",
+   "id": "A3",
+   "question": "What demonstration data does the gate preview carry so the card can be checked?",
+   "reversible": true
+  }
+ ],
+ "canary_routes": [
+  "/",
+  "/projects/demo"
+ ],
+ "constraints": [
+  {
+   "id": "C1",
+   "kind": "regression",
+   "statement": "All existing content and behaviour of the task page and of every other page stays as accepted in earlier tasks (T0, T1, T4, T6); in particular the task page keeps its existing cards (\"Contract\", \"Verification\", \"Workers\", \"Timeline\", \"Evidence files\", \"Operations\" where shown), its owner decision forms and its page title \"Task · Agents\", and the preview demo data used by earlier checks (demo tasks T1-T3, the open decisions, the demo worker runs and qualification records, the Demo Project capability profile) stays as it is apart from the additions stated in this contract.",
+   "trace": {
+    "ref": "accepted contracts T0, T1, T4 and T6 (task page, decisions, Demo Project data, System page ledger) and their checks of record",
+    "source": "project"
+   },
+   "verify": "blackbox"
+  },
+  {
+   "id": "C2",
+   "kind": "prohibited",
+   "statement": "The card only reads the stored evidence package (its recorded status, counts, Verifier result and hash): opening or reloading the task page never assembles, stores, re-hashes or changes an evidence package or an evidence row, creates executor jobs, contacts a worker or model, or shows an estimated or derived-but-unrecorded value.",
+   "trace": {
+    "ref": "It is read-only and shows only recorded facts.",
+    "source": "intent"
+   },
+   "verify": "judgment"
+  },
+  {
+   "id": "C3",
+   "kind": "prohibited",
+   "statement": "The demonstration evidence package and the demonstration head of task T3 exist only in the gate preview's demo data (APP_ENV=preview); production never receives an invented evidence package, artifact or head.",
+   "trace": {
+    "ref": "AC2: the preview must carry a known package for AC2-AC5 to be checkable black-box, and invented evidence must never reach production where packages drive enforcement and decisions",
+    "source": "necessary"
+   },
+   "verify": "judgment"
+  }
+ ],
+ "criteria": [
+  {
+   "given": "the gate preview with its demo data and the owner signed in via /auth/preview",
+   "id": "AC1",
+   "priority": "must",
+   "tags": [],
+   "then": "the response is HTTP 200, the document title is \"Task · Agents\", and the page shows exactly one h2 heading whose text is exactly \"Evidence package\"; within that card there is a description list whose terms are, in order, \"Status\", \"Required criteria verified\", \"Verifier\", \"Package hash\"",
+   "trace": {
+    "ref": "On the task page, show the evidence package of the task's current head",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /projects/demo, activates the link of demo task T3 and lands on /tasks/{id} of T3"
+  },
+  {
+   "given": "the gate preview with its demo data, in which demo task T3's current head has a stored package with status \"incomplete\", and the owner signed in",
+   "id": "AC2",
+   "priority": "must",
+   "tags": [],
+   "then": "the value (surrounding whitespace removed) is exactly \"incomplete\"",
+   "trace": {
+    "ref": "its status (complete, incomplete, blocked or inconsistent)",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /tasks/{id} of T3 and reads the value of \"Status\" in the \"Evidence package\" card"
+  },
+  {
+   "given": "the gate preview with its demo data, in which the T3 package records 3 must-criteria in scope of which 2 are Verified, and the owner signed in",
+   "id": "AC3",
+   "priority": "must",
+   "tags": [],
+   "then": "the value (surrounding whitespace removed) is exactly \"2 of 3\"",
+   "trace": {
+    "ref": "how many required criteria are verified out of how many",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /tasks/{id} of T3 and reads the value of \"Required criteria verified\" in the \"Evidence package\" card"
+  },
+  {
+   "given": "the gate preview with its demo data, in which the T3 package records the Verifier status \"not_run\", and the owner signed in",
+   "id": "AC4",
+   "priority": "must",
+   "tags": [],
+   "then": "the value (surrounding whitespace removed) begins with \"not_run\" and contains none of the other Verifier status identifiers (\"no_defect_found\", \"defects\", \"findings\", \"unknown\")",
+   "trace": {
+    "ref": "the result of the independent Verifier",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /tasks/{id} of T3 and reads the value of \"Verifier\" in the \"Evidence package\" card"
+  },
+  {
+   "given": "the gate preview with its demo data, in which the T3 package records the hash ea3524e95164fa82395285b83ee8e5d34a7beced8fd0f31d4c774562be0e5b19, and the owner signed in",
+   "id": "AC5",
+   "priority": "must",
+   "tags": [],
+   "then": "the value, with all whitespace removed, is exactly \"ea3524e95164fa82395285b83ee8e5d34a7beced8fd0f31d4c774562be0e5b19\"",
+   "trace": {
+    "ref": "and the package hash",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /tasks/{id} of T3 and reads the value of \"Package hash\" in the \"Evidence package\" card"
+  },
+  {
+   "given": "the gate preview with its demo data, in which demo task T1 has no evidence package, and the owner signed in",
+   "id": "AC6",
+   "priority": "must",
+   "tags": [],
+   "then": "the response is HTTP 200, the page shows exactly one h2 heading \"Evidence package\", the card contains the text \"No evidence package yet.\" and contains none of the terms \"Status\", \"Required criteria verified\", \"Verifier\", \"Package hash\" as description-list terms",
+   "trace": {
+    "ref": "When the task has no evidence package yet, the page says so.",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /projects/demo, activates the link of demo task T1 and reads the \"Evidence package\" card on /tasks/{id} of T1"
+  },
+  {
+   "given": "the gate preview with its demo data and the owner signed in",
+   "id": "AC7",
+   "priority": "must",
+   "tags": [],
+   "then": "the visible text of the card is identical before and after the reload, and the card contains no button, form, text input or select",
+   "trace": {
+    "ref": "It is read-only and shows only recorded facts.",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /tasks/{id} of T3, reads the \"Evidence package\" card, reloads the page and reads it again"
+  },
+  {
+   "given": "a task whose current head has no stored package while an earlier head of the same task has one, the owner signed in",
+   "id": "AC8",
+   "priority": "should",
+   "tags": [],
+   "then": "the \"Evidence package\" card shows \"No evidence package yet.\" and none of the earlier head's status, counts, Verifier result or hash",
+   "trace": {
+    "ref": "the evidence package of the task's current head",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /tasks/{id} of that task"
+  },
+  {
+   "given": "a task whose current head has several stored packages (e.g. one after the gate and a later one before the acceptance decision), the owner signed in",
+   "id": "AC9",
+   "priority": "should",
+   "tags": [],
+   "then": "the card shows the status, \"{verified} of {total}\", Verifier status and hash of the most recently stored package for that head",
+   "trace": {
+    "ref": "the evidence package of the task's current head",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /tasks/{id} of that task"
+  },
+  {
+   "id": "AC10",
+   "priority": "should",
+   "refs": [
+    "/tasks/{id}",
+    "src/app/(app)/tasks/[id]/page.tsx",
+    "src/components/ui.tsx"
+   ],
+   "statement": "The \"Evidence package\" card uses the existing task page look (Card with CardHeader, muted labels as in the other cards, monospace for the hash and the Verifier identifier), shows no animation, spinner or progress indicator, and stays readable at a 375px-wide viewport (the hash may wrap) and on desktop.",
+   "tags": [],
+   "trace": {
+    "ref": "It is read-only and shows only recorded facts.",
+    "source": "intent"
+   },
+   "type": "experience"
+  }
+ ],
+ "id": "T7",
+ "intent_sha256": "3f6a873e6bf25baffa0b7354cfbc9e7b13323a4743ca8d3c024c15c971a09e8e",
+ "interface": {
+  "ui": "Sign-in for the gate preview: GET /auth/preview (redirects to / with an owner session). Task page: route /tasks/{id} (reached e.g. from the Demo Project page /projects/demo, where each task's key such as \"T3\" is shown in a link to /tasks/{id}); page title \"Task · Agents\" (unchanged). NEW: a card on the task page with heading (h2) exactly \"Evidence package\" (exactly one such heading on the page). When a package is stored for the task's current head, the card contains a description list with these terms (dt), in this order, each followed by its value (dd): \"Status\" -> exactly one of \"complete\", \"incomplete\", \"blocked\", \"inconsistent\"; \"Required criteria verified\" -> \"{verified} of {total}\" (e.g. \"2 of 3\"); \"Verifier\" -> the recorded Verifier status identifier, one of \"no_defect_found\", \"no_defect_found_partial_coverage\", \"defects\", \"findings\", \"unknown\", \"not_run\" (optionally followed by a human-readable label); \"Package hash\" -> the full 64-character lowercase hex SHA-256 of the package, as visible text (it may wrap). When no package is stored for the current head, or the task has no head, the card shows exactly the text \"No evidence package yet.\" and no description list. The card contains no button, form, text input or select. Preview values (A3 demo data): demo task T3 (\"Demo: list descriptions\"): Status \"incomplete\", Required criteria verified \"2 of 3\", Verifier \"not_run\", Package hash \"ea3524e95164fa82395285b83ee8e5d34a7beced8fd0f31d4c774562be0e5b19\"; demo task T1 (\"Demo: export a list as CSV\"): \"No evidence package yet.\"."
+ },
+ "non_goals": [
+  "Showing the package's other content (criterion-by-criterion statuses, gaps, inconsistencies, regressions, scans, findings, judgments, handoff sections, plan tasks, stage, scope, contract version, head, creation time) - it may be shown but is not required.",
+  "Showing packages of earlier heads, a package history, or comparing packages.",
+  "Assembling, re-assembling, refreshing, auditing or replaying a package from the UI; any new button, form, action or API under /api/v0.",
+  "Changing how packages are built, judged, hashed or stored (src/domain/evidence.ts, src/worker/evidence.ts), the evidence statuses, the gate, the Verifier or the control loop.",
+  "Showing the evidence package on other pages (Command page, project pages, Decisions, System).",
+  "Changing the existing task page content (header, \"Where this task is\", the stepper, the owner action card, \"Contract\", \"Verification\", \"Workers\", \"Timeline\", \"Evidence files\", \"Operations\"), its live refresh, sign-in, sessions or authorization.",
+  "Estimates, projections, charts, progress indicators or animations."
+ ],
+ "open_questions": [],
+ "policies": [
+  "policy.json"
+ ],
+ "scope": {
+  "paths": [
+   "**"
+  ],
+  "summary": "The task page (/tasks/{id}) gains a read-only card headed \"Evidence package\" that shows the stored evidence package of the task's current head (the latest package recorded for that head): its status (complete, incomplete, blocked or inconsistent), how many of the package's required (must) criteria are verified out of how many, the recorded result of the independent Verifier, and the package hash. It shows only what the stored package records; opening the page never assembles, stores or changes a package. When no package is recorded for the task's current head (or the task has no head yet), the card says \"No evidence package yet.\". The gate preview's demonstration data gains one demonstration evidence package on demo task T3 (with a demonstration head) so the card can be checked black-box; demo task T1 keeps having none. All other parts of the task page stay unchanged."
+ },
+ "tier": "standard",
+ "title": "Evidence package on the task page",
+ "traces_to": [
+  "OWNER-INTENT-T7"
+ ],
+ "version": 1
+}
