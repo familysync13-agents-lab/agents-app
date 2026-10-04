@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import type { Db } from "./client";
 import type { CapabilityProfile } from "@/domain/profile";
-import { contracts, decisions, projects, qualificationRecords, runs, tasks, transitions } from "./schema";
+import { artifacts, contracts, decisions, evidencePackages, projects, qualificationRecords, runs, tasks, transitions } from "./schema";
 
 /** Demonstration capability profile of the demo project (no control loop runs in a preview, so nothing would ever detect one). */
 export const PREVIEW_CAPABILITY_PROFILE: CapabilityProfile = {
@@ -34,6 +34,7 @@ export async function seedPreviewDemo(db: Db) {
   const existing = await db.select({ id: tasks.id }).from(tasks).where(eq(tasks.projectId, p.id)).limit(1);
   if (!existing.length) await seedDemoTasks(db, p.id);
   await seedDemoLedger(db, p.id);
+  await seedDemoEvidencePackage(db, p.id);
 }
 
 async function seedDemoTasks(db: Db, projectId: number) {
@@ -107,4 +108,32 @@ async function seedDemoLedger(db: Db, projectId: number) {
     await db.insert(qualificationRecords).values(
       [1, 2, 3].map((i) => ({ worker: "local-llm", taskClass: "log_summary", mode: "shadow" as const, taskId: t3.id, inputSha256: String(i).padStart(64, "0"), expected: "demo summary", output: { summary: "demo summary" }, valid: true, agree: true, durationMs: 1200, note: DEMO_NOTE })),
     );
+}
+
+/** The demonstration head of demo task T3 and the recorded values of its demonstration evidence package (contract T7, A3). */
+export const DEMO_HEAD = "3".repeat(40);
+export const DEMO_PACKAGE = {
+  status: "incomplete",
+  summary: { must_total: 3, must: { verified: 2, partially_verified: 0, not_verified: 1, unknown: 0, waived: 0 }, regressions: 0, findings: 0, gaps: 1, inconsistencies: 0, verifier: "not_run", chain_head: null },
+  sha256: "ea3524e95164fa82395285b83ee8e5d34a7beced8fd0f31d4c774562be0e5b19",
+} as const;
+
+/**
+ * GATE PREVIEW ONLY: demo task T3 gets the demonstration head and one stored evidence package for it (with its stored body
+ * artifact), so the task page's "Evidence package" card can be checked black-box. T1 and T2 stay without a package. The package is
+ * plainly marked demo data and records the demonstration hash given by the contract (it is not the hash of an assembled body).
+ * Idempotent, also on a preview database seeded before this existed. Never called in production (see instrumentation.ts).
+ */
+async function seedDemoEvidencePackage(db: Db, projectId: number) {
+  const [t3] = await db.select({ id: tasks.id, headSha: tasks.headSha }).from(tasks).where(and(eq(tasks.projectId, projectId), eq(tasks.key, "T3")));
+  if (!t3) return;
+  if (!t3.headSha) await db.update(tasks).set({ headSha: DEMO_HEAD }).where(eq(tasks.id, t3.id));
+  const has = await db.select({ id: evidencePackages.id }).from(evidencePackages).where(and(eq(evidencePackages.taskId, t3.id), eq(evidencePackages.headSha, DEMO_HEAD))).limit(1);
+  if (has.length) return;
+  const content = JSON.stringify({ schema: "agents-app/evidence-package@1", demo: true, note: DEMO_NOTE, task: { key: "T3" }, scope: "task", head: DEMO_HEAD, stage: "gate", status: DEMO_PACKAGE.status, summary: DEMO_PACKAGE.summary });
+  const [a] = await db
+    .insert(artifacts)
+    .values({ taskId: t3.id, kind: "evidence-package", name: `evidence package (task, ${DEMO_HEAD.slice(0, 8)}, gate)`, content, sha256: DEMO_PACKAGE.sha256, workerAuthored: false })
+    .returning({ id: artifacts.id });
+  await db.insert(evidencePackages).values({ taskId: t3.id, scope: "task", planTask: null, headSha: DEMO_HEAD, contractVersion: null, contractSha256: null, status: DEMO_PACKAGE.status, summary: { ...DEMO_PACKAGE.summary, must: { ...DEMO_PACKAGE.summary.must } }, artifactId: a!.id, sha256: DEMO_PACKAGE.sha256, stage: "gate" });
 }
