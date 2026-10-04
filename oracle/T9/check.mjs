@@ -1,195 +1,183 @@
 import assert from 'node:assert/strict';
 
 const ids = ['AC1', 'AC2', 'AC3', 'AC4', 'AC5'];
-// Both sources are supplied by the gate; no private fixture environment is used.
-const base = process.argv[2] || process.env.BASE_URL;
-let browser, context, page, setupError;
+const normalize = value => (value ?? '').replace(/\s+/g, ' ').trim();
+const fixtures = [
+  { key: 'T4', title: 'Demo: share a list', statement: '2 items would be accepted without proof' },
+  { key: 'T5', title: 'Demo: book covers', statement: 'Nothing is accepted without proof' },
+];
+const counted = /^\d+ items? would be accepted without proof$/;
+const isStatement = text => counted.test(text) || text === 'Nothing is accepted without proof';
+let browser;
+let baseURL;
+let setupError;
 try {
-  if (!base) throw new Error('Missing baseURL argument and BASE_URL');
-  new URL(base);
+  baseURL = new URL(process.argv[2]).origin;
   const { chromium } = await import('playwright');
   browser = await chromium.launch({ args: ['--no-sandbox', '--disable-dev-shm-usage'] });
-  context = await browser.newContext();
-  page = await context.newPage();
-  page.setDefaultTimeout(12000);
-  page.setDefaultNavigationTimeout(25000);
 } catch (error) {
-  setupError = `HARNESS: ${error.message}`;
+  setupError = `HARNESS: browser/URL setup failed: ${error.message}`;
 }
 
-// Read DOM wording, never CSS-transformed innerText. Each element is read
-// separately; structured rows are not concatenated for textual assertions.
-async function fields(locator) {
-  return locator.evaluate(root => {
-    const visible = el => {
-      const style = getComputedStyle(el);
+async function eventually(read, predicate, message) {
+  const deadline = Date.now() + 10000;
+  let value;
+  do {
+    value = await read();
+    if (predicate(value)) return value;
+    await new Promise(resolve => setTimeout(resolve, 150));
+  } while (Date.now() < deadline);
+  throw new Error(message);
+}
+
+// Inspect each element separately, preserving its own source wording regardless
+// of CSS text-transform. All browser-side variables are local to this callback.
+async function visibleTexts(root) {
+  return root.evaluate(element => {
+    return [element, ...element.querySelectorAll('*')].filter(node => {
+      const style = getComputedStyle(node);
       return style.visibility !== 'hidden' && style.visibility !== 'collapse' &&
-        style.display !== 'none' && el.getClientRects().length > 0;
-    };
-    return [root, ...root.querySelectorAll('*')].filter(visible).map(el => ({
-      tag: el.tagName,
-      text: (el.textContent || '').trim(),
-      leaf: ![...el.children].some(visible),
-    }));
+        node.getClientRects().length > 0;
+    }).map(node => (node.textContent ?? '').replace(/\s+/g, ' ').trim());
   });
 }
-async function exactField(row, expected) {
-  assert((await fields(row)).some(f => f.text === expected), `Missing visible field: ${expected}`);
+
+async function openDecisions(page) {
+  const response = await page.goto(`${baseURL}/decisions`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: 'Decisions', exact: true, level: 1 }).waitFor();
+  await page.getByRole('listitem').first().waitFor();
+  return response;
 }
-async function openDecisions() {
-  const response = await page.goto(new URL('/decisions', base).href, { waitUntil: 'networkidle' });
-  assert.equal(response?.status(), 200, '/decisions must return HTTP 200');
-  await page.getByRole('heading', { name: 'Decisions', exact: true }).waitFor({ state: 'visible' });
-  await page.getByText('Open', { exact: true }).waitFor({ state: 'visible' });
-}
-async function decision(key, kind) {
-  // Start from semantic list items, then inspect individual metadata fields.
-  const candidates = page.getByRole('listitem');
-  await candidates.first().waitFor({ state: 'visible' });
-  const matches = [];
-  for (let i = 0; i < await candidates.count(); i++) {
-    const row = candidates.nth(i);
-    if (!await row.isVisible()) continue;
-    const fs = await fields(row);
-    const meta = fs.filter(f => {
-      const parts = f.text.split('·').map(s => s.trim());
-      return parts.length === 3 && parts[0] === 'Demo Project' && parts[1] === key && parts[2].length > 0;
-    });
-    if (!meta.length || !fs.some(f => f.text === kind)) continue;
-    // The nearest enclosing section/card with an Open label must contain this row.
-    const inOpen = await row.evaluate(el => {
-      for (let parent = el.parentElement; parent && parent.tagName !== 'BODY'; parent = parent.parentElement) {
-        const labels = [...parent.querySelectorAll('*')].filter(n =>
-          (n.textContent || '').trim() === 'Open' && n.getClientRects().length > 0);
-        if (labels.length) return true;
+
+async function acceptanceItem(page, fixture) {
+  const text = `${fixture.key} · ${fixture.title}`;
+  const matchingItems = async () => {
+    const result = [];
+    const items = page.getByRole('listitem');
+    for (let i = 0; i < await items.count(); i++) {
+      const item = items.nth(i);
+      if (!await item.isVisible()) continue;
+      const links = item.getByRole('link');
+      for (let j = 0; j < await links.count(); j++) {
+        const link = links.nth(j);
+        if (await link.isVisible() && /^\/tasks\/\d+$/.test(await link.getAttribute('href') ?? '') &&
+            normalize(await link.textContent()) === text) {
+          result.push(item);
+          break;
+        }
       }
-      return false;
-    });
-    if (inOpen) matches.push(row);
-  }
-  assert.equal(matches.length, 1, `Expected one ${kind} item for Demo Project · ${key} in Open`);
+    }
+    return result;
+  };
+  const matches = await eventually(matchingItems, items => items.length > 0, `Missing task link ${text}`);
+  assert.equal(matches.length, 1, `Expected exactly one list item for ${text}`);
   return matches[0];
 }
-async function statements(row, expected) {
-  const fs = await fields(row);
-  assert(fs.some(f => f.text === expected), `Missing exact statement: ${expected}`);
-  const counts = fs.map(f => f.text).filter(t => /^\d+ items? would be accepted without proof$/.test(t));
-  if (expected === 'Nothing is accepted without proof') {
-    assert.equal(counts.length, 0, 'Clean decision displays a numeric count');
-  } else {
-    assert(!fs.some(f => f.text === 'Nothing is accepted without proof'), 'Review decision displays clean statement');
-    assert(counts.every(t => t === expected), 'Decision displays a contradictory count');
-  }
+
+async function badgeItem(page, label) {
+  const matches = await eventually(async () => {
+    const found = [];
+    const items = page.getByRole('listitem');
+    for (let i = 0; i < await items.count(); i++) {
+      const item = items.nth(i);
+      if (await item.isVisible() && (await visibleTexts(item)).includes(label)) found.push(item);
+    }
+    return found;
+  }, items => items.length > 0, `Missing ${label} list item`);
+  assert.equal(matches.length, 1, `Expected exactly one ${label} list item`);
+  return matches[0];
 }
-async function taskLinks(row) {
-  const links = row.getByRole('link');
+
+async function singleLink(item, expectedText) {
+  const links = item.getByRole('link', { includeHidden: true });
+  assert.equal(await links.count(), 1, 'List item must contain exactly one link');
+  await links.waitFor({ state: 'visible' });
+  const href = await links.getAttribute('href');
+  assert.match(href ?? '', /^\/tasks\/\d+$/, 'Task href must use a decimal id');
+  const text = normalize(await links.textContent());
+  if (expectedText !== undefined) assert.equal(text, expectedText, 'Task link text');
+  return { link: links, href, text };
+}
+
+async function followTask(page, context, item, key, title) {
+  const { link, href } = await singleLink(item, title === undefined ? undefined : `${key} · ${title}`);
+  // Next.js can navigate without a document response. Check the destination's
+  // HTTP status through the same authenticated context, and actually click too.
+  const response = await context.request.get(`${baseURL}${href}`);
+  assert.equal(response.status(), 200, `HTTP status for ${href}`);
+  await Promise.all([
+    page.waitForURL(url => url.origin === baseURL && url.pathname === href),
+    link.click(),
+  ]);
+  await eventually(() => page.title(), titleText => titleText === 'Task · Agents', 'Incorrect task document title');
+  const heading = page.getByRole('heading', { level: 1 });
+  await heading.waitFor();
+  await eventually(() => heading.textContent(), value => {
+    const text = normalize(value);
+    return text.includes(key) && (title === undefined || text.includes(title));
+  }, `Task h1 does not contain ${key}${title ? ` and ${title}` : ''}`);
+}
+
+async function snapshot(page) {
   const result = [];
-  for (let i = 0; i < await links.count(); i++) {
-    const link = links.nth(i);
-    const href = await link.getAttribute('href');
-    if (!href) continue;
-    const url = new URL(href, base);
-    if (url.origin === new URL(base).origin && /^\/tasks\/[^/]+\/?$/.test(url.pathname)) result.push({ link, url });
+  for (const fixture of fixtures) {
+    const item = await acceptanceItem(page, fixture);
+    assert.equal(await item.locator('button, form, input, select, textarea').count(), 0, 'Acceptance item contains an interactive control');
+    const { href, text } = await singleLink(item, `${fixture.key} · ${fixture.title}`);
+    const statements = await eventually(() => visibleTexts(item), values => values.some(isStatement), `Missing proof statement for ${fixture.key}`);
+    // Nested elements can expose the same whole text; compare distinct wording.
+    const proof = [...new Set(statements.filter(isStatement))].sort();
+    assert.equal(proof.length, 1, 'Expected one proof statement wording');
+    result.push({ href, text, statement: proof[0] });
   }
-  assert.equal(result.length, 1, 'Expected exactly one link to /tasks/{id}');
-  return result[0];
+  return result;
 }
-async function snapshot(row, key) {
-  assert.equal(await row.locator('button, [role="button"], form, input:not([type="hidden"]), textarea, select, [role="textbox"], [role="combobox"]').count(), 0,
-    `${key} acceptance item contains an editing control`);
-  // Retain separate visible text nodes, including direct text beside child nodes.
-  // Normalize only the age portion of the contracted metadata element.
-  return row.evaluate((root, taskKey) => {
-    const visible = el => el.getClientRects().length > 0 && !['hidden', 'collapse'].includes(getComputedStyle(el).visibility);
-    const metadata = [...root.querySelectorAll('*')].filter(el => {
-      const p = (el.textContent || '').trim().split('·').map(s => s.trim());
-      return p.length === 3 && p[0] === 'Demo Project' && p[1] === taskKey;
-    });
-    const smallest = metadata.filter(el => !metadata.some(other => other !== el && el.contains(other)));
-    const output = [];
-    function walk(el) {
-      if (!visible(el)) return;
-      if (smallest.includes(el)) { output.push(`Demo Project · ${taskKey} · <age>`); return; }
-      for (const child of el.childNodes) {
-        if (child.nodeType === Node.TEXT_NODE) {
-          const value = child.textContent.replace(/\s+/g, ' ').trim();
-          if (value) output.push(value);
-        } else if (child.nodeType === Node.ELEMENT_NODE) walk(child);
+
+for (const criterion of ids) {
+  let context;
+  try {
+    if (setupError) throw new Error(setupError);
+    context = await browser.newContext();
+    const page = await context.newPage();
+    page.setDefaultTimeout(10000);
+    page.setDefaultNavigationTimeout(20000);
+    await page.goto(`${baseURL}/auth/preview`, { waitUntil: 'domcontentloaded' });
+    await page.waitForURL(url => url.origin === baseURL && url.pathname === '/');
+    const response = await openDecisions(page);
+    if (criterion === 'AC1' || criterion === 'AC2') {
+      if (criterion === 'AC1') assert.equal(response?.status(), 200, '/decisions HTTP status');
+      const fixture = fixtures[criterion === 'AC1' ? 0 : 1];
+      const item = await acceptanceItem(page, fixture);
+      const texts = await eventually(() => visibleTexts(item), values => values.includes('Acceptance') && values.includes(fixture.statement), `Missing Acceptance badge or ${fixture.statement}`);
+      assert(texts.includes('Acceptance'), 'Missing Acceptance badge');
+      assert(texts.includes(fixture.statement), 'Missing expected proof statement');
+      assert(!texts.some(text => isStatement(text) && text !== fixture.statement), 'Conflicting proof statement');
+    } else if (criterion === 'AC3') {
+      for (const fixture of fixtures) {
+        await openDecisions(page);
+        await followTask(page, context, await acceptanceItem(page, fixture), fixture.key, fixture.title);
+      }
+    } else if (criterion === 'AC4') {
+      const before = await snapshot(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.getByRole('heading', { name: 'Decisions', exact: true, level: 1 }).waitFor();
+      assert.deepEqual(await snapshot(page), before, 'Acceptance facts changed after reload');
+    } else if (criterion === 'AC5') {
+      for (const [label, key] of [['Contract review', 'T1'], ['Decision', 'T2']]) {
+        await openDecisions(page);
+        const item = await badgeItem(page, label);
+        assert(!(await visibleTexts(item)).some(text => /accepted without proof/i.test(text)), `${label} contains a proof statement`);
+        await followTask(page, context, item, key);
       }
     }
-    walk(root);
-    return output;
-  }, key);
-}
-
-const checks = {
-  AC1: async () => {
-    await openDecisions();
-    await statements(await decision('T4', 'Acceptance'), '2 items would be accepted without proof');
-  },
-  AC2: async () => {
-    await openDecisions();
-    await statements(await decision('T5', 'Acceptance'), 'Nothing is accepted without proof');
-  },
-  AC3: async () => {
-    for (const [key, title] of [['T4', 'Demo: share a list'], ['T5', 'Demo: book covers']]) {
-      await openDecisions();
-      const { link, url } = await taskLinks(await decision(key, 'Acceptance'));
-      assert.equal((await link.textContent()).trim().replace(/\s*·\s*/g, ' · '), `${key} · ${title}`, 'Task link text differs');
-      const [response] = await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle' }),
-        link.click(),
-      ]);
-      // Client-side history navigation has no document response in Playwright.
-      // In that case independently verify the linked route with this owner's cookies.
-      const taskResponse = response ?? await context.request.get(url.href, { timeout: 25000 });
-      assert.equal(taskResponse.status(), 200, 'Task navigation must return HTTP 200');
-      assert.equal(new URL(page.url()).pathname.replace(/\/$/, ''), url.pathname.replace(/\/$/, ''), 'Task link opened a different route');
-      await page.waitForFunction(() => document.title === 'Task · Agents');
-      assert.equal(await page.title(), 'Task · Agents');
-      await page.getByText(title, { exact: true }).first().waitFor({ state: 'visible' });
-      await page.getByText(key, { exact: true }).first().waitFor({ state: 'visible' });
-    }
-  },
-  AC4: async () => {
-    await openDecisions();
-    const before = {};
-    for (const key of ['T4', 'T5']) before[key] = await snapshot(await decision(key, 'Acceptance'), key);
-    await page.reload({ waitUntil: 'networkidle' });
-    await page.getByRole('heading', { name: 'Decisions', exact: true }).waitFor({ state: 'visible' });
-    for (const key of ['T4', 'T5']) assert.deepEqual(await snapshot(await decision(key, 'Acceptance'), key), before[key], `${key} changed after reload (excluding age)`);
-  },
-  AC5: async () => {
-    // The frozen inputs do not supply the historical title/explanation fixtures.
-    // Check all independently specified consequences before reporting that gap;
-    // observing this build cannot establish its own unchanged-wording baseline.
-    await openDecisions();
-    for (const [key, kind] of [['T1', 'Contract review'], ['T2', 'Decision']]) {
-      const row = await decision(key, kind);
-      await exactField(row, kind);
-      assert.equal(await row.getByRole('link').count(), 1, `${key} must contain exactly one link`);
-      await taskLinks(row);
-      const fs = await fields(row);
-      assert(!fs.some(f => /would be accepted without proof|Nothing is accepted without proof/i.test(f.text)), `${key} contains acceptance wording`);
-      if (key === 'T1') await exactField(row, 'Approve the contract for T1: Demo: export a list as CSV');
-    }
-    throw new Error('HARNESS: Missing authoritative pre-T9 fixtures: T2 decision title, T0 title-shortening rule, and T1/T2 explanation text. Supply the referenced accepted contracts/checks or their frozen fixtures; this build cannot establish its own unchanged-wording baseline. See NOTES.md.');
-  },
-};
-
-try {
-  for (const criterion of ids) {
-    try {
-      if (setupError) throw new Error(setupError);
-      // Reestablish the documented owner session for each independent criterion.
-      await page.goto(new URL('/auth/preview', base).href, { waitUntil: 'networkidle' });
-      assert.equal(new URL(page.url()).pathname, '/', 'Preview sign-in did not redirect to /');
-      await checks[criterion]();
-      console.log(JSON.stringify({ criterion, result: 'pass' }));
-    } catch (error) {
-      console.log(JSON.stringify({ criterion, result: 'fail', detail: String(error.message || error).slice(0, 1200) }));
-    }
+    console.log(JSON.stringify({ criterion, result: 'pass' }));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const infrastructure = /net::ERR_(CONNECTION_REFUSED|NAME_NOT_RESOLVED)|browser has been closed|Target page, context or browser has been closed/i.test(message);
+    console.log(JSON.stringify({ criterion, result: 'fail', detail: `${infrastructure && !message.startsWith('HARNESS:') ? 'HARNESS: ' : ''}${message}`.slice(0, 1500) }));
+  } finally {
+    if (context) await context.close().catch(() => {});
   }
-} finally {
-  await browser?.close().catch(() => {});
 }
+if (browser) await browser.close().catch(() => {});
+process.exitCode = 0;

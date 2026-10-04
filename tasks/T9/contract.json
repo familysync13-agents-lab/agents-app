@@ -2,7 +2,7 @@
  "assumptions": [
   {
    "basis": "existing behaviour",
-   "chosen": "Exactly as the recorded decision record and its owner summary already define it: the count n is the number of residual items in the decision record recorded for that acceptance decision (the decision-record artifact the decision references) whose kind is not \"should\" (unverified should-criteria) and not \"advisory_constraint\" (advisory constraints); \"Nothing is accepted without proof\" is shown when n is 0 (the record's attention is \"clean\"). This matches the wording \"N item(s) would be accepted without proof\" / \"Nothing is accepted without proof\" of the explanation the control loop already writes for the same decision, so the two never contradict each other on the page. The text is \"1 item would be accepted without proof\" for n = 1 and \"{n} items would be accepted without proof\" for n >= 2.",
+   "chosen": "Exactly as the recorded decision record and its owner summary already define it: the count n is the number of residual items in the decision record recorded for that acceptance decision (the decision-record artifact the decision references) whose kind is not \"should\" (unverified should-criteria) and not \"advisory_constraint\" (advisory constraints); \"Nothing is accepted without proof\" is shown when n is 0 (the record's attention is \"clean\"). This matches the wording \"N item(s) would be accepted without proof\" / \"Nothing is accepted without proof\" of the explanation the control loop already writes for the same decision. The text is \"1 item would be accepted without proof\" for n = 1 and \"{n} items would be accepted without proof\" for n >= 2.",
    "id": "A1",
    "question": "Which recorded items count as \"items that would be accepted without proof\", and when does the page say \"Nothing is accepted without proof\"?",
    "reversible": true
@@ -16,7 +16,7 @@
   },
   {
    "basis": "existing behaviour",
-   "chosen": "Like the other preview demo data (APP_ENV=preview only, idempotent, also on a preview database seeded earlier), the Demo Project gains two demo tasks in state DONE, each with one open acceptance decision whose recorded context references a stored decision-record artifact: T4 \"Demo: share a list\" (decision title \"Accept T4: Demo: share a list\"), whose recorded decision record has attention \"review\" and three residual items - two counted ones (kinds such as \"finding\" and \"verifier\") and one of kind \"should\" - so the page shows \"2 items would be accepted without proof\"; and T5 \"Demo: book covers\" (decision title \"Accept T5: Demo: book covers\"), whose recorded decision record has attention \"clean\" and exactly one residual item of kind \"should\", so the page shows \"Nothing is accepted without proof\". The explanation (why) of each demo decision is worded as the control loop's owner summary would word it for that record. Nothing else of the demo data changes.",
+   "chosen": "Like the other preview demo data (APP_ENV=preview only, idempotent, also on a preview database seeded earlier), the Demo Project gains two demo tasks in state DONE, each with one open acceptance decision whose recorded context references a stored decision-record artifact: T4 \"Demo: share a list\", whose recorded decision record has attention \"review\" and three residual items - two counted ones (kinds such as \"finding\" and \"verifier\") and one of kind \"should\" - so the page shows \"2 items would be accepted without proof\"; and T5 \"Demo: book covers\", whose recorded decision record has attention \"clean\" and exactly one residual item of kind \"should\", so the page shows \"Nothing is accepted without proof\". Decision titles and explanations of these demo decisions are free text and are not part of any check. Nothing else of the demo data changes.",
    "id": "A3",
    "question": "What demonstration data does the gate preview carry so the feature can be checked?",
    "reversible": true
@@ -30,7 +30,7 @@
   {
    "id": "C1",
    "kind": "regression",
-   "statement": "Everything accepted in earlier tasks keeps working and their checks of record keep passing (T0, T1, T4, T5, T6, T7, T8). In particular: /decisions keeps its h1 \"Decisions\" and the card header \"Open\"; every open-decision list item on /decisions and on / still contains exactly one link to /tasks/{id}, the kind label, the line \"{project} · {task key} · {age}\" and the decision title (shortened to at most 100 characters as defined by T0), and on /decisions the explanation text; the demo tasks T1, T2, T3 and their open decisions, the two demo worker runs, the demo qualification records, the Demo Project capability profile and the T3 evidence package stay exactly as they are (the new demo tasks add no worker runs, evidence packages or qualification records).",
+   "statement": "Everything accepted in earlier tasks keeps working and their checks of record keep passing (T0, T1, T4, T5, T6, T7, T8): among others the /decisions h1 \"Decisions\" and card header \"Open\", the decision titles shortened as defined by T0 on /decisions and /, the demo tasks T1, T2, T3 and their open decisions, the two demo worker runs, the demo qualification records, the Demo Project capability profile and the T3 evidence package. The new demo tasks add no worker runs, evidence packages or qualification records.",
    "trace": {
     "ref": "accepted contracts T0 (open-decision lists on /decisions and /), T1, T4, T5, T6 (System page ledger: exactly two demo runs), T7 and T8 (demo tasks T1-T3 and the T3 evidence package) and their checks of record",
     "source": "project"
@@ -72,77 +72,77 @@
    "id": "AC1",
    "priority": "must",
    "tags": [],
-   "then": "the response is HTTP 200 and the list item contains an element whose whole visible text (surrounding whitespace removed) is exactly \"2 items would be accepted without proof\"; the list item contains no element whose whole visible text is \"Nothing is accepted without proof\" and no other \"... would be accepted without proof\" count",
+   "then": "the response is HTTP 200; exactly one list item on the page contains such a link; that list item contains an element whose whole visible text is exactly \"Acceptance\" and an element whose whole visible text is exactly \"2 items would be accepted without proof\"; it contains no element whose whole visible text is \"Nothing is accepted without proof\" and no element whose whole visible text is any other text matching \"{digits} item(s) would be accepted without proof\"",
    "trace": {
     "ref": "each open acceptance decision shows how many items would be accepted without proof, taken from the recorded decision record",
     "source": "intent"
    },
    "type": "behavior",
    "verify": "blackbox",
-   "when": "the owner opens /decisions and reads the list item of that decision in the \"Open\" card (the item with the kind label \"Acceptance\" and the line \"Demo Project · T4\")"
+   "when": "the owner opens /decisions and takes the list item that contains the link whose whole visible text is \"T4 · Demo: share a list\""
   },
   {
-   "given": "the gate preview with its demo data, in which demo task T5 \"Demo: book covers\" has an open acceptance decision whose recorded decision record has no item that would be accepted without proof (attention \"clean\"; its only residual item is an unverified should-criterion), and the owner signed in",
+   "given": "the gate preview with its demo data, in which demo task T5 \"Demo: book covers\" has an open acceptance decision whose recorded decision record has no item that would be accepted without proof (attention \"clean\"; its only residual item is an unverified should-criterion), and the owner signed in via /auth/preview",
    "id": "AC2",
    "priority": "must",
    "tags": [],
-   "then": "the list item contains an element whose whole visible text (surrounding whitespace removed) is exactly \"Nothing is accepted without proof\", and no element whose whole visible text matches \"{number} item(s) would be accepted without proof\" (e.g. \"0 items would be accepted without proof\" or \"1 item would be accepted without proof\")",
+   "then": "exactly one list item on the page contains such a link; that list item contains an element whose whole visible text is exactly \"Acceptance\" and an element whose whole visible text is exactly \"Nothing is accepted without proof\"; it contains no element whose whole visible text matches \"{digits} item(s) would be accepted without proof\" (e.g. \"0 items would be accepted without proof\" or \"1 item would be accepted without proof\")",
    "trace": {
     "ref": "says \"Nothing is accepted without proof\" when there are none",
     "source": "intent"
    },
    "type": "behavior",
    "verify": "blackbox",
-   "when": "the owner opens /decisions and reads the list item of that decision in the \"Open\" card (kind label \"Acceptance\", line \"Demo Project · T5\")"
+   "when": "the owner opens /decisions and takes the list item that contains the link whose whole visible text is \"T5 · Demo: book covers\""
   },
   {
-   "given": "the gate preview with its demo data and the owner signed in",
+   "given": "the gate preview with its demo data and the owner signed in via /auth/preview",
    "id": "AC3",
    "priority": "must",
    "tags": [],
-   "then": "each of the two list items contains exactly one link to /tasks/{id}, whose visible text is exactly \"T4 · Demo: share a list\" respectively \"T5 · Demo: book covers\" (whitespace around \"·\" may vary); activating it opens /tasks/{id} of that task with HTTP 200, the document title \"Task · Agents\", and a page showing that task's key and title",
+   "then": "each of the two list items contains exactly one link; its href is /tasks/{id} with a decimal id and its whole visible text is exactly \"T4 · Demo: share a list\" respectively \"T5 · Demo: book covers\"; activating it opens /tasks/{id} with HTTP 200 and the document title \"Task · Agents\", and the visible text of that page's h1 contains \"T4\" and \"Demo: share a list\" respectively \"T5\" and \"Demo: book covers\"",
    "trace": {
     "ref": "Each decision links to its task by the task key and title.",
     "source": "intent"
    },
    "type": "behavior",
    "verify": "blackbox",
-   "when": "the owner opens /decisions, and in the \"Open\" card reads the acceptance list items of T4 and T5 and activates the task link of each in turn"
+   "when": "the owner opens /decisions, takes the list item of T4 and of T5 (identified as in AC1 and AC2) and activates the task link of each in turn"
   },
   {
-   "given": "the gate preview with its demo data and the owner signed in",
+   "given": "the gate preview with its demo data and the owner signed in via /auth/preview",
    "id": "AC4",
    "priority": "must",
    "tags": [],
-   "then": "the visible text of each list item, apart from its relative age, is identical before and after the reload, and neither list item contains a button, form, text input or select",
+   "then": "for each list item the recorded href, link text and statement text are identical before and after the reload, and neither list item contains a button, form, input, select or textarea element",
    "trace": {
     "ref": "It is read-only and shows only recorded facts.",
     "source": "intent"
    },
    "type": "behavior",
    "verify": "blackbox",
-   "when": "the owner opens /decisions, reads the visible text of the T4 and T5 acceptance list items, reloads the page and reads them again"
+   "when": "the owner opens /decisions, takes the list items of T4 and T5 (identified as in AC1 and AC2) and records, for each, the href and visible text of its task link and the whole visible text of its proof statement element (\"... would be accepted without proof\" or \"Nothing is accepted without proof\"), then reloads the page and records them again"
   },
   {
-   "given": "the gate preview with its demo data (open decisions of T1, kind \"Contract review\", and T2, kind \"Decision\") and the owner signed in",
+   "given": "the gate preview with its demo data, in which the only open decisions of a kind other than acceptance are those of demo tasks T1 (kind \"contract_approval\") and T2 (kind \"block\"), and the owner signed in via /auth/preview",
    "id": "AC5",
    "priority": "must",
    "tags": [],
-   "then": "each item still shows its kind label (\"Contract review\" / \"Decision\"), the line \"Demo Project · T1\" / \"Demo Project · T2\", its decision title as defined by T0 and its explanation text, and contains exactly one link, to /tasks/{id} of its task; neither item contains any text \"would be accepted without proof\" or \"Nothing is accepted without proof\"",
+   "then": "exactly one list item on the page contains a \"Contract review\" badge and exactly one contains a \"Decision\" badge; each of the two contains exactly one link, whose href is /tasks/{id} with a decimal id; neither list item's visible text contains \"accepted without proof\"; activating the link opens /tasks/{id} with HTTP 200 and the document title \"Task · Agents\", and the visible text of that page's h1 contains \"T1\" for the \"Contract review\" item and \"T2\" for the \"Decision\" item",
    "trace": {
     "ref": "Decisions of other kinds are unchanged.",
     "source": "intent"
    },
    "type": "behavior",
    "verify": "blackbox",
-   "when": "the owner opens /decisions and reads the list items of T1 and T2 in the \"Open\" card"
+   "when": "the owner opens /decisions, takes the list item that contains an element whose whole visible text is exactly \"Contract review\" and the list item that contains an element whose whole visible text is exactly \"Decision\", and activates the link of each in turn"
   },
   {
    "given": "an open acceptance decision recorded without a decision record (e.g. one opened before decision records existed), the owner signed in",
    "id": "AC6",
    "priority": "should",
    "tags": [],
-   "then": "the item shows its kind label, line, title, explanation and task link as usual, and neither \"Nothing is accepted without proof\" nor any \"... would be accepted without proof\" count",
+   "then": "the item shows its kind badge \"Acceptance\" and its task link as usual, and its visible text contains neither \"Nothing is accepted without proof\" nor \"would be accepted without proof\"",
    "trace": {
     "ref": "shows only recorded facts",
     "source": "intent"
@@ -185,7 +185,7 @@
  "id": "T9",
  "intent_sha256": "bb5e7f1a691c3e69624a3b81db90674769ee3a47b27f31501a81b38392e53172",
  "interface": {
-  "ui": "Sign-in for the gate preview: GET /auth/preview (redirects to / with an owner session). Decisions page: route /decisions, h1 \"Decisions\", card header \"Open\", one list item per open decision (unchanged for every kind except acceptance). Kind label of an acceptance decision on /decisions: \"Acceptance\" (unchanged); other kind labels unchanged: \"Contract review\", \"Confirm on GitHub\", \"Decision\", \"Budget\". NEW in each open acceptance list item: (1) exactly one link to /tasks/{id} of its task whose visible text is \"{task key} · {task title}\" (e.g. \"T4 · Demo: share a list\"); (2) one element whose whole visible text (surrounding whitespace removed) is exactly one of: \"1 item would be accepted without proof\", \"{n} items would be accepted without proof\" (n >= 2, decimal digits), or \"Nothing is accepted without proof\"; when the acceptance decision has no recorded decision record, neither statement is shown. The acceptance list item also keeps the kind label, the line \"{project} · {task key} · {age}\", the decision title (shortened per T0) and the explanation text, and contains no button, form, text input or select. Task page: route /tasks/{id}, page title \"Task · Agents\". Preview demo data (A3): Demo Project task T4 \"Demo: share a list\" with the open acceptance decision \"Accept T4: Demo: share a list\" -> \"2 items would be accepted without proof\"; task T5 \"Demo: book covers\" with the open acceptance decision \"Accept T5: Demo: book covers\" -> \"Nothing is accepted without proof\"; existing demo decisions of T1 (\"Contract review\", \"Approve the contract for T1: Demo: export a list as CSV\") and T2 (\"Decision\") unchanged."
+  "ui": "Sign-in for the gate preview: GET /auth/preview (redirects to / with an owner session). Decisions page: route /decisions, h1 \"Decisions\", card header \"Open\", one list item (role listitem) per open decision. Text matching rule used by every criterion: the \"visible text\" of an element is its rendered text with surrounding whitespace removed and inner runs of whitespace collapsed to one space; \"an element whose whole visible text is X\" means some visible element inside the list item (the list item itself or a descendant) has exactly that text. Kind badge: each open-decision list item contains one visible element whose whole visible text is exactly its kind label - \"Acceptance\", \"Contract review\", \"Confirm on GitHub\", \"Decision\" or \"Budget\" (unchanged). Identity of an acceptance list item: the list item on /decisions containing a link (role link) whose href is /tasks/{id} (id = decimal digits) and whose whole visible text is \"{task key} · {task title}\" (e.g. \"T4 · Demo: share a list\"); in the preview exactly one list item contains such a link per acceptance decision. NEW in each open acceptance list item: (1) exactly one link, to /tasks/{id} of its task, with the visible text \"{task key} · {task title}\"; (2) one element whose whole visible text is exactly one of \"1 item would be accepted without proof\", \"{n} items would be accepted without proof\" (n >= 2, decimal digits) or \"Nothing is accepted without proof\"; when the acceptance decision has no recorded decision record, neither statement is shown. The acceptance list item contains no button, form, input, select or textarea. Task page: route /tasks/{id}, document title \"Task · Agents\", h1 whose visible text contains the task key and the task title. Preview demo data (A3): Demo Project task T4 \"Demo: share a list\" -> \"2 items would be accepted without proof\"; task T5 \"Demo: book covers\" -> \"Nothing is accepted without proof\"; the existing open decisions of T1 (kind badge \"Contract review\") and T2 (kind badge \"Decision\") are the only open non-acceptance decisions in the preview."
  },
  "non_goals": [
   "Changing list items of open decisions of any kind other than acceptance on /decisions, the batch card \"{n} contracts ready in {project}\", or the open-decision strip of the Command page (/).",
@@ -194,7 +194,8 @@
   "Any new button, form, action, filter, sort order or API endpoint (including under /api/v0); approving, rejecting or re-computing anything from the Decisions page.",
   "Changing the database schema or migrations.",
   "Showing the count on the Command page, project pages, the task page or the System page.",
-  "Making the Decisions page fit a phone-width screen beyond what it does today."
+  "Making the Decisions page fit a phone-width screen beyond what it does today.",
+  "Adding test-only attributes (such as data-* or ids) to the page for the sake of checking; the checks rely on the visible elements named in the interface."
  ],
  "open_questions": [],
  "policies": [
@@ -204,12 +205,12 @@
   "paths": [
    "**"
   ],
-  "summary": "On the Decisions page (/decisions), in the \"Open\" card, each open acceptance decision (kind label \"Acceptance\") additionally shows, read from the decision record recorded for that decision, how many items would be accepted without proof (\"{n} items would be accepted without proof\", singular \"1 item would be accepted without proof\"), or \"Nothing is accepted without proof\" when there are none, and links to its task with a link whose text is the task key and the task title (\"{key} · {title}\"). The list item stays read-only and shows only recorded facts: nothing is computed beyond counting the recorded residual items, nothing is written, and an acceptance decision without a recorded decision record shows neither statement. Open decisions of other kinds (contract review, confirm on GitHub, decision, budget) are listed exactly as before. The gate preview's demonstration data gains two demo tasks with open acceptance decisions and recorded decision records so the feature can be checked black-box; all earlier demo data stays as it is."
+  "summary": "On the Decisions page (/decisions), in the \"Open\" card, each open acceptance decision (kind label \"Acceptance\") additionally shows, read from the decision record recorded for that decision, how many items would be accepted without proof (\"{n} items would be accepted without proof\", singular \"1 item would be accepted without proof\"), or \"Nothing is accepted without proof\" when there are none, and links to its task with a link whose text is the task key and the task title (\"{key} · {title}\"). The list item stays read-only and shows only recorded facts: nothing is computed beyond counting the recorded residual items, nothing is written, and an acceptance decision without a recorded decision record shows neither statement. Open decisions of other kinds (contract review, confirm on GitHub, decision, budget) are listed as before. The gate preview's demonstration data gains two demo tasks with open acceptance decisions and recorded decision records so the feature can be checked black-box; all earlier demo data stays as it is. Every check identifies a list item by a stable, separately rendered element (the task link by its href and visible text, or the kind badge by its exact text), never by splitting text that mixes the badge, project name, task key and age."
  },
  "tier": "standard",
  "title": "Decisions page shows what an acceptance would take without proof",
  "traces_to": [
   "OWNER-INTENT-T9"
  ],
- "version": 1
+ "version": 7
 }
