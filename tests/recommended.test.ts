@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { activity, decisions, tasks, transitions } from "@/db/schema";
-import { classifyDecision, type DecisionFacts } from "@/domain/policy";
+import { decisions, tasks } from "@/db/schema";
+import { classifyDecision, contractEscalation, ROUTINE_OPERATIONS, type DecisionFacts } from "@/domain/policy";
+import { Contract, intentHash, lintContract, quotesIntent, requirementAuthority } from "@/domain/contract";
 import { createTask, decideBlock } from "@/server/owner";
-import { clock, FakeExecutor, openDecisions, policyDecisions, runUntil, setup, taskRow } from "./support/harness";
-import { fixtureHandlers as scenario } from "./support/fixture-handlers";
+import { clock, contractApproved, contractRows, FakeExecutor, openDecisions, owner, policyDecisions, runUntil, setup, taskRow } from "./support/harness";
+import { CONTRACT, fixtureHandlers as scenario } from "./support/fixture-handlers";
 
 /*
  * RECOMMENDED = AUTO-APPROVE. A decision either has one recommended action the control system takes itself (recorded as a
@@ -15,37 +16,51 @@ const options = [
   { id: "o2", label: "Write a new helper", consequence: "One new file." },
   { id: "abandon", label: "Abandon the task", consequence: "Nothing is built." },
 ];
-const f = (over: Partial<DecisionFacts> = {}): DecisionFacts => ({ kind: "block", stage: "build", recommendation: "Use the existing helper", options, cls: "routine", taskTier: "standard", hasWork: false, text: "Which helper should be used?", ...over });
+const f = (over: Partial<DecisionFacts> = {}): DecisionFacts => ({ kind: "block", stage: "build", recommendation: "Use the existing helper", options, taskTier: "standard", hasWork: false, ...over });
 const auto = (x: DecisionFacts) => classifyDecision(x).auto;
+const needs = (x: DecisionFacts) => {
+  const c = classifyDecision(x);
+  expect(c.auto).toBeNull();
+  return c.auto === null ? c.needsOwner.join() : "";
+};
 
-describe("classifyDecision: recommended = automatic, everything else needs the owner", () => {
-  it("takes the one recommended action itself (continue / retry-like choice / abandon)", () => {
-    expect(auto(f())).toBe("o1");
-    expect(auto(f({ recommendation: "o2" }))).toBe("o2");
-    expect(auto(f({ recommendation: "Abandon the task", cls: undefined, options: [options[2]!] }))).toBe("abandon");
-    expect(auto(f({ stage: "contract", recommendation: "End here", cls: null, options: [{ id: "o1", label: "End here", consequence: "", action: "abandon" }] }))).toBe("o1");
+describe("classifyDecision: only an allowlisted routine operation is automatic (SEC-TB-01)", () => {
+  it("the allowlist is owned by the control plane and holds routine operations only", () => {
+    expect(Object.keys(ROUTINE_OPERATIONS)).toEqual(["end_unbuilt_task"]);
   });
-  it("cannot be bypassed by recommending an option for an owner-level decision", () => {
-    const needs = (x: DecisionFacts) => {
-      const c = classifyDecision(x);
-      expect(c.auto).toBeNull();
-      return c.auto === null ? c.needsOwner.join() : "";
-    };
-    expect(needs(f({ cls: undefined }))).toMatch(/product \/ owner-level/); // genuine ambiguity: a worker question not marked routine
-    expect(needs(f({ cls: "owner" }))).toMatch(/product \/ owner-level/);
-    expect(needs(f({ taskTier: "critical" }))).toMatch(/critical/); // danger
-    expect(needs(f({ recommendation: "Abandon the task", hasWork: true }))).toMatch(/discard existing work/); // major / irreversible
-    expect(needs(f({ recommendation: "Abandon the task", cls: undefined }))).toMatch(/product \/ owner-level/); // abandon vs real alternatives is a choice
-    for (const [text, word] of [["Rotate the API token?", "token"], ["Grant the App permission to the repo", "permission"], ["Delete the old rows", "delete"], ["Store the password", "password"], ["This widens the scope", "scope"], ["A security trade-off", "security"], ["Needs a credential", "credential"], ["Changes billing", "billing"]] as const)
-      expect(needs(f({ text }))).toContain(word);
-    expect(needs(f({ options: [{ id: "o1", label: "Use the existing helper", consequence: "Deletes user data: irreversible" }, options[2]!] }))).toMatch(/irreversible|delete/i);
+  it("ends a task for which nothing was built and no other path is offered", () => {
+    expect(auto(f({ recommendation: "Abandon the task", options: [options[2]!] }))).toBe("abandon");
+    expect(auto(f({ stage: "contract", recommendation: "End here", options: [{ id: "o1", label: "End here", consequence: "", action: "abandon" }] }))).toBe("o1");
+  });
+  it("a recommended option is never authority: every choice between real options needs the Owner", () => {
+    expect(needs(f())).toMatch(/only the Owner decides/);
+    expect(needs(f({ recommendation: "o2" }))).toMatch(/only the Owner decides/);
+    expect(needs(f({ stage: "contract" }))).toMatch(/only the Owner decides/);
+    expect(needs(f({ taskTier: "critical" }))).toMatch(/critical/);
+    expect(needs(f({ recommendation: "Abandon the task", hasWork: true }))).toMatch(/discard existing work/);
+    expect(needs(f({ recommendation: "Abandon the task" }))).toMatch(/only the Owner decides/); // abandon vs real alternatives is a choice
     for (const stage of ["security", "tamper", "access", "evidence", "budget"]) expect(needs(f({ stage }))).toContain(stage);
     for (const kind of ["acceptance", "contract_github_approval", "budget", "contract_approval"]) expect(needs(f({ kind }))).toMatch(/owner authority/);
     expect(needs(f({ recommendation: null }))).toMatch(/no recommended action/);
     expect(needs(f({ recommendation: "Something else" }))).toMatch(/exactly one option/);
     expect(needs(f({ options: [options[0]!, { ...options[0]!, id: "o9" }] }))).toMatch(/exactly one option/);
   });
+  it("an operation that is not on the allowlist, or that would end the task, is not automatic", () => {
+    expect(needs(f({ operation: "apply_worker_choice" as never }))).toMatch(/only the Owner decides/);
+    expect(needs(f({ operation: "end_unbuilt_task", recommendation: "Abandon the task" }))).toMatch(/only the Owner decides/); // real alternatives exist
+  });
 });
+
+/*
+ * SEC-TB-01 adversarial regression. Each record is what a worker could write in BLOCKED.json: neutral wording, no word any filter
+ * could catch, its own label "routine", and a recommendation. Before the fix every one of them was applied without the Owner.
+ */
+const ATTACKS: Record<string, Record<string, unknown>> = {
+  "public access by link": { unknown: "Who can open a list from a link", why: "The intent does not say", options: [{ label: "Anyone holding the link can open it", consequence: "Links work for everybody" }, { label: "Only the person who made the list", consequence: "Links work for one person" }], recommendation: "Anyone holding the link can open it" },
+  "automatic deletion": { unknown: "How long finished lists are kept", why: "Not stated", options: [{ label: "Remove finished lists after 30 days", consequence: "Old lists go away on their own" }, { label: "Keep them", consequence: "Nothing goes away" }], recommendation: "Remove finished lists after 30 days" },
+  "dropping a required criterion": { unknown: "AC1 cannot be met with the chosen component", would_resolve: "Leave AC1 out of this task", options: ["Leave AC1 out of this task", "Rebuild the component"], recommendation: "Leave AC1 out of this task" },
+  "sending data to an outside service": { unknown: "Where list names are spell-checked", why: "Not stated", options: [{ label: "Send each list name to an outside spell-check service", consequence: "Names are checked remotely" }, { label: "No spell-check", consequence: "-" }], recommendation: "Send each list name to an outside spell-check service" },
+};
 
 describe("control loop: recommended actions never wait for the owner", () => {
   const start = async (opts: Parameters<typeof scenario>[0]) => {
@@ -67,20 +82,45 @@ describe("control loop: recommended actions never wait for the owner", () => {
   };
   const Q = { type: "BLOCKED:DECISION", unknown: "Sort by title or by date?", why: "Both are possible.", options: [{ label: "By title", consequence: "A-Z" }, { label: "By date", consequence: "newest first" }], recommendation: "By title" };
 
-  it("a recommended routine choice is executed without the owner, recorded as a control-system decision, and the workflow continues", async () => {
-    const { db, id, run, ex } = await start({ draftBlocks: [{ ...Q, class: "routine" }] });
-    const shown = await run(async () => (await taskRow(db, id)).step === "await_acceptance");
-    expect(shown.map((d) => d.kind)).toEqual(["acceptance"]); // the question itself was never shown to the owner
-    const pol = (await policyDecisions(db, id)).filter((d) => d.kind === "block");
-    expect(pol.map((d) => [d.choice, d.status, d.decidedVia])).toEqual([["o1", "decided", "policy"]]);
-    const act = await db.select().from(activity).where(eq(activity.taskId, id));
-    expect(act.filter((a) => a.actor === "owner" && /Decision/.test(a.message))).toEqual([]); // not "by the owner"
-    expect(act.some((a) => a.actor === "system" && /Decided by the control system/.test(a.message) && /By title/.test(a.message))).toBe(true);
-    const prompts = ex.log.filter((l) => l.op === "builder").map((l) => String(l.params.prompt_text));
-    expect(prompts[1]).toContain("Control-system decision");
-    expect(prompts[1]).not.toContain("Owner decision");
-    const tr = await db.select().from(transitions).where(eq(transitions.taskId, id));
-    expect(tr.some((t) => /Decided by the control system/.test(t.reason))).toBe(true);
+  for (const [name, attack] of Object.entries(ATTACKS)) {
+    it(`contract stage - ${name}: "class: routine" and a recommendation never decide; the Owner is asked and nothing proceeds`, async () => {
+      const { db, id, run, state } = await start({ draftBlocks: [{ type: "BLOCKED:DECISION", ...attack, class: "routine" }] });
+      const shown = await run(async () => (await taskRow(db, id)).state === "BLOCKED_DECISION");
+      expect(shown.map((d) => d.kind)).toEqual(["block"]);
+      const [d] = await openDecisions(db, id);
+      expect([d!.status, d!.recommendation, d!.decidedVia]).toEqual(["open", null, null]);
+      expect((d!.context as { needsOwner: string[]; workerClass: unknown; origin: string })).toMatchObject({ origin: "worker", workerClass: "routine", needsOwner: [expect.stringMatching(/only the Owner decides/)] });
+      expect((await policyDecisions(db, id)).filter((x) => x.kind === "block")).toEqual([]); // nothing was decided by the control system
+      // it waits: no contract is written from the worker's own recommendation
+      await expect(runUntil(db, (await start({})).ex, clock(), async () => (await taskRow(db, id)).state !== "BLOCKED_DECISION", 5)).rejects.toThrow();
+      expect(state.drafts).toBe(1);
+      expect(await contractRows(db, id)).toEqual([]);
+    });
+    it(`build stage with a PR already open - ${name}: the Builder's "routine" block waits for the Owner; the contract is not rewritten`, async () => {
+      const { db, id, run } = await start({ failFirstGate: true, builderBlocks: [{ type: "BLOCKED:DECISION", ...attack, class: "routine" }] });
+      await run(async () => (await taskRow(db, id)).state === "BLOCKED_DECISION");
+      const [d] = await openDecisions(db, id);
+      expect([d!.kind, d!.status, d!.recommendation]).toEqual(["block", "open", null]);
+      expect((d!.context as { stage: string; origin: string }).stage).toBe("build");
+      expect((await taskRow(db, id)).prNumber).toBeTruthy(); // existing work: a PR is open
+      expect((await policyDecisions(db, id)).filter((x) => x.kind === "block")).toEqual([]);
+      expect((await contractRows(db, id)).filter((c) => c.kind === "contract").length).toBe(1); // still the Owner-approved v1, unchanged
+    });
+  }
+
+  it("a new contract is never approved by the control system: tags, tier, traces and wording are the drafter's and carry no authority", async () => {
+    owner.approvesContracts = false;
+    try {
+      const { db, id, run } = await start({});
+      const shown = await run(async () => (await taskRow(db, id)).step === "await_owner_contract");
+      expect(shown.map((d) => d.kind)).toEqual(["contract_approval"]);
+      expect([shown[0]!.status, shown[0]!.recommendation]).toEqual(["open", null]);
+      expect(shown[0]!.why).toMatch(/sets what will be built; approving requirements is yours\. Traced to a quote of your intent: AC1/);
+      expect((await policyDecisions(db, id)).filter((x) => x.kind === "contract_approval")).toEqual([]);
+      expect(await contractApproved(db, id)).toBe(false);
+    } finally {
+      owner.approvesContracts = true;
+    }
   });
 
   it("nothing shown to the owner ever carries a recommended option (invariant, whole lifecycle incl. blocks and acceptance)", async () => {
@@ -89,7 +129,7 @@ describe("control loop: recommended actions never wait for the owner", () => {
     const [d] = await openDecisions(db, id);
     expect(d!.recommendation).toBeNull(); // NEEDS YOU: the worker's suggestion is not presented as RECOMMENDED
     expect((d!.context as { suggestion?: string }).suggestion).toBe("By title");
-    expect((d!.context as { needsOwner?: string[] }).needsOwner!.join()).toMatch(/product \/ owner-level/);
+    expect((d!.context as { needsOwner?: string[] }).needsOwner!.join()).toMatch(/only the Owner decides/);
     // genuine owner decision: the task waits
     await expect(runUntil(db, (await start({})).ex, clock(), async () => (await taskRow(db, id)).state !== "BLOCKED_DECISION", 5)).rejects.toThrow();
     expect((await taskRow(db, id)).state).toBe("BLOCKED_DECISION");
@@ -164,5 +204,30 @@ describe("control loop: recommended actions never wait for the owner", () => {
     const did = await ctx.openDecision({ kind: "block", title: "Give up?", why: "The worker suggests ending.", options: [{ id: "abandon", label: "Abandon the task", consequence: "The PR is closed." }], recommendation: "abandon", context: { stage: "build" } });
     const [d] = await db.select().from(decisions).where(eq(decisions.id, did));
     expect([d!.status, d!.recommendation, d!.decidedVia]).toEqual(["open", null, null]);
+  });
+});
+
+describe("SEC-TB-01 wider path: a requirement the drafter writes into a contract is never its own authority", () => {
+  const INTENT = "Sort lists\nLet owners sort their lists alphabetically on the list index.";
+  const open = { id: "AC9", type: "behavior", priority: "must", tags: [], verify: "blackbox", given: "a list and a visitor who is not signed in", when: "the visitor opens the link of the list", then: "the list is shown" };
+  const body = (trace: { source: string; ref: string }, extra: Record<string, unknown> = {}) => ({ ...CONTRACT("T9"), intent_sha256: intentHash(INTENT), policies: ["policy.json"], criteria: [...CONTRACT("T9").criteria, { ...open, trace }], ...extra });
+  const lint = (c: unknown) => lintContract(c, { id: "T9", tier: "standard" }, { intent: INTENT });
+  it("a fragment of the intent is not a source: the weak trace that passed before is refused", () => {
+    expect(quotesIntent("their lists", INTENT)).toBe(false); // the audit's example: 2 words
+    expect(quotesIntent("ir lists alphabetically on th", INTENT)).toBe(false); // not whole words
+    expect(quotesIntent("sort their lists alphabetically", INTENT)).toBe(true);
+    expect(quotesIntent("Sort  THEIR lists, alphabetically", INTENT)).toBe(true); // case and punctuation do not matter; the words do
+    expect(lint(body({ source: "intent", ref: "their lists" })).problems.join()).toMatch(/AC9: an intent trace must quote the owner's intent verbatim: at least 4 consecutive whole words/);
+  });
+  it("a strong quote, no sensitive tag and standard tier still do not approve it: it is listed for the Owner, who approves every new outcome", () => {
+    const c = Contract.parse(body({ source: "intent", ref: "sort their lists alphabetically" }));
+    expect(lint(c).ok).toBe(true); // well-formed - and that is all lint says
+    expect(contractEscalation({ taskTier: "standard", body: c, lintOk: true, oracleProblems: [], calibrated: true })).toEqual([]); // nothing "sensitive" was declared
+    // ... which no longer matters: approval is not derived from the contract's own text (see the control-loop test above)
+    const drafted = Contract.parse(body({ source: "necessary", ref: "AC1: lists must be reachable" }, { assumptions: [{ id: "A1", question: "Who may open a list?", chosen: "Anyone with the link", basis: "stated intent", reversible: true }] }));
+    const auth = requirementAuthority(drafted, INTENT);
+    expect(auth.quoted).toContain("AC1");
+    expect(auth.quoted).not.toContain("AC9");
+    expect(auth.added).toEqual(expect.arrayContaining([{ id: "AC9", why: expect.stringMatching(/^drafter: needed for AC1/) }, { id: "A1", why: "assumption: Anyone with the link" }]));
   });
 });

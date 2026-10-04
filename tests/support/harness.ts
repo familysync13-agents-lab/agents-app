@@ -54,10 +54,26 @@ export function clock(start = Date.parse("2026-10-01T10:00:00Z")) {
   return { now: () => new Date(t), advance: (s: number) => (t += s * 1000) };
 }
 
+/**
+ * The Owner in tests. Every contract that sets or changes the required outcome needs the Owner (SEC-TB-01), so a flow that is not
+ * about contract approval lets this stand-in approve the exact contract shown - AFTER \`until\` has seen the waiting decision, so a
+ * test can still stop there. Set approvesContracts = false to act as the Owner yourself.
+ */
+export const owner = { approvesContracts: true };
+async function approveWaitingContracts(db: Db) {
+  const { decideContract } = await import("@/server/owner");
+  for (const t of await db.select().from(tasks)) {
+    if (t.step !== "await_owner_contract" || !t.currentContractId) continue;
+    const [c] = await db.select().from(contracts).where(eq(contracts.id, t.currentContractId));
+    if (c?.status === "review") await decideContract(db, { taskId: t.id, contractId: c.id, choice: "approve", note: "", sha256: c.sha256 });
+  }
+}
+
 /** Run the control loop and the fake executor until `until` holds or the step budget is exhausted. */
 export async function runUntil(db: Db, ex: FakeExecutor, clk: ReturnType<typeof clock>, until: () => Promise<boolean>, max = 400) {
   for (let i = 0; i < max; i++) {
     if (await until()) return i;
+    if (owner.approvesContracts) await approveWaitingContracts(db);
     await tick(db, clk.now);
     await ex.drain();
     clk.advance(35);

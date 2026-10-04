@@ -6,7 +6,9 @@ import { CALIBRATION } from "./plan";
  *   A a new product decision            B a trust-boundary / security change      C an unavoidable authorization or credential
  *   D an irreversible / high-impact act E an unresolved Critical/High issue       F a genuine blocker the system cannot repair
  *   G final acceptance of the result
- * Everything else is decided mechanically here and recorded as a decision row with decidedVia "policy" (the audit trail).
+ * Routine operations (ROUTINE_OPERATIONS, self-recovery, a contract revision that leaves the required outcome unchanged) are decided
+ * mechanically and recorded as a decision row with decidedVia "policy" (the audit trail). A contract that SETS or CHANGES the
+ * required outcome is always the Owner's to approve (SEC-TB-01): its text is written by a worker and is never its own authority.
  * All functions are pure and deterministic: no AI call decides whether the owner is needed.
  */
 
@@ -22,7 +24,10 @@ export interface ContractFacts {
   calibrated: boolean;
 }
 
-/** Reasons a generated contract needs the owner. Empty = it stays within the recorded intent and is approved automatically. */
+/**
+ * What the Owner should know when approving a generated contract (shown with the approval). A contract that sets or changes the
+ * required outcome ALWAYS needs the Owner - whatever this returns: these are additional reasons, never the test for asking.
+ */
 export function contractEscalation(f: ContractFacts): string[] {
   const why: string[] = [];
   if (!f.lintOk) why.push("the contract is not lint-clean");
@@ -55,32 +60,46 @@ export interface DecisionOption {
   action?: "abandon";
 }
 
+/**
+ * Routine operations the control system may decide itself. THIS LIST IS THE ONLY SOURCE OF THAT AUTHORITY (SEC-TB-01): each entry is
+ * an operation whose meaning is defined by control-plane code, is reversible, and changes neither the contract nor the product.
+ * Nothing a worker writes - a class label, a recommendation, an option, a tag, a trace or any wording - can add to it or select
+ * from it: the operation of a decision is set by the control-plane code that raises it, never read from a worker's file.
+ */
+export const ROUTINE_OPERATIONS = {
+  /** End a task for which nothing was built and no other path is offered: nothing is lost; the intent can be filed again. */
+  end_unbuilt_task: "Recommended action: end the task. Nothing has been built, so nothing is lost and the intent can be filed again.",
+} as const;
+export type RoutineOperation = keyof typeof ROUTINE_OPERATIONS;
+
 export interface DecisionFacts {
   kind: string;
   stage: string;
   recommendation: string | null | undefined;
   options: DecisionOption[];
-  /** the worker's own label in BLOCKED.json; only "routine" can make a worker question automatic, and never on its own */
-  cls: unknown;
+  /**
+   * The routine operation this decision is, when the control-plane code raising it declares one. Absent for every decision that
+   * comes from a worker's BLOCKED.json: answering such a block rewrites the contract, which only the Owner may authorize.
+   */
+  operation?: RoutineOperation | null;
   taskTier: "standard" | "critical";
   /** a PR / built head exists: abandoning would discard work */
   hasWork: boolean;
-  text: string;
 }
 
-const OWNER_WORDS = /\b(secret|credential|token|password|permission|access|delete|irreversible|payment|billing|price|legal|privacy|personal data|security|authori[sz]|scope|architecture)\b/i;
 const OWNER_STAGES = ["security", "tamper", "access", "evidence", "budget"];
 
 export const isAbandon = (o: DecisionOption) => o.id === "abandon" || o.action === "abandon";
 
 /**
- * THE decision rule of the control system: RECOMMENDED = AUTO-APPROVE.
- * A decision either has exactly one recommended action that the control system may take itself - then it is taken, recorded as a
+ * THE decision rule of the control system: RECOMMENDED = AUTO-APPROVE - for routine operations only.
+ * A decision either IS one of the ROUTINE_OPERATIONS, with exactly one recommended action - then it is taken, recorded as a
  * control-system decision and the workflow continues - or it NEEDS YOU and is shown to the owner WITHOUT any recommended option.
- * There is no third state: a recommended option never waits for a click.
- * Whether the owner is needed is decided here, mechanically, from what the decision is - never from the fact that somebody
- * labelled an option "recommended". So a dangerous, major, irreversible, security/permission/credential or ambiguous decision cannot
- * be turned into an automatic one by recommending an option.
+ *
+ * Security invariant (SEC-TB-01): whether the Owner is needed is decided from facts the control plane owns - the decision kind, the
+ * stage, the task tier, whether work exists, the shape of the option list, and the declared routine operation. No worker-controlled
+ * field is authority: not "class", not the recommendation, not option labels or consequences, not the title or reason. A worker
+ * may DESCRIBE a blocker; it can never AUTHORIZE its own answer. In particular there is no wording test here: text is not evidence.
  */
 export function classifyDecision(f: DecisionFacts): { auto: string; basis: string } | { auto: null; needsOwner: string[] } {
   const owner = (...why: string[]) => ({ auto: null, needsOwner: why });
@@ -93,14 +112,11 @@ export function classifyDecision(f: DecisionFacts): { auto: string; basis: strin
   if (OWNER_STAGES.includes(f.stage)) return owner(`${f.stage} stop`);
   if (f.taskTier === "critical") return owner("critical tier (security / trust-sensitive work)");
   if (isAbandon(hit) && f.hasWork) return owner("abandoning would discard existing work (major / not reversible)");
-  // ending a task is automatic only when it is the single path left (no alternative to choose between) and nothing was built
-  if (isAbandon(hit) && f.options.every(isAbandon)) {
-    return { auto: hit.id, basis: "Recommended action: end the task. Nothing has been built, so nothing is lost and the intent can be filed again." };
-  }
-  if (f.cls !== "routine") return owner("a product / owner-level question (not a routine engineering choice)");
-  const m = OWNER_WORDS.exec(`${f.text} ${hit.label} ${hit.consequence}`);
-  if (m) return owner(`touches an owner-level matter (${m[0].toLowerCase()})`);
-  return { auto: hit.id, basis: "Recommended routine, reversible choice inside the approved intent." };
+  // end_unbuilt_task is recognised from the SHAPE of the decision (the single path left ends the task; nothing was built) - the
+  // control plane builds the option list and knows whether work exists. It is the only thing a worker's block can lead to unasked.
+  if (isAbandon(hit) && f.options.every(isAbandon)) return { auto: hit.id, basis: ROUTINE_OPERATIONS.end_unbuilt_task };
+  if (f.operation && Object.hasOwn(ROUTINE_OPERATIONS, f.operation) && !isAbandon(hit)) return { auto: hit.id, basis: ROUTINE_OPERATIONS[f.operation] };
+  return owner("answering this changes the contract or the product (meaning, scope, requirements, behaviour, access, data, security): only the Owner decides");
 }
 
 /** Self-recovery: automatic retries of a failed step before a person is asked (delays in seconds, by attempt). */

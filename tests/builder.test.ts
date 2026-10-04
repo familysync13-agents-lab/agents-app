@@ -237,7 +237,7 @@ describe("decomposed execution", () => {
       for (const d of await openDecisions(db, id)) if (!seen.includes(d.kind)) seen.push(d.kind);
       return (await taskRow(db, id)).step === "await_acceptance";
     }, 900);
-    expect(seen).toEqual(["acceptance"]); // planning, plan commit, per-task gates and a correction: nobody was asked
+    expect(seen).toEqual(["contract_approval", "acceptance"]); // planning, plan commit, per-task gates and a correction: nobody was asked
     // classified complex by rule, planned by the planner; the first (incomplete) plan was refused mechanically and fixed
     const ps = await db.select().from(plans).where(eq(plans.taskId, id)).orderBy(plans.planVersion);
     expect(PlanBody.parse(ps[0]!.body)).toMatchObject({ shape: "complex", shape_reasons: [expect.stringMatching(/rule 2: 2 independent deliverables \(filtering, sorting\)/)], tasks: [] });
@@ -330,7 +330,7 @@ describe("BT13 defects found in the first real runs (regression)", () => {
       for (const d of await openDecisions(db, id)) seen.add(d.kind);
       return (await taskRow(db, id)).step === "await_acceptance";
     }, 900);
-    expect([...seen]).toEqual(["acceptance"]);
+    expect([...seen]).toEqual(["contract_approval", "acceptance"]);
     const [c] = await contractRows(db, id);
     expect(c!.calibration?.failsOnMain).toEqual(["AC1"]); // calibrated in the end, with the SAME authored check (no second Verifier session)
     expect(ex.log.filter((l) => l.op === "verifier").length).toBe(2); // check author + acceptance check only
@@ -345,7 +345,7 @@ describe("BT14 a PR that fell behind main is updated and merged without the owne
       for (const d of await openDecisions(db, id)) seen.add(d.kind);
       return (await taskRow(db, id)).step === "await_acceptance";
     });
-    expect([...seen]).toEqual(["acceptance"]); // no "approve on GitHub" request
+    expect([...seen]).toEqual(["contract_approval", "acceptance"]); // no "approve on GitHub" request
     expect([state.systemMerges, state.ownerMerges, state.updatedBranch]).toEqual([2, 0, 1]);
     const [c] = await contractRows(db, id);
     expect([c!.status, c!.prHead]).toEqual(["merged", "hc101u"]);
@@ -388,7 +388,7 @@ describe("BT15 a 'regression' on an earlier task whose work is not merged yet (f
       return (await taskRow(db, id)).step === "await_acceptance";
     });
     expect(state.updatedBranch).toBe(before + 1);
-    expect([...seen]).toEqual(["acceptance"]);
+    expect([...seen]).toEqual(["contract_approval", "acceptance"]);
     expect((await taskRow(db, id)).corrections).toBe(0);
   }, 60000);
 });

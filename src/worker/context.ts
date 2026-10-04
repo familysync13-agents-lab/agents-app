@@ -14,7 +14,7 @@ import {
 } from "@/db/schema";
 import { sha256 } from "@/domain/contract";
 import { canTransition } from "@/domain/lifecycle";
-import { classifyDecision } from "@/domain/policy";
+import { classifyDecision, type RoutineOperation } from "@/domain/policy";
 import { recordEvidence } from "./evidence";
 
 export type Task = typeof tasks.$inferSelect;
@@ -142,10 +142,10 @@ export class TaskCtx {
       stage: String(context.stage ?? ""),
       recommendation: d.recommendation,
       options: d.options ?? [],
-      cls: context.class,
+      // set only by the control-plane code raising the decision; a worker's block never carries one (steps-contract / steps-build)
+      operation: context.origin === "worker" ? null : ((context.operation as RoutineOperation | undefined) ?? null),
       taskTier: this.task.tier,
       hasWork: !!this.task.prNumber || !!this.task.headSha,
-      text: `${d.title} ${d.why}`,
     });
     if (c.auto !== null) return this.policyDecision(d, c.auto, c.basis);
     return this.insertDecision({ ...d, recommendation: null, context: { ...context, needsOwner: c.needsOwner, suggestion: d.recommendation ?? null } });

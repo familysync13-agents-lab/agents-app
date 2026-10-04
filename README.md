@@ -118,6 +118,20 @@ What the owner's acceptance rests on is a **decision record** computed from the 
 - The record is stored as an artifact (`decision-record`); its hash is in the DONE and ACCEPTED facts. Operator check:
   `decision_replay`.
 
+## Owner authority (SEC-TB-01)
+
+A worker may describe a blocker; nothing it writes can authorize the answer. Whether the Owner is needed is decided only from
+facts the control plane owns (`src/domain/policy.ts`):
+
+- **Routine operations** the control system decides itself are an explicit allowlist in code (`ROUTINE_OPERATIONS`). Today it holds
+  one: ending a task for which nothing was built and no other path is offered. Self-recovery retries and contract revisions that
+  leave the required outcome unchanged are also decided mechanically, by comparison with recorded facts.
+- **A worker's block** (`BLOCKED.json`) always goes to the Owner. Its `class`, `recommendation`, options and wording are shown or
+  recorded; none of them is read as authority. There is no keyword test.
+- **A contract that sets or changes the required outcome** is always approved by the Owner. Its tags, tier, traces and assumptions
+  are the drafter's and approve nothing. The control plane computes which requirements quote the Owner's intent (at least four
+  consecutive whole words) and which the drafter added, and shows that with the approval.
+
 ## Development
 
 ```

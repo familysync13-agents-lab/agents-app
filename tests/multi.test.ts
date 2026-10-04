@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { decisions, projects, transitions } from "@/db/schema";
 import { createTask, decideContract } from "@/server/owner";
-import { clock, contractRows, FakeExecutor, contractApproved, openDecisions, runUntil, setup, taskRow } from "./support/harness";
+import { clock, contractRows, FakeExecutor, contractApproved, openDecisions, runUntil, setup, taskRow, owner } from "./support/harness";
 import { fixtureHandlers as scenario } from "./support/fixture-handlers";
 
 const intent = (s: string) => `Let owners ${s} on the list index, without changing anything else.`;
@@ -15,13 +15,15 @@ describe("several tasks: batched approvals, serialized and stacked work", () => 
     const ex = new FakeExecutor(db, h);
     const a = await createTask(db, { projectId: project.id, title: "Sort lists", intent: intent("sort lists"), tier: "standard" });
     const b = await createTask(db, { projectId: project.id, title: "Filter lists", intent: intent("filter lists"), tier: "standard" });
-    // both contracts touch a trust boundary (tagged "security"), so both are escalated; the owner approves them in one sitting
+    // both contracts wait for the Owner (every new outcome does; these also touch a trust boundary); approved in one sitting
+    owner.approvesContracts = false;
     await runUntil(db, ex, clk, async () => (await taskRow(db, a)).step === "await_owner_contract" && (await taskRow(db, b)).step === "await_owner_contract");
     expect((await openDecisions(db, a))[0]!.why).toMatch(/trust boundary \(security\)/);
     for (const id of [a, b]) {
       const [c] = await contractRows(db, id);
       await decideContract(db, { taskId: id, contractId: c!.id, choice: "approve", note: "", sha256: c!.sha256 });
     }
+    owner.approvesContracts = true;
     await runUntil(db, ex, clk, async () => state.contractPrs.size > 0);
     expect(state.contractPrs.size).toBe(1); // one PR for both
     const [only] = [...state.contractPrs.values()];

@@ -144,7 +144,8 @@ export async function buildCollect(ctx: TaskCtx): Promise<void> {
       why: String(rec.would_resolve ?? rec.why ?? "The Builder may not make this decision (it holds engineering rights only)."),
       options: [...opts, { id: "abandon", label: "Abandon the task", consequence: "The task ends; nothing is merged." }],
       recommendation: typeof rec.recommendation === "string" ? rec.recommendation : null,
-      context: { stage: "build", artifactId: art, runId, criteria: rec.criteria ?? [], tried: rec.tried ?? null, class: kind === "BLOCKED_DECISION" ? (rec.class ?? null) : null },
+      // origin "worker": everything in this decision except its stage was written by the Builder. Its own label is kept for the record only.
+      context: { stage: "build", origin: "worker", artifactId: art, runId, criteria: rec.criteria ?? [], tried: rec.tried ?? null, workerClass: kind === "BLOCKED_DECISION" ? (rec.class ?? null) : null },
     };
     await ctx.openDecision(dec);
     return ctx.goto("await_decision", {});

@@ -34,7 +34,7 @@ describe("GT1 repository facts: the declarative proof of a static requirement", 
 });
 
 describe("GT1b verifiability at the Contract boundary: a blind check author sees only this contract (T9, live)", () => {
-  const must = (o: Record<string, unknown>) => ({ id: "AC4", type: "behavior", priority: "must", tags: [], verify: "blackbox", trace: { source: "intent", ref: "Let owners" }, given: "the owner signed in", when: "the owner opens /decisions", then: "each item shows its kind label", ...o });
+  const must = (o: Record<string, unknown>) => ({ id: "AC4", type: "behavior", priority: "must", tags: [], verify: "blackbox", trace: { source: "intent", ref: "on the list index" }, given: "the owner signed in", when: "the owner opens /decisions", then: "each item shows its kind label", ...o });
   const withMust = (o: Record<string, unknown>) => lint(v3({ criteria: [...CONTRACT("T9").criteria, V3_EXTRA.criterion, must(o)] }));
   it("refuses a must-criterion that depends on wording, fixtures or earlier state the check author cannot see", () => {
     // the criterion that looped six times on T9, as it was written
@@ -44,7 +44,7 @@ describe("GT1b verifiability at the Contract boundary: a blind check author sees
     expect(withMust({ then: "the page title is unchanged" }).problems.join()).toMatch(/AC4: "unchanged" requires something to stay as it is/);
     expect(withMust({ then: "each row keeps the existing wording" }).problems.join()).toMatch(/AC4: "existing wording" refers to wording it does not state/);
     expect(withMust({ then: "the title is the one established by an earlier task" }).problems.join()).toMatch(/AC4: "established by an earlier" defers to what an earlier task defined/);
-    expect(lint(v3({ constraints: [...V3_EXTRA.constraints, { id: "C5", kind: "interface", statement: "The export link stays the same.", verify: "blackbox", trace: { source: "intent", ref: "Let owners" } }] })).problems.join()).toMatch(/C5: "stays the same"/);
+    expect(lint(v3({ constraints: [...V3_EXTRA.constraints, { id: "C5", kind: "interface", statement: "The export link stays the same.", verify: "blackbox", trace: { source: "intent", ref: "on the list index" } }] })).problems.join()).toMatch(/C5: "stays the same"/);
   });
   it("accepts the same requirement stated as observable behaviour, a regression constraint, and what the gate or judgment proves", () => {
     expect(lint(v3())).toEqual({ ok: true, problems: [] }); // C1 "stays as it is" is a regression constraint: earlier checks prove it
@@ -67,7 +67,7 @@ describe("GT2 lint: structural musts and static constraints need a fact; experie
     expect(lint(v3({ constraints: [{ ...V3_EXTRA.constraints[2], advisory: undefined }] })).problems.join()).toMatch(/C3: a judgment-class constraint cannot decide acceptance: restate it in a provable form/);
     expect(lint(v3({ constraints: [{ ...V3_EXTRA.constraints[2], kind: "security" }] })).problems.join()).toMatch(/C3: a security constraint materially affects acceptance and must be provable/);
     expect(lint(v3({ constraints: [{ ...V3_EXTRA.constraints[0], advisory: true }] })).problems.join()).toMatch(/C1: "advisory" belongs to judgment-class constraints only/);
-    const exp = { id: "AC4", type: "experience", priority: "must", tags: [], statement: "Feels quick", refs: ["DESIGN"], verify: "judgment", evidence: "a recording", trace: { source: "intent", ref: "Let owners" } };
+    const exp = { id: "AC4", type: "experience", priority: "must", tags: [], statement: "Feels quick", refs: ["DESIGN"], verify: "judgment", evidence: "a recording", trace: { source: "intent", ref: "on the list index" } };
     expect(lint(v3({ criteria: [...CONTRACT("T9").criteria, exp] })).problems.join()).toMatch(/AC4: the gate verifies must-criteria of type behavior, threshold and structural only/);
   });
   it("a contract written before the Gate phase still loads and its constraints are simply unbound", () => {

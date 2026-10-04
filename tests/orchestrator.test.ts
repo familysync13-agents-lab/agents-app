@@ -24,8 +24,10 @@ describe("control loop (scripted executor)", () => {
     expect(c!.text).toBe(canonicalJson({ ...CONTRACT("T9"), intent_sha256: intentHash("Sort lists\nLet owners sort their lists alphabetically on the list index."), policies: ["policy.json", "project:reading-lists"] }));
     expect(c!.oracleJs).toContain("criterion");
     expect(state.builderPrompts[0]).toContain("Sort lists");
-    expect(await openDecisions(db, id)).toEqual([]); // a contract within the intent is not an owner decision
-    expect((await policyDecisions(db, id)).map((d) => [d.kind, d.choice])).toEqual([["contract_approval", "approve"]]);
+    expect(await openDecisions(db, id)).toEqual([]);
+    // SEC-TB-01: a contract that sets what will be built is approved by the Owner (the test's stand-in), never by the control system
+    expect((await policyDecisions(db, id)).filter((d) => d.kind === "contract_approval")).toEqual([]);
+    expect((await db.select().from(decisions).where(eq(decisions.taskId, id))).filter((d) => d.kind === "contract_approval").map((d) => [d.choice, d.decidedVia])).toEqual([["approve", "app"]]);
 
     await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "IN_PROGRESS");
     // the mutation test is critical-tier depth: raise the tier of the built task to exercise it in this end-to-end run
@@ -87,7 +89,7 @@ describe("control loop (scripted executor)", () => {
     const clk = clock();
     const { h } = scenario({ draftBlocked: true });
     const ex = new FakeExecutor(db, h);
-    const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists somehow, whatever makes sense.", tier: "standard" });
+    const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists somehow on the list index, whatever makes sense.", tier: "standard" });
     await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "BLOCKED_DECISION");
     const [d] = await openDecisions(db, id);
     expect(d!.kind).toBe("block");
@@ -106,7 +108,7 @@ describe("control loop (scripted executor)", () => {
     const clk = clock();
     const { h } = scenario({ draftBlockedTwice: true });
     const ex = new FakeExecutor(db, h);
-    const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists somehow.", tier: "standard" });
+    const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists somehow on the list index.", tier: "standard" });
     await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "BLOCKED_DECISION");
     const [d1] = await openDecisions(db, id);
     await decideBlock(db, { decisionId: d1!.id, choice: "o1", note: "" });
@@ -305,7 +307,7 @@ describe("control loop (scripted executor)", () => {
       for (const d of await openDecisions(db, id)) seen.add(`asked:${d.kind}`);
       return await contractApproved(db, id);
     });
-    expect([...seen]).toEqual(["PROPOSED"]); // never blocked, nobody asked
+    expect([...seen]).toEqual(["PROPOSED", "asked:contract_approval"]); // never blocked; the Owner is asked only for the contract itself
     expect((await policyDecisions(db, id)).filter((x) => (x.context as { stage?: string }).stage === "recovery").length).toBe(1);
     expect((await taskRow(db, id)).corrections).toBe(0);
   });

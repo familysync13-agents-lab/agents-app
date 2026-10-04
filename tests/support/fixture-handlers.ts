@@ -12,7 +12,7 @@ export const CONTRACT = (key: string) => ({
   open_questions: [],
   interface: { ui: 'GET /lists: button "Sort A–Z"' },
   criteria: [
-    { id: "AC1", type: "behavior", priority: "must", tags: [], given: "alice with lists B, A", when: "she clicks Sort A–Z", then: "A is listed before B", verify: "blackbox", trace: { source: "intent", ref: "Let owners" } },
+    { id: "AC1", type: "behavior", priority: "must", tags: [], given: "alice with lists B, A", when: "she clicks Sort A–Z", then: "A is listed before B", verify: "blackbox", trace: { source: "intent", ref: "on the list index" } },
     { id: "AC2", type: "experience", priority: "should", tags: [], statement: "Feels quick", refs: ["DESIGN"], trace: { source: "necessary", ref: "AC1: sorting must not feel slow" } },
   ],
   canary_routes: ["/"],
@@ -27,12 +27,12 @@ export const V3_EXTRA = {
   constraints: [
     { id: "C1", kind: "regression", statement: "Everything else on the list index stays as it is.", verify: "blackbox", trace: { source: "project", ref: "earlier accepted contracts" } },
     { id: "C2", kind: "prohibited", statement: "No database migration is added.", verify: "static", fact: { kind: "unchanged", paths: ["drizzle/**"] }, trace: { source: "necessary", ref: "AC1: sorting is a view of existing data" } },
-    { id: "C3", kind: "design", statement: "Nothing is estimated or animated.", verify: "judgment", advisory: true, trace: { source: "intent", ref: "Let owners" } },
+    { id: "C3", kind: "design", statement: "Nothing is estimated or animated.", verify: "judgment", advisory: true, trace: { source: "intent", ref: "on the list index" } },
     { id: "C4", kind: "security", statement: "The sort parameter is never reflected unescaped.", verify: "blackbox", trace: { source: "necessary", ref: "AC1: the sort choice travels in the URL" } },
   ],
 };
 
-export function fixtureHandlers(opts: { arbiterQuotaOnce?: boolean; gateAlwaysFails?: boolean; repairUnchangedOnce?: boolean; v3?: { staticFailsFirst?: boolean }; verifierLegacy?: boolean; verifierSkips?: string[]; judgmentNo?: boolean; verifierExtra?: Record<string, unknown>[]; verifierBlocked?: { class: string; reason: string }; repro?: "reproduced" | "not_reproduced" | "none"; draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: (p: Record<string, unknown>) => Record<string, unknown>; localCode?: (p: Record<string, unknown>) => Record<string, unknown>; verdicts?: (items: { id: string }[]) => { id: string; pass: boolean; reason: string }[] } = {}) {
+export function fixtureHandlers(opts: { builderBlocks?: Record<string, unknown>[]; arbiterQuotaOnce?: boolean; gateAlwaysFails?: boolean; repairUnchangedOnce?: boolean; v3?: { staticFailsFirst?: boolean }; verifierLegacy?: boolean; verifierSkips?: string[]; judgmentNo?: boolean; verifierExtra?: Record<string, unknown>[]; verifierBlocked?: { class: string; reason: string }; repro?: "reproduced" | "not_reproduced" | "none"; draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: (p: Record<string, unknown>) => Record<string, unknown>; localCode?: (p: Record<string, unknown>) => Record<string, unknown>; verdicts?: (items: { id: string }[]) => { id: string; pass: boolean; reason: string }[] } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -56,6 +56,7 @@ export function fixtureHandlers(opts: { arbiterQuotaOnce?: boolean; gateAlwaysFa
     mainN: 0,
     updatedBranch: 0,
     oraclesAuthored: 0,
+    reports: 0,
     verifierPrompts: [] as string[],
     volKey: new Map<string, string>(),
     taskPrs: new Map<number, { key: string; head: string; n: number }>(),
@@ -201,7 +202,13 @@ export function fixtureHandlers(opts: { arbiterQuotaOnce?: boolean; gateAlwaysFa
         state.plansServed++;
         if (pl !== null) out[".bakeoff/plan.json"] = b64(JSON.stringify(pl));
       }
-      if (paths.includes(".bakeoff/REPORT.md")) out[".bakeoff/REPORT.md"] = b64("# Report\nImplemented sorting.");
+      if (paths.includes(".bakeoff/REPORT.md")) {
+        state.reports++;
+        // builderBlocks[i] is what the Builder writes instead of its report on correction i+1 (a PR and a built head already exist)
+        const blk = opts.builderBlocks?.[state.reports - 2];
+        if (blk) out[".bakeoff/BLOCKED.json"] = b64(JSON.stringify(blk));
+        else out[".bakeoff/REPORT.md"] = b64("# Report\nImplemented sorting.");
+      }
       if (paths.includes("out/findings.json") && /^agents-vw-0-q/.test(vol)) {
         const items = JSON.parse(Buffer.from(state.verifierFiles.get(vol)!["items.json"]!, "base64").toString()) as { id: string }[];
         out["out/findings.json"] = b64(JSON.stringify({ verdicts: opts.verdicts ? opts.verdicts(items) : items.map((x) => ({ id: x.id, pass: true, reason: "faithful" })) }));

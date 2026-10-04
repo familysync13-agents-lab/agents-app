@@ -15,7 +15,7 @@ import { CONTRACT, fixtureHandlers as scenario } from "./support/fixture-handler
 const INTENT = "Sort lists\nLet owners sort their lists alphabetically on the list index.";
 const v2 = (over: Record<string, unknown> = {}) => ({ ...CONTRACT("T9"), intent_sha256: intentHash(INTENT), policies: ["policy.json"], ...over }) as Record<string, unknown>;
 const lint = (c: unknown, previous: unknown[] = []) => lintContract(c, { id: "T9", tier: "standard" }, { intent: INTENT, previous });
-const crit = (over: Record<string, unknown>) => ({ id: "AC1", type: "behavior", priority: "must", tags: [], given: "g", when: "w", then: "t", verify: "blackbox", trace: { source: "intent", ref: "Let owners" }, ...over });
+const crit = (over: Record<string, unknown>) => ({ id: "AC1", type: "behavior", priority: "must", tags: [], given: "g", when: "w", then: "t", verify: "blackbox", trace: { source: "intent", ref: "on the list index" }, ...over });
 const big = (n: number, extra: (i: number) => Record<string, unknown> = () => ({})) => v2({ criteria: Array.from({ length: n }, (_, i) => crit({ id: `AC${i + 1}`, ...extra(i) })) }) as unknown as Contract;
 const SHA = "a".repeat(64);
 const plan = (c: Contract, tasks: unknown[], integration: string[] = [], over: Record<string, unknown> = {}) => ({ contract: c.id, contract_version: c.version, contract_sha256: SHA, plan_version: 1, shape: "complex", shape_reasons: [], tasks, integration, ...over });
@@ -72,14 +72,14 @@ describe("contract v2: fields, lint, traceability", () => {
   });
 
   it("AT2 experience: needs an evidence requirement, may not disguise behaviour, and stays blocked as MUST until the gate can prove it", () => {
-    const exp = (over: Record<string, unknown>) => v2({ criteria: [crit({}), { id: "AC2", type: "experience", priority: "should", tags: [], statement: "Feels calm", refs: ["DESIGN"], trace: { source: "intent", ref: "Let owners" }, ...over }] });
+    const exp = (over: Record<string, unknown>) => v2({ criteria: [crit({}), { id: "AC2", type: "experience", priority: "should", tags: [], statement: "Feels calm", refs: ["DESIGN"], trace: { source: "intent", ref: "on the list index" }, ...over }] });
     expect(lint(exp({ verify: "judgment" })).problems.join()).toMatch(/AC2: a judgment-class criterion must state its evidence requirement/);
     expect(lint(exp({ verify: "judgment", evidence: "screenshots of the list at 3 widths" })).ok).toBe(true);
     expect(lint(exp({ given: "a", when: "b", then: "c" })).problems.join()).toMatch(/AC2: this is ordinary behaviour or a threshold/);
     expect(lint(exp({ target: "under 200 ms" })).problems.join()).toMatch(/do not label it "experience"/);
     // representable, but NOT activated: the current gate cannot verify it, so nothing is weakened (UNKNOWN can never satisfy a must)
     expect(lint(exp({ priority: "must", verify: "judgment", evidence: "e" })).problems.join()).toMatch(/AC2: the gate verifies must-criteria of type behavior, threshold and structural only/);
-    expect(lint(v2({ criteria: [crit({}), { id: "AC2", type: "structural", priority: "must", tags: [], rule: "r", check: "c", verify: "static", trace: { source: "intent", ref: "Let owners" } }] })).problems.join()).toMatch(/AC2: a structural must-criterion needs a valid "fact"/); // Gate phase: a structural must is allowed with a repository fact
+    expect(lint(v2({ criteria: [crit({}), { id: "AC2", type: "structural", priority: "must", tags: [], rule: "r", check: "c", verify: "static", trace: { source: "intent", ref: "on the list index" } }] })).problems.join()).toMatch(/AC2: a structural must-criterion needs a valid "fact"/); // Gate phase: a structural must is allowed with a repository fact
   });
 
   it("criterion ids are stable across versions: no reuse of a retired id, no id changing into another requirement", () => {
@@ -97,7 +97,7 @@ describe("contract v2: fields, lint, traceability", () => {
     expect(contractEscalation(facts(v2({ assumptions: a(CALIBRATION.maxAssumptions) })))).toEqual([]);
     expect(contractEscalation(facts(v2({ assumptions: a(CALIBRATION.maxAssumptions + 1) }))).join()).toMatch(/4 assumptions were needed/);
     expect(contractEscalation(facts(v2({ assumptions: a(1, false) }))).join()).toMatch(/not reversible \(A1\)/);
-    const nec = (k: number) => v2({ criteria: [crit({}), ...Array.from({ length: 3 }, (_, i) => crit({ id: `AC${i + 2}`, trace: i < k ? { source: "necessary", ref: "AC1: needed" } : { source: "intent", ref: "Let owners" } }))] });
+    const nec = (k: number) => v2({ criteria: [crit({}), ...Array.from({ length: 3 }, (_, i) => crit({ id: `AC${i + 2}`, trace: i < k ? { source: "necessary", ref: "AC1: needed" } : { source: "intent", ref: "on the list index" } }))] });
     expect(contractEscalation(facts(nec(1)))).toEqual([]); // 1 of 4
     expect(contractEscalation(facts(nec(2))).join()).toMatch(/2 of 4 must-criteria were added by the drafter/);
   });
@@ -109,7 +109,7 @@ describe("contract v2: fields, lint, traceability", () => {
     const same = Contract.parse(v2({}));
     const retraced = Contract.parse(JSON.parse(JSON.stringify(v2({})).replace('"ref":"Let owners"', '"ref":"sort their lists"')));
     expect(outcomeChanged(same, retraced)).toBe(false);
-    for (const change of [{ non_goals: ["No drag and drop"] }, { scope: { summary: "s", paths: ["src/**"] } }, { interface: { ui: "other" } }, { constraints: [{ id: "C1", kind: "prohibited", statement: "s", verify: "static", trace: { source: "intent", ref: "Let owners" } }] }])
+    for (const change of [{ non_goals: ["No drag and drop"] }, { scope: { summary: "s", paths: ["src/**"] } }, { interface: { ui: "other" } }, { constraints: [{ id: "C1", kind: "prohibited", statement: "s", verify: "static", trace: { source: "intent", ref: "on the list index" } }] }])
       expect(outcomeChanged(same, Contract.parse(v2(change)))).toBe(true);
   });
 });

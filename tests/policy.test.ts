@@ -64,17 +64,19 @@ describe("control loop under the V1 escalation policy", () => {
     return { db, clk, state, ex, id };
   };
 
-  it("intent -> contract -> build -> DONE with no owner action before final acceptance; the approval is in the audit trail", async () => {
+  it("intent -> contract (Owner approves it) -> build -> DONE with no other owner action before final acceptance", async () => {
     const { db, clk, state, ex, id } = await start({});
     const asked: string[] = [];
     await runUntil(db, ex, clk, async () => {
       for (const d of await openDecisions(db, id)) if (!asked.includes(d.kind)) asked.push(d.kind);
       return (await taskRow(db, id)).step === "await_acceptance";
     });
-    expect(asked).toEqual(["acceptance"]); // the only thing the owner is ever asked
-    const pol = await policyDecisions(db, id);
-    expect(pol.map((d) => [d.kind, d.choice, d.status])).toEqual([["contract_approval", "approve", "decided"]]);
-    expect(pol[0]!.note).toMatch(/within the recorded intent/);
+    expect(asked).toEqual(["contract_approval", "acceptance"]); // the Owner approves what will be built, and the result (SEC-TB-01)
+    expect((await policyDecisions(db, id)).filter((d) => d.kind === "contract_approval")).toEqual([]); // never approved by the control system
+    const { decisions: decs } = await import("@/db/schema");
+    const { eq: eqq } = await import("drizzle-orm");
+    const ca = (await db.select().from(decs).where(eqq(decs.taskId, id))).filter((d) => d.kind === "contract_approval");
+    expect(ca.map((d) => [d.choice, d.status, d.decidedVia])).toEqual([["approve", "decided", "app"]]);
     expect(state.systemMerges).toBe(1);
     expect(state.ownerMerges).toBe(0);
     expect(ex.log.some((l) => l.op === "transport" && (l.params.ops as { op: string }[])[0]!.op === "refresh_pr")).toBe(false);

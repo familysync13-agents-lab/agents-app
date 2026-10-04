@@ -255,7 +255,7 @@ describe("LW7 the local coder in production", () => {
       for (const d of await openDecisions(db, id)) if (!seen.includes(d.kind)) seen.push(d.kind);
       return (await taskRow(db, id)).step === "await_acceptance";
     }, 900);
-    expect(seen).toEqual(["acceptance"]);
+    expect(seen).toEqual(["contract_approval", "acceptance"]);
     const rs = (await db.select().from(runs).where(eq(runs.taskId, id)).orderBy(runs.id)).filter((r) => r.purpose === "build");
     expect(rs.map((r) => [r.worker, r.model, r.taskClass, r.planTask, r.outcome])).toEqual([["local-coder", CODER, "small_code", "T9.a", "report"], ["claude-code", "opus", "build", "T9.b", "report"]]);
     expect(rs[0]).toMatchObject({ provider: "ollama-host", routeReason: expect.stringMatching(/qualified for small_code: 20 samples, 100% agreement/), contextBytes: 7000, durationMs: 21000 });

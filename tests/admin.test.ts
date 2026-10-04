@@ -39,7 +39,7 @@ describe("audited admin operations", () => {
     const clk = clock();
     const { h } = scenario({ draftBlocked: true });
     const ex = new FakeExecutor(db, h);
-    const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists somehow.", tier: "standard" });
+    const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists somehow on the list index.", tier: "standard" });
     await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "BLOCKED_DECISION");
     const [d] = await openDecisions(db, id);
     await decideBlock(db, { decisionId: d!.id, choice: "o1", note: "" });

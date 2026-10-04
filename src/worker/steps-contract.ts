@@ -109,7 +109,8 @@ export async function draftCollect(ctx: TaskCtx): Promise<void> {
       options: [...options, { id: "abandon", label: "Abandon the task", consequence: "Nothing is built." }],
       // (a worker option that ends the task is folded into the built-in abandon: see workerOptions)
       recommendation: typeof rec.recommendation === "string" ? rec.recommendation : null,
-      context: { stage: "contract", artifactId: art, runId, class: rec.class ?? null },
+      // origin "worker": everything in this decision except its stage was written by the drafter. Its own label is kept for the record only.
+      context: { stage: "contract", origin: "worker", artifactId: art, runId, workerClass: rec.class ?? null },
     };
     await ctx.openDecision(dec);
     return ctx.goto("await_decision", {});

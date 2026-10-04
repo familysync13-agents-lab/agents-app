@@ -19,11 +19,10 @@ const RULES = `Rules
    it would require a product, design, architecture or security decision the contract does not make, do NOT guess and do NOT
    implement around it. Instead write /work/${OUTCOME_DIR}/BLOCKED.json:
    {"type": "BLOCKED:DECISION" or "BLOCKED:EVIDENCE", "criteria": [...], "unknown": "...", "tried": "...",
-    "would_resolve": "...", "options": ["..."], "recommendation": "<one of the options, verbatim>",
-    "class": "routine" or "owner"}
-   class "routine" = a reversible choice inside the approved contract with no effect on product behaviour, scope, security,
-   permissions or cost (your recommended option is then applied without asking anyone); everything else is "owner".
-   and stop. Correct blocking is counted as a success; guessing is not.
+    "would_resolve": "...", "options": ["..."], "recommendation": "<one of the options, verbatim>"}
+   and stop. Every block is answered by the owner - your recommendation is a suggestion shown to them, never applied on its own.
+   So do not block for engineering choices that are yours (how to implement what the contract already requires): make those
+   yourself. Correct blocking is counted as a success; guessing is not.
 4. Keep the Dockerfile \`check\` stage passing (lint, type-check, automated tests) and write automated tests for your work.
 5. Server-side secrets (for example V0_SECRET_CANARY) must never reach the browser in any form.
 6. Do not commit dependencies or build output (keep .gitignore correct). Keep the repository runnable from a clean checkout.
@@ -176,10 +175,8 @@ ${CONTRACT_V2_RULES}
 - If the intent is ambiguous or contradictory, or turning it into criteria requires a product, design, security or architecture
   decision the owner has not made, do NOT guess: write /work/${OUTCOME_DIR}/BLOCKED.json instead:
   {"type": "BLOCKED:DECISION", "unknown": "<the decision needed, one sentence>", "why": "<why it cannot be decided by you>",
-   "options": [{"label": "...", "consequence": "..."}], "recommendation": "<option label, verbatim>", "class": "routine" | "owner"}
-  class "routine" = a reversible choice inside the recorded intent with no effect on product behaviour, scope, security,
-  permissions or cost (your recommended option is then applied without asking the owner); everything else is "owner".
-  Prefer deciding routine matters yourself and stating the choice in the contract instead of blocking.
+   "options": [{"label": "...", "consequence": "..."}], "recommendation": "<option label, verbatim>"}
+  Every block is answered by the owner; your recommendation is a suggestion shown to them, never applied on its own.
   An option whose choice means THIS task must end here (for example "build it in another project/repository and file the intent
   there") must carry "action": "abandon": choosing it ends the task at once. Never ask the owner a second time to confirm a
   decision already made: if a decision already given means no contract can be written for this task, write BLOCKED.json with the

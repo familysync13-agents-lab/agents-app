@@ -154,7 +154,6 @@ export const VERIFY_FOR: Record<Criterion["type"], readonly VerifyClass[]> = {
  */
 export const GATED_MUST_TYPES: readonly Criterion["type"][] = ["behavior", "threshold", "structural"];
 
-const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 export const intentHash = (intent: string) => sha256(intent);
 
 export interface LintResult {
@@ -208,15 +207,14 @@ export function lintContract(raw: unknown, expect: { id: string; tier: "standard
 /** Contract spec v2 rules for a contract being WRITTEN: traceability, verification class, assumptions, constraints, stable ids. */
 function lintV2(c: Contract, ctx: V2Context): string[] {
   const problems: string[] = [];
-  const intent = norm(ctx.intent);
   if (c.intent_sha256 !== intentHash(ctx.intent)) problems.push("intent_sha256 must be the hash of the recorded owner intent");
   const policies = c.policies ?? [];
   if (policies.length === 0) problems.push("policies must reference the applicable policies by id (references, never copies)");
   const acIds = new Set(c.criteria.map((k) => k.id));
   const trace = (id: string, t: Trace | undefined) => {
     if (!t) return problems.push(`${id}: trace is required (intent | policy | project | necessary) - a requirement without a source is not allowed`);
-    if (t.source === "intent" && (norm(t.ref).length < 8 || !intent.includes(norm(t.ref))))
-      problems.push(`${id}: an intent trace must quote the owner's intent verbatim (at least 8 characters of it)`);
+    if (t.source === "intent" && !quotesIntent(t.ref, ctx.intent))
+      problems.push(`${id}: an intent trace must quote the owner's intent verbatim: at least ${MIN_QUOTE_WORDS} consecutive whole words of it (a fragment is not a source)`);
     if (t.source === "policy" && !policies.some((p) => t.ref === p || t.ref.startsWith(`${p}:`) || t.ref.startsWith(`${p} `)))
       problems.push(`${id}: a policy trace must name one of the referenced policies (${policies.join(", ") || "none"})`);
     if (t.source === "necessary") {
@@ -299,6 +297,38 @@ export function outcomeOf(c: Contract) {
     constraints: (c.constraints ?? []).map(strip),
     canary_routes: c.canary_routes,
   });
+}
+
+/*
+ * Authority of a requirement (SEC-TB-01). Computed by the control plane from the contract and the recorded intent - never taken
+ * from the drafter's word:
+ *   quoted - its trace quotes at least MIN_QUOTE_WORDS consecutive whole words of the Owner's intent;
+ *   added  - everything else: "necessary", "project" and "policy" traces, and every assumption. These are the drafter's decisions.
+ * A quote shows where a requirement CLAIMS to come from; it does not prove the requirement says what the Owner meant. So this
+ * classification never approves anything: it tells the Owner, who approves every contract that sets or changes the outcome,
+ * which requirements to read first.
+ */
+export const MIN_QUOTE_WORDS = 4;
+const words = (s: string) => s.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+export function quotesIntent(ref: string, intent: string): boolean {
+  const r = words(ref);
+  const i = words(intent);
+  if (r.length < Math.min(MIN_QUOTE_WORDS, i.length)) return false;
+  for (let k = 0; k + r.length <= i.length; k++) if (r.every((w, j) => i[k + j] === w)) return true;
+  return false;
+}
+export function requirementAuthority(c: Contract, intent: string): { quoted: string[]; added: { id: string; why: string }[]; summary: string } {
+  const quoted: string[] = [];
+  const added: { id: string; why: string }[] = [];
+  const of = (id: string, t: Trace | undefined) => {
+    if (t?.source === "intent" && quotesIntent(t.ref, intent)) quoted.push(id);
+    else added.push({ id, why: !t ? "no source" : t.source === "necessary" ? `drafter: needed for ${t.ref.slice(0, 80)}` : t.source === "intent" ? "does not quote your intent" : `${t.source}: ${t.ref.slice(0, 80)}` });
+  };
+  for (const k of c.criteria) of(k.id, k.trace);
+  for (const x of c.constraints ?? []) of(x.id, x.trace);
+  for (const a of c.assumptions ?? []) added.push({ id: a.id, why: `assumption: ${a.chosen.slice(0, 100)}` });
+  const summary = `Traced to a quote of your intent: ${quoted.join(", ") || "none"}. Added by the drafter: ${added.map((x) => `${x.id} (${x.why})`).join("; ") || "none"}.`;
+  return { quoted, added, summary };
 }
 
 /** Did the REQUIRED OUTCOME change between two versions? (Approval authority depends on it; the version number does not.) */
