@@ -114,7 +114,7 @@ describe("GT5 evidence packages count judged constraints and name the ones that 
     const p = pkg(base);
     expect(p.status).toBe("complete");
     expect(p.body.constraints.map((c) => [c.id, c.counted, c.status])).toEqual([["C1", true, "verified"], ["C2", true, "verified"], ["C3", false, "not_verified"], ["C4", true, "verified"]]);
-    expect(p.body.constraints[2]!.reason).toMatch(/decided by independent judgment, not by the gate/);
+    expect(p.body.constraints[2]!.reason).toMatch(/awaiting independent judgment/);
     expect(p.body.handoff.decision).toMatchObject({ constraints_counted: 3, constraints_not_counted: ["C3"] });
     expect(p.body.handoff.verifier.judgment_constraints).toEqual(["C3"]);
   });
@@ -154,13 +154,13 @@ describe("GT6 end to end: a contract with a structural must and constraints of e
     // evidence: constraints and scans are rows like criteria; the final package counts the judged constraints
     const ev = await db.select().from(evidence).where(eq(evidence.taskId, id)).orderBy(asc(evidence.seq));
     const h2 = ev.filter((r) => r.commitSha === "h2");
-    expect(h2.filter((r) => r.criterionId?.startsWith("C")).map((r) => [r.criterionId, r.status, r.checkName])).toEqual([["C1", "verified", "regression-set"], ["C2", "verified", "static:fact"], ["C3", "unknown", "judgment"], ["C4", "verified", "oracle:oracle/T9/check.mjs"]]);
+    expect(h2.filter((r) => r.kind === "criterion" && r.criterionId?.startsWith("C")).map((r) => [r.criterionId, r.status, r.checkName])).toEqual([["C1", "verified", "regression-set"], ["C2", "verified", "static:fact"], ["C3", "unknown", "judgment"], ["C4", "verified", "oracle:oracle/T9/check.mjs"]]);
     expect(h2.filter((r) => r.kind === "scan").map((r) => [r.subject, r.status])).toEqual([["scan:secrets", "verified"], ["scan:dependencies", "partially_verified"], ["scan:static-analysis", "verified"]]);
     const ps = await db.select().from(evidencePackages).where(eq(evidencePackages.taskId, id)).orderBy(asc(evidencePackages.id));
     expect(ps.map((p) => [p.headSha, p.stage, p.status])).toEqual([["h1", "gate", "incomplete"], ["h2", "gate", "complete"], ["h2", "done", "complete"]]);
     const body = JSON.parse((await db.select().from(artifacts).where(eq(artifacts.id, ps.at(-1)!.artifactId)))[0]!.content);
     expect(body.criteria.filter((k: { priority: string }) => k.priority === "must").map((k: { id: string; status: string }) => [k.id, k.status])).toEqual([["AC1", "verified"], ["AC3", "verified"]]);
-    expect(body.constraints.map((k: { id: string; counted: boolean }) => [k.id, k.counted])).toEqual([["C1", true], ["C2", true], ["C3", false], ["C4", true]]);
+    expect(body.constraints.map((k: { id: string; counted: boolean }) => [k.id, k.counted])).toEqual([["C1", true], ["C2", true], ["C3", true], ["C4", true]]); // C3: decided by the independent Verifier's judgment (Verifier phase)
     expect(body.scans.map((s: { scanner: string; status: string }) => [s.scanner, s.status])).toEqual([["dependencies", "partially_verified"], ["secrets", "verified"], ["static-analysis", "verified"]]);
     expect(body.handoff.verifier.judgment_constraints).toEqual(["C3"]);
     void tasks;

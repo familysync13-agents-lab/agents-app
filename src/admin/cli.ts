@@ -7,6 +7,7 @@ import { createDb } from "@/db/client";
 import { activity, qualificationBatches, qualificationRecords, tasks } from "@/db/schema";
 import type { SemanticClass } from "@/domain/router";
 import { runAdmin } from "@/server/admin";
+import { verifierCalibration } from "@/worker/steps-verify";
 import { assemblePackage, auditEvidence, replayEvidence } from "@/worker/evidence";
 import { proposeIntent } from "@/server/proposals";
 import { routeTable } from "@/worker/shadow";
@@ -34,6 +35,8 @@ async function main() {
     for (const id of ids) { const a = await auditEvidence(db, id); res.push({ task: id, ok: a.ok, rows: a.chain.rows, sealed: a.chain.sealed, backfilled: a.backfilled, chain_head: a.chain.head?.slice(0, 16) ?? null, problems: a.chain.problems.slice(0, 3), artifacts_bad: a.artifacts.bad, artifacts_missing: a.artifacts.missing }); }
     out({ ok: res.every((r) => r.ok), tasks: res });
   }
+  // Verifier calibration: how its findings stood up to the control plane's own reproduction, and how much it covered (read-only)
+  if (op === "verifier_calibration") out({ ok: true, ...(await verifierCalibration(db)) });
   if (op === "evidence_replay") out({ ok: true, ...(await replayEvidence(db, (req as { taskId?: number }).taskId)) });
   if (op === "evidence_package") {
     const r = req as { taskId: number; head?: string; full?: boolean };

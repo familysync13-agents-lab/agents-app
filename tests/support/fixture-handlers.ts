@@ -32,7 +32,7 @@ export const V3_EXTRA = {
   ],
 };
 
-export function fixtureHandlers(opts: { v3?: { staticFailsFirst?: boolean }; draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: (p: Record<string, unknown>) => Record<string, unknown>; localCode?: (p: Record<string, unknown>) => Record<string, unknown>; verdicts?: (items: { id: string }[]) => { id: string; pass: boolean; reason: string }[] } = {}) {
+export function fixtureHandlers(opts: { v3?: { staticFailsFirst?: boolean }; verifierLegacy?: boolean; verifierSkips?: string[]; judgmentNo?: boolean; verifierExtra?: Record<string, unknown>[]; verifierBlocked?: { class: string; reason: string }; repro?: "reproduced" | "not_reproduced" | "none"; draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: (p: Record<string, unknown>) => Record<string, unknown>; localCode?: (p: Record<string, unknown>) => Record<string, unknown>; verdicts?: (items: { id: string }[]) => { id: string; pass: boolean; reason: string }[] } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -49,6 +49,7 @@ export function fixtureHandlers(opts: { v3?: { staticFailsFirst?: boolean }; dra
     drafts: 0,
     builderPrompts: [] as string[],
     verifierFindingsServed: 0,
+    reproRuns: 0,
     smokeRuns: 0,
     key: "T9",
     contractPrs: new Map<number, { head: string; refreshed: boolean; files: string[]; merged?: string }>(),
@@ -201,9 +202,20 @@ export function fixtureHandlers(opts: { v3?: { staticFailsFirst?: boolean }; dra
       } else if (paths.includes("out/findings.json")) {
         state.verifierFindingsServed++;
         const high = opts.verifierHigh && state.verifierFindingsServed === 1;
+        const ids = opts.complex ? ["AC1", "AC2", "AC3"] : opts.v3 ? ["AC1", "C1", "C4"] : ["AC1"];
+        const finding = { id: "F1", severity: "high", class: "implementation", criterion: "T9:AC1", title: "Sort ignores case", expected: "a before B", observed: "B before a", repro: ["open /lists"], reproduced: 2 };
         out["out/findings.json"] = b64(
-          JSON.stringify({ findings: high ? [{ severity: "high", criterion: "T9:AC1", title: "Sort ignores case", expected: "a before B", observed: "B before a", repro: ["open /lists"] }] : [], checked: ["AC1"] }),
+          opts.verifierLegacy
+            ? JSON.stringify({ findings: high ? [{ severity: "high", criterion: "T9:AC1", title: "Sort ignores case", expected: "a before B", observed: "B before a", repro: ["open /lists"] }] : [], checked: ["AC1"] })
+            : JSON.stringify({
+                schema: 2,
+                coverage: ids.filter((id) => !(opts.verifierSkips ?? []).includes(id)).map((id) => ({ criterion: id, verdict: high && id === "AC1" ? "violated" : "conforms", how: "opened /lists, clicked Sort A-Z, compared the order" })),
+                judgments: opts.v3 ? [{ id: "C3", verdict: opts.judgmentNo && state.verifierFindingsServed === 1 ? "not_satisfied" : "satisfied", evidence: "Opened /lists three times: values were identical and static, no animation or estimate was shown.", reason: opts.judgmentNo && state.verifierFindingsServed === 1 ? "a progress animation is shown" : "only recorded values" }] : [],
+                findings: [...(high ? [finding] : []), ...(opts.verifierExtra ?? [])],
+                blocked: opts.verifierBlocked ?? null,
+              }),
         );
+        if (paths.includes("out/repro.mjs") && high && !opts.verifierLegacy && opts.repro !== "none") out["out/repro.mjs"] = b64(`// REPRO\nimport { chromium } from 'playwright';\nconsole.log(JSON.stringify({ criterion: 'F1', result: 'x' }));\n`);
       }
       if (paths.includes(".bakeoff/mutants.json"))
         out[".bakeoff/mutants.json"] = b64(
@@ -414,6 +426,10 @@ export function fixtureHandlers(opts: { v3?: { staticFailsFirst?: boolean }; dra
     apply_patch: () => ({ ok: true }),
     // mutant 0 is caught by the oracle, mutant 1 survives (the bake-off's title/author swap)
     oracle_run: (p) => {
+      if (String(p.oracle_js).startsWith("// REPRO")) {
+        state.reproRuns++;
+        return { results: [{ criterion: "F1", result: opts.repro === "not_reproduced" ? "pass" : "fail", detail: opts.repro === "not_reproduced" ? "A is listed before B" : "B before a" }] };
+      }
       if (!/m[0-9]$/.test(String(p.preview))) {
         // smoke run against main (feature absent): a correct check fails AC1; a defective one crashes
         state.smokeRuns++;

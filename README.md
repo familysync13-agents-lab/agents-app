@@ -79,6 +79,28 @@ class (Contract spec v2 section 5). The task record binds each must-criterion an
 
 Tests: `python3 gate/tests/test_gate.py` (the gate's own rules) and `tests/gate.test.ts`.
 
+## Verifier
+
+The independent Verifier (a different vendor, blind to the code and to the Builder's narrative) checks a preview of the exact head
+after the gate passed and the evidence package of that head is complete. Its result is structured and its consequences are
+computed (`src/domain/verification.ts`), never taken from its wording:
+
+- **Coverage** by id: one verdict (conforms / violated / not checked) per must-criterion and observable constraint.
+- **Judgment** with captured evidence for requirements whose proof is judgment (experience criteria, judgment-class constraints).
+  A judgment-class constraint is decided by it; a judgment without evidence is "cannot judge".
+- **Findings** tied to a criterion id (or none), with a class: only `implementation` is the Builder's; `check`, `infrastructure`,
+  `evidence` and `control_plane` are recorded as failures of the verification and never sent to the Builder.
+- **Materiality**: a finding sends the work back only when it is an implementation defect, critical or high, against a
+  requirement of the contract, a regression or a security defect.
+- **False-positive control**: for material findings the Verifier writes a reproduction script and the control plane runs it itself
+  against the same preview. Reproduced: the work goes back. Ran and did not reproduce: the finding is recorded as unconfirmed and
+  does not go back. No working script: the finding keeps its effect, so a missing script cannot hide a defect.
+- **Precedence**: the Verifier never overrides a gate failure or an evidence-integrity failure; its "conforms" is shown beside a
+  criterion's status and cannot change it.
+- **Handoff**: the assessment is stored as an artifact (`verifier-report`) tied to head, run and contract version; the final
+  evidence package carries coverage, findings by disposition, judgments and - when the Verifier could not verify - the class of
+  that failure. Calibration figures: operator check `verifier_calibration`.
+
 ## Development
 
 ```

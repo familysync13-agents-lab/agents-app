@@ -266,18 +266,47 @@ callbacks must be passed as arguments, they are not in scope in the browser):\n$
   }`;
 }
 
-export function acceptancePrompt(key: string, contractFiles: string[]): string {
+export function acceptancePrompt(key: string, contractFiles: string[], scope: { observe: { id: string; text: string }[]; judge: { id: string; text: string; requirement: string | null }[] } = { observe: [], judge: [] }): string {
   return `You are the blind Verifier doing an independent POST-BUILD black-box acceptance check of task ${key}. A preview of the
 build is running at http://preview:8080. The contract of ${key} is /work/contract.json; earlier contracts (interfaces that must keep
 working) are ${contractFiles.map((f) => `/work/${f}`).join(", ") || "(none)"}. You have no source code and no repository; do not look
-for them. Goal: find defects the gate may have missed - observable behaviour that violates a criterion or the interface text of
-${key}, a regression of an earlier contract, or an obvious security/authorization defect (access to or changes of another user's
-data, secrets or stack traces shown to users). Explore with Playwright (chromium, launch args ['--no-sandbox',
-'--disable-dev-shm-usage']) and fetch, fresh contexts per actor, unique data. Spend at most 20 minutes. Write /work/out/findings.json:
-{"findings": [{"severity": "critical"|"high"|"medium"|"low", "criterion": "<e.g. ${key}:AC2 or T2:AC4 or security>",
-  "title": "<one line>", "expected": "...", "observed": "...", "repro": ["step", "..."]}],
- "checked": ["<what you checked and found conforming>"], "unknown": ["<what you could not check>"]}
-Report only findings you reproduced. Keep scripts in /work/out/. Finish with the single line VERIFIER-DONE.`;
+for them. The automated gate has already passed this build; your job is to find what it missed, independently.
+
+1. COVERAGE. Check each of these requirements of ${key} yourself, through the running product, and give one verdict per id:
+${scope.observe.map((x) => `   - ${x.id}: ${x.text.replace(/\s+/g, " ").slice(0, 400)}`).join("\n") || "   (none)"}
+2. JUDGMENT. These requirements cannot be proven by a deterministic check. Judge each from what you can observe, and record
+   the evidence your judgment rests on (what you opened, did and saw; concrete values). Without evidence, answer cannot_judge:
+${scope.judge.map((x) => `   - ${x.id}: ${x.text.replace(/\s+/g, " ").slice(0, 400)}${x.requirement ? ` (required evidence: ${x.requirement.slice(0, 200)})` : ""}`).join("\n") || "   (none)"}
+3. Also look for regressions of the earlier contracts and for obvious security/authorization defects (access to or changes of
+   another user's data, secrets or stack traces shown to users).
+
+Explore with Playwright (chromium, launch args ['--no-sandbox', '--disable-dev-shm-usage']) and fetch, fresh contexts per actor,
+unique data. Spend at most 20 minutes. Report only what you observed. Reproduce every critical or high finding a SECOND time in a
+fresh browser context before reporting it.
+
+Write /work/out/findings.json:
+{"schema": 2,
+ "coverage": [{"criterion": "<id from list 1>", "verdict": "conforms" | "violated" | "not_checked", "how": "<what you did and saw>"}],
+ "judgments": [{"id": "<id from list 2>", "verdict": "satisfied" | "not_satisfied" | "cannot_judge", "evidence": "<what you observed>", "reason": "..."}],
+ "findings": [{"id": "F1", "severity": "critical" | "high" | "medium" | "low",
+   "class": "implementation" | "check" | "infrastructure" | "evidence" | "control_plane",
+   "criterion": "<AC or C id of ${key}, or T<n>:AC<m> of an earlier contract, or security, or none>",
+   "title": "<one line>", "expected": "...", "observed": "...", "repro": ["step", "..."], "reproduced": <how many times you reproduced it>}],
+ "blocked": null | {"class": "infrastructure" | "evidence" | "control_plane" | "check", "reason": "<why you could not verify>"},
+ "unknown": ["<what you could not check>"]}
+- class: "implementation" = the product behaves wrongly. Everything else is NOT the product's fault: "infrastructure" = the
+  preview or your tools failed; "evidence" = the evidence a requirement needs cannot be captured here; "control_plane" = the files
+  you were given are missing or contradict each other; "check" = a requirement is ambiguous or cannot be checked as written.
+- severity: critical = data loss, security or a must-requirement entirely missing; high = a must-requirement violated in normal
+  use; medium = a defect outside the requirements or in an edge case; low = cosmetic.
+- Every "violated" in coverage needs a finding with that criterion id.
+
+For every critical or high finding of class "implementation", ALSO write /work/out/repro.mjs: one self-contained script in the
+format of /work/SCAFFOLD.md (base URL is argv[2]) that prints exactly one JSON line per finding:
+{"criterion": "<finding id, e.g. F1>", "result": "fail" | "pass", "detail": "<what was observed>"}
+where "fail" means the defect occurred. The control system runs this script itself against the same build: a finding it cannot
+reproduce is treated as unconfirmed. Check it with \`node --check /work/out/repro.mjs\`.
+Keep scripts in /work/out/. Finish with the single line VERIFIER-DONE.`;
 }
 
 export function mutantPrompt(key: string, criteria: { id: string; text: string }[]): string {
