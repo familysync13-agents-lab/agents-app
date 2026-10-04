@@ -1,0 +1,160 @@
+{
+ "assumptions": [
+  {
+   "basis": "stated intent",
+   "chosen": "The task pages /tasks/{id} of the gate preview's demo tasks T1, T2 and T3 (reached from /projects/demo, owner signed in via /auth/preview), in a browser viewport 375 CSS pixels wide and 812 CSS pixels high, measured after the page has finished loading. T3 carries the demonstration evidence package (T7, A3), T1 shows \"No evidence package yet.\" and an open owner decision. A \"card\" is the nearest enclosing section element of each h2 heading on the page (the h2's own parent element when it has no enclosing section). \"Inside the screen\" means the element's bounding box has left edge >= 0 and right edge <= 375 CSS pixels, with a tolerance of 1 CSS pixel for sub-pixel rounding.",
+   "id": "A1",
+   "question": "Which task pages, in which state, are measured to decide whether \"the task page fits the screen width\"?",
+   "reversible": true
+  },
+  {
+   "basis": "existing behaviour",
+   "chosen": "Yes. Content inside a container of a card that scrolls horizontally on its own (computed overflow-x \"auto\" or \"scroll\", e.g. the existing criteria tables of the \"Verification\" card) does not count as widening the page, provided that container itself lies inside the screen and the document does not scroll horizontally. Every other text value (hashes, SHAs, URLs, identifiers, JSON, titles) wraps or is shortened so that it stays inside the screen.",
+   "id": "A2",
+   "question": "May a wide table or preformatted block inside a card scroll horizontally within its own frame, given that the page itself must not scroll horizontally?",
+   "reversible": true
+  },
+  {
+   "basis": "existing behaviour",
+   "chosen": "A long value may wrap or be shortened (e.g. truncated with an ellipsis or shown as a short prefix, as the task page already does for head SHAs), except the \"Package hash\" value of the \"Evidence package\" card, which keeps showing the full 64-character hash as visible text and wraps at narrow widths (T7 contract, AC5 and interface).",
+   "id": "A3",
+   "question": "May long values be shortened, and how does that relate to the \"Package hash\" value that T7 requires in full?",
+   "reversible": true
+  }
+ ],
+ "canary_routes": [
+  "/",
+  "/projects/demo"
+ ],
+ "constraints": [
+  {
+   "id": "C1",
+   "kind": "regression",
+   "statement": "All existing content and behaviour of the task page and of every other page stays as accepted in earlier tasks (T0, T1, T4, T6, T7) and their checks of record (run at their usual desktop viewport) keep passing; in particular the task page keeps its page title \"Task · Agents\", its existing cards (\"Where this task is\", \"Contract\", \"Verification\", \"Workers\", \"Timeline\", \"Evidence files\", \"Operations\" where shown, and \"Evidence package\"), its owner decision forms, and the \"Evidence package\" card's terms and values exactly as defined by T7 (the \"Package hash\" value remains the full 64-character hash as visible text).",
+   "trace": {
+    "ref": "Nothing changes on wide screens.",
+    "source": "intent"
+   },
+   "verify": "blackbox"
+  }
+ ],
+ "criteria": [
+  {
+   "given": "the gate preview with its demo data, a browser viewport of 375 x 812 CSS pixels, and the owner signed in via /auth/preview",
+   "id": "AC1",
+   "priority": "must",
+   "tags": [],
+   "then": "for each of the three task pages the response is HTTP 200, the document title is \"Task · Agents\", the document's scroll width (document.documentElement.scrollWidth) is at most 375 CSS pixels, and the horizontal scroll position of the document (window.scrollX) stays 0",
+   "trace": {
+    "ref": "On a 375px-wide screen the task page fits the screen width: the page does not scroll horizontally",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /projects/demo, activates the link of each demo task T1, T2 and T3 in turn, and on each /tasks/{id} page (after it has loaded) tries to scroll the document to the right (e.g. window.scrollBy(1000, 0))"
+  },
+  {
+   "conditions": "gate preview with its demo data, owner signed in via /auth/preview, viewport 375 x 812 CSS pixels, measured after load on /tasks/{id} of each demo task T1, T2 and T3, over every h2 heading on the page",
+   "id": "AC2",
+   "metric": "Horizontal overflow of the task page: document.documentElement.scrollWidth minus the viewport width, and the largest distance by which any card (the nearest enclosing section of an h2 heading) extends beyond the left edge (0) or right edge (375) of the viewport",
+   "priority": "must",
+   "tags": [],
+   "target": "0 CSS pixels (tolerance 1 CSS pixel for sub-pixel rounding)",
+   "trace": {
+    "ref": "every card, including the Evidence package card, stays inside the screen",
+    "source": "intent"
+   },
+   "type": "threshold",
+   "verify": "measure"
+  },
+  {
+   "given": "the gate preview with its demo data, in which demo task T3 has the demonstration evidence package with hash ea3524e95164fa82395285b83ee8e5d34a7beced8fd0f31d4c774562be0e5b19, a browser viewport of 375 x 812 CSS pixels, and the owner signed in",
+   "id": "AC3",
+   "priority": "must",
+   "tags": [],
+   "then": "the card's bounding box and the bounding box of every one of its descendant elements (in particular the \"Package hash\" value) have left edge >= 0 and right edge <= 375 CSS pixels (1 CSS pixel tolerance), and the \"Package hash\" value, with all whitespace removed, is still exactly \"ea3524e95164fa82395285b83ee8e5d34a7beced8fd0f31d4c774562be0e5b19\" as visible text",
+   "trace": {
+    "ref": "including the Evidence package card, stays inside the screen",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /tasks/{id} of T3 and reads the \"Evidence package\" card (the nearest enclosing section of the h2 heading \"Evidence package\")"
+  },
+  {
+   "given": "the gate preview with its demo data, a browser viewport of 375 x 812 CSS pixels, and the owner signed in",
+   "id": "AC4",
+   "priority": "must",
+   "tags": [],
+   "then": "every visible element whose bounding box extends beyond the right edge of the viewport (right edge > 376 CSS pixels) or beyond its left edge (left edge < -1) lies inside an ancestor element with computed overflow-x \"auto\" or \"scroll\" (or \"hidden\"/\"clip\" that clips it) whose own bounding box is inside the viewport; no text value (hash, SHA, identifier, URL, title) widens its card or the page",
+   "trace": {
+    "ref": "Long values such as hashes wrap or shorten instead of widening the page.",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /tasks/{id} of each demo task T1, T2 and T3 and inspects every visible element inside the page's main region"
+  },
+  {
+   "given": "the gate preview with its demo data, a browser viewport of 1280 x 800 CSS pixels, and the owner signed in",
+   "id": "AC5",
+   "priority": "must",
+   "tags": [],
+   "then": "each page does not scroll horizontally (document.documentElement.scrollWidth at most 1280 CSS pixels), shows the same h2 headings as at 375 CSS pixels wide, and on T3 the \"Evidence package\" card shows the terms \"Status\", \"Required criteria verified\", \"Verifier\", \"Package hash\" in that order with the values \"incomplete\", \"2 of 3\", a value beginning with \"not_run\", and the full hash \"ea3524e95164fa82395285b83ee8e5d34a7beced8fd0f31d4c774562be0e5b19\" (whitespace removed)",
+   "trace": {
+    "ref": "Nothing changes on wide screens.",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /tasks/{id} of demo task T3 and of demo task T1"
+  },
+  {
+   "id": "AC6",
+   "priority": "should",
+   "refs": [
+    "/tasks/{id}",
+    "src/app/(app)/tasks/[id]/page.tsx",
+    "src/components/evidence-package.tsx",
+    "src/components/ui.tsx"
+   ],
+   "statement": "At 375 CSS pixels wide the task page reads as a single column: text is not clipped mid-word without an indication (an ellipsis or a visible short form with the full value available, e.g. as a title), labels stay next to or directly above their values, and the hash wraps cleanly inside its card. At desktop widths (1280 CSS pixels and wider) the task page looks as it did before this change (same arrangement of cards and of the \"Evidence package\" description list).",
+   "tags": [],
+   "trace": {
+    "ref": "Long values such as hashes wrap or shorten instead of widening the page. Nothing changes on wide screens.",
+    "source": "intent"
+   },
+   "type": "experience"
+  }
+ ],
+ "id": "T8",
+ "intent_sha256": "a47ff2ac4c37bb181a2955c1630fb94e9e3bafd197498d9b6cb1fb65cac98373",
+ "interface": {
+  "ui": "No new routes, headings, labels, buttons or messages. Existing names reused: sign-in for the gate preview GET /auth/preview (redirects to / with an owner session); Demo Project page /projects/demo, where each demo task's key (\"T1\", \"T2\", \"T3\") is shown in a link to its task page; task page route /tasks/{id} with page title \"Task · Agents\"; cards headed (h2) \"Where this task is\", \"Contract\", \"Verification\", \"Workers\", \"Timeline\", \"Evidence files\", \"Operations\" (where shown) and \"Evidence package\". The \"Evidence package\" card (T7): description-list terms \"Status\", \"Required criteria verified\", \"Verifier\", \"Package hash\"; preview values for demo task T3: \"incomplete\", \"2 of 3\", \"not_run\", \"ea3524e95164fa82395285b83ee8e5d34a7beced8fd0f31d4c774562be0e5b19\"; demo task T1 shows \"No evidence package yet.\". Measurement viewport for this task: 375 x 812 CSS pixels (phone width); wide-screen viewport: 1280 x 800 CSS pixels."
+ },
+ "non_goals": [
+  "Making any other page (Command page /, project pages, Decisions, System, artifact pages, sign-in pages) fit a phone-width screen; they may improve as a side effect of shared components but are not required to.",
+  "Changing the layout, look or content of the task page on wide screens, or of any other page.",
+  "Adding, removing or renaming headings, cards, terms, values, buttons, forms or messages of the task page; changing what the page shows, its live refresh, sign-in, sessions or authorization.",
+  "Changing how evidence packages, hashes, contracts or task data are stored, computed or recorded; the database schema, migrations, the control loop, the gate or the Verifier.",
+  "A separate mobile navigation, a new menu, gestures, or a dedicated mobile layout beyond fitting the width.",
+  "Viewports narrower than 375px, landscape-specific layouts, print styles, or vertical length of the page.",
+  "Changing the preview demo data."
+ ],
+ "open_questions": [],
+ "policies": [
+  "policy.json"
+ ],
+ "scope": {
+  "paths": [
+   "**"
+  ],
+  "summary": "On a 375px-wide viewport the task page (/tasks/{id}) fits the screen width: the document does not scroll horizontally, every card of the page (each section headed by an h2, including the \"Evidence package\" card added by T7) lies entirely within the screen, and long values such as hashes wrap or are shortened instead of widening the page. The content of the page does not change: every heading, term, value and control accepted in earlier tasks stays present, and the full package hash stays readable as visible text (it wraps). On wide screens (desktop widths) the page looks and behaves as before. This is a layout-only change to the task page."
+ },
+ "tier": "standard",
+ "title": "Task page fits a phone-width screen",
+ "traces_to": [
+  "OWNER-INTENT-T8"
+ ],
+ "version": 1
+}
