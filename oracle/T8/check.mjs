@@ -183,7 +183,14 @@ const checks = {
       assert.deepEqual(await headings(page), narrow, `${key}: desktop h2 headings differ from phone`);
       if (key === 'T3') {
         const packageCard = card(page);
-        assert.deepEqual((await packageCard.locator('dt').allInnerTexts()).map(s => s.trim()),
+        // Read each term independently: CSS text-transform changes innerText's
+        // presentation case, but does not change the label identity or order.
+        const terms = packageCard.locator('dt');
+        const labels = [];
+        for (let i = 0; i < await terms.count(); i++) {
+          labels.push((await terms.nth(i).textContent()).trim());
+        }
+        assert.deepEqual(labels,
           ['Status', 'Required criteria verified', 'Verifier', 'Package hash'], 'Evidence package term order');
         assert.equal((await (await value(packageCard, 'Status')).innerText()).trim(), 'incomplete');
         assert.equal((await (await value(packageCard, 'Required criteria verified')).innerText()).trim(), '2 of 3');
