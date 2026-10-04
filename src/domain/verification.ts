@@ -172,8 +172,9 @@ export function assessVerifier(c: Contract, taskKey: string, raw: unknown, repro
   const blocked = o.blocked && typeof o.blocked.reason === "string" ? { class: cls(o.blocked.class) === "implementation" ? ("infrastructure" as const) : cls(o.blocked.class), reason: o.blocked.reason.slice(0, 600) } : null;
   const blocking = [
     ...findings.filter((f) => f.disposition === "blocking").map((f) => ({ finding: f.id, criterion: f.criterion, text: `[${f.severity}] ${f.criterion ?? (f.security ? "security" : "")} - ${f.title}\n   expected: ${f.expected}\n   observed: ${f.observed}\n   steps: ${f.repro.join(" | ")}${f.reproduction === "reproduced" ? "\n   (reproduced by the control system against this build)" : ""}` })),
-    // an advisory constraint is explicitly non-blocking: its judgment is reported, never sent back
-    ...judgments.filter((j) => j.verdict === "not_satisfied" && !advisory.has(j.id)).map((j) => ({ finding: null, criterion: j.id, text: `[judgment] ${j.id} is not satisfied: ${j.reason || "(no reason given)"}\n   observed: ${j.evidence}` })),
+    // an advisory constraint is explicitly non-blocking: its judgment is reported, never sent back;
+    // and a should-criterion never decides: only a required requirement (a must, or a constraint that is not advisory) can block
+    ...judgments.filter((j) => j.verdict === "not_satisfied" && !advisory.has(j.id) && must.has(j.id)).map((j) => ({ finding: null, criterion: j.id, text: `[judgment] ${j.id} is not satisfied: ${j.reason || "(no reason given)"}\n   observed: ${j.evidence}` })),
   ];
   const verdict: Assessment["verdict"] = blocking.length ? "defects_confirmed" : blocked ? "unverified" : "no_blocking_defect";
   return { schema: "agents-app/verifier-assessment@1", valid: true, problems, coverage: { required, conforms, violated, not_checked: notChecked, ratio: required.length ? (conforms.length + violated.length) / required.length : 1 }, judgments, findings, blocked, verdict, blocking };

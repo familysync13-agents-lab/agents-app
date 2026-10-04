@@ -96,6 +96,8 @@ describe("VT5 judgment: a verdict with captured evidence per judgment-class requ
     expect(assessVerifier(C, "T9", OUT({ judgments: [{ id: "C3", verdict: "satisfied", evidence: "ok" }] }), null).judgments[1]).toMatchObject({ verdict: "cannot_judge", reason: "a judgment needs the evidence it rests on" });
     const no = assessVerifier(C, "T9", OUT({ judgments: [{ id: "C3", verdict: "not_satisfied", evidence: "A spinner animates an estimated completion time on /lists.", reason: "an estimate is shown" }] }), null);
     expect(no).toMatchObject({ verdict: "no_blocking_defect", blocking: [] }); // C3 is advisory: reported, never sent back
+    // T8 (live): a should-level experience criterion judged not satisfied is reported, never sent back to the Builder
+    expect(assessVerifier(C, "T9", OUT({ judgments: [{ id: "AC2", verdict: "not_satisfied", evidence: "At 375px the summary ends mid-word without an ellipsis.", reason: "clipped" }] }), null)).toMatchObject({ verdict: "no_blocking_defect", blocking: [] });
     const legacy = { ...C, constraints: (C.constraints ?? []).map((x) => (x.id === "C3" ? { ...x, advisory: undefined } : x)) } as typeof C;
     expect(assessVerifier(legacy, "T9", OUT({ judgments: [{ id: "C3", verdict: "not_satisfied", evidence: "A spinner animates an estimated completion time on /lists.", reason: "an estimate is shown" }] }), null)).toMatchObject({ verdict: "defects_confirmed", blocking: [{ finding: null, criterion: "C3", text: expect.stringMatching(/C3 is not satisfied: an estimate is shown/) }] });
   });

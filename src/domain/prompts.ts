@@ -218,7 +218,16 @@ documented test data, a missing dependency, an environment problem - anything th
 \`{"criterion":"ACx","result":"fail","detail":"HARNESS: <what is missing>"}\`. Such results are routed back to you, never to the
 Builder. Never report HARNESS for application behaviour that contradicts the contract.
 Text extraction: never concatenate \`textContent\` of structured content and match words across element boundaries (adjacent
-elements have no separating whitespace); read each item or field with its own locator (\`innerText()\` of that element, roles, labels).
+elements have no separating whitespace); read each item or field with its own locator (\`textContent()\` of that element, trimmed;
+roles, labels).
+Two facts about any page that a check must respect (both are verified mechanically before your check is accepted):
+- Rendered text is not the text. \`innerText()\` / \`allInnerTexts()\` return text AFTER CSS (a label styled in capitals reads
+  "PACKAGE HASH" although its text is "Package hash"). Compare wording with \`textContent()\` / \`allTextContents()\` (trimmed), or
+  case-insensitively. Accessible names (\`getByRole(..., { name })\`) are not affected by CSS.
+- The text and the accessible name of an element join the text of its children with NO separator: a link made of an id element
+  followed by a title reads "T1Export a list", not "T1 Export a list". Never require whitespace, punctuation or a word boundary
+  (\`\\b\`, \`[^A-Za-z0-9_]\`, \`(\\s|$)\`) before or after an id or label in a text pattern. Find the element by role, by its
+  \`href\`, or find the id's own element and compare its text exactly.
 
 Rules for robust black-box checks
 - Judge only observable behaviour: HTTP status, final URL, visible text, accessible names/roles/labels exactly as the contract names

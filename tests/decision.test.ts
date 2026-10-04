@@ -29,7 +29,10 @@ describe("DC1 readiness: deterministic failures decide first", () => {
     expect(decide(body({ integrity: { chain_ok: false } }), "p").outcome).toBe("not_ready");
     const v = body().verifier;
     expect(decide(body({ verifier: { ...v, status: "defects", findings: { ...v.findings, blocking: 1 } } }), "p").blockers.join()).toMatch(/confirmed 1 blocking defect/);
-    expect(decide(body({ verifier: { ...v, judgments: [{ id: "AC2", verdict: "not_satisfied", evidence: 1 }] } }), "p").blockers.join()).toMatch(/AC2: independent judgment says not satisfied/);
+    expect(decide(body({ verifier: { ...v, judgments: [{ id: "AC1", verdict: "not_satisfied", evidence: 1 }] } }), "p").blockers.join()).toMatch(/AC1: independent judgment says not satisfied/);
+    // T8 (live): a SHOULD-criterion judged not satisfied never blocks; it is listed for the owner
+    const sh = decide(body({ verifier: { ...v, judgments: [{ id: "AC2", verdict: "not_satisfied", evidence: 1 }] } }), "p");
+    expect(sh).toMatchObject({ outcome: "ready", residual: [{ kind: "should", id: "AC2", text: "should-criterion judged NOT satisfied by the independent Verifier" }] });
   });
 });
 

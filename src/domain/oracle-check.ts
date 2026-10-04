@@ -50,7 +50,32 @@ export function staticOracleProblems(js: string, extraHosts: string[] = []): str
   for (const m of js.matchAll(/process\.env\.([A-Z0-9_]+)/g)) {
     if (!(ORACLE_ENV.env as readonly string[]).includes(m[1]!)) problems.push(`depends on environment variable ${m[1]} that the gate does not provide (provided: ${ORACLE_ENV.env.join(", ")}; the base URL is also argv[2])`);
   }
+  problems.push(...observationProblems(js));
   return [...new Set(problems)];
+}
+
+/**
+ * How a check OBSERVES the page - two recurring defects of blind checks (T7 and T8: four gate failures, none of them the
+ * implementation's). Facts about any web page, never about a particular implementation or an expected answer:
+ *   1. rendered text (innerText) carries CSS text-transform, so comparing it case-sensitively with the contract's wording fails on
+ *      a page that merely styles a label in capitals;
+ *   2. the text / accessible name of an element is the concatenation of its children WITHOUT separators ("<span>T1</span>Title"
+ *      reads "T1Title"), so a pattern that demands a word boundary, whitespace or punctuation after an id never matches.
+ */
+export function observationProblems(js: string): string[] {
+  const out: string[] = [];
+  const lines = js.split("\n");
+  const caseSafe = /toLowerCase\(\)|toUpperCase\(\)|toLocaleLowerCase\(\)|toLocaleUpperCase\(\)/;
+  lines.forEach((l, i) => {
+    if (/^\s*(\/\/|\*)/.test(l)) return;
+    if (/\.(innerText|allInnerTexts)\s*\(|\.innerText\b/.test(l) && !caseSafe.test(l))
+      out.push(`line ${i + 1}: reads rendered text (innerText), which carries CSS text-transform (a label styled in capitals reads "PACKAGE HASH"); read the element's own text with textContent() / allTextContents() (trimmed), or compare case-insensitively`);
+    const boundary = /\[\^A-Za-z0-9_?\]|\(\\{1,2}s\|\$\)|\(\?=\\{1,2}s\|\$\)|\(\?!\\{1,2}w\)|\(\?!\[A-Za-z0-9_?\]\)/;
+    const textFilter = /hasText|hasNotText|getByText|getByRole|\bname\s*:|toHaveText|toContainText|toHaveAccessibleName/;
+    if (boundary.test(l) || (textFilter.test(l) && /\\b/.test(l)))
+      out.push(`line ${i + 1}: a text pattern demands a boundary (non-word character, whitespace or \\b) next to an id or label; an element's text and accessible name join its children with NO separator ("T1" followed by a title reads "T1Title"), so this never matches. Locate by role, href or the id's own element and compare that element's text exactly`);
+  });
+  return [...new Set(out)];
 }
 
 const BUILTINS = new Set([
