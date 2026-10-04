@@ -172,7 +172,7 @@ const checks = {
       assert(!fs.some(f => /would be accepted without proof|Nothing is accepted without proof/i.test(f.text)), `${key} contains acceptance wording`);
       if (key === 'T1') await exactField(row, 'Approve the contract for T1: Demo: export a list as CSV');
     }
-    throw new Error('HARNESS: AC5 exact T2 decision title/T0 shortening rule and T1/T2 explanation fixtures are absent from supplied contract and environment notes; unchanged wording cannot be judged (see NOTES.md)');
+    throw new Error('HARNESS: Missing authoritative pre-T9 fixtures: T2 decision title, T0 title-shortening rule, and T1/T2 explanation text. Supply the referenced accepted contracts/checks or their frozen fixtures; this build cannot establish its own unchanged-wording baseline. See NOTES.md.');
   },
 };
 
