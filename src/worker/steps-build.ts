@@ -2,7 +2,7 @@ import { and, desc, eq, inArray, like, ne, notInArray, sql } from "drizzle-orm";
 import { decisions, evidence, gateResults, runs, tasks } from "@/db/schema";
 import type { Contract } from "@/domain/contract";
 import { classifyVerdict } from "@/domain/lifecycle";
-import { criteriaFromGate, correctionDetails, oracleDefects, type GateEvidence } from "@/domain/gate";
+import { criteriaFromGate, correctionDetails, oracleDefects, type GateEvidence, scansFromGate } from "@/domain/gate";
 import { buildPrompt, correctionPrompt, noOutcomePrompt, OUTCOME_DIR } from "@/domain/prompts";
 import { extraFiles } from "@/domain/context";
 import { PlanBody } from "@/domain/plan";
@@ -300,8 +300,11 @@ export async function gateCollect(ctx: TaskCtx): Promise<void> {
         detail: `${c.regression ? "regression · " : ""}${c.check}${c.detail ? ` · ${c.detail}` : ""}`.slice(0, 2000),
         artifactId: art,
         kind: c.regression ? "regression" : "criterion",
-        checkName: c.check,
+        // "unmapped" = the gate reported the requirement without a verification binding (not judged)
+        checkName: c.deciding ? c.check : c.check === "unmapped" ? "unbound" : c.check === "judgment" ? "judgment" : `deferred:${c.check}`,
       });
+    for (const sc of scansFromGate(ev))
+      await ctx.evidence({ subject: sc.subject, status: sc.status, oracle: "deterministic", persistence: "point_in_time", source: `gate:${checkRun}`, commitSha: head, contractSha256: ev.contract_sha256 ?? null, detail: sc.detail, severity: sc.severity, artifactId: art, kind: "scan", checkName: sc.subject });
     await ctx.log("gate", `Gate verdict for ${head.slice(0, 8)}: ${verdict}${ev.reasons?.length ? ` (${ev.reasons.join("; ").slice(0, 200)})` : ""}`, { check_run: checkRun, verdict });
   }
   // the evidence package of this head: criterion status computed from the rows bound to it, integrity checked (deterministic)
@@ -338,7 +341,7 @@ export async function gateCollect(ctx: TaskCtx): Promise<void> {
     return ctx.goto("await_decision", {});
   }
   // BLOCKED:* from the gate: an Unknown must-criterion or missing evidence (never silently passed)
-  const unknown = criteriaFromGate(ev).filter((c) => c.status === "unknown").map((c) => `${c.subject}: ${c.detail.slice(0, 120)}`);
+  const unknown = criteriaFromGate(ev).filter((c) => c.deciding && c.status === "unknown").map((c) => `${c.subject}: ${c.detail.slice(0, 120)}`);
   return blockEvidence(ctx, `Gate ${verdict}: ${[...(ev.reasons ?? []), ...unknown].join("; ").slice(0, 400) || "no reason given"}`, fact);
 }
 
@@ -360,7 +363,7 @@ async function routeFailure(ctx: TaskCtx, verdict: string, ev: GateEvidence, fac
     return ctx.goto("sync_branch", { head: ctx.data.head, checkRun: ctx.data.checkRun, verdict });
   }
   const failing = criteriaFromGate(ev)
-    .filter((c) => c.status !== "verified")
+    .filter((c) => c.deciding && c.status !== "verified")
     .map((c) => ({ subject: c.subject, detail: c.detail, regression: c.regression }));
   const defects = oracleDefects(ev);
   if (defects && !failing.some((c) => c.regression)) {

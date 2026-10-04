@@ -142,7 +142,7 @@ describe("EV4 the evidence package: deterministic, criterion-linked, with gaps a
     // the Verifier handoff holds ids and evidence requirements only: no Builder narrative, no code, no gate detail
     const c2 = Contract.parse({ ...CONTRACT("T9"), criteria: [CONTRACT("T9").criteria[0], { ...CONTRACT("T9").criteria[1], evidence: "a screen recording of sorting 200 lists" }] });
     const v = buildPackage(pkgInput({ contract: { version: 1, sha256: "c1", body: c2 }, rows: [row({ id: 1 }), row({ id: 3, kind: "finding", subject: "finding:general", criterionTask: null, criterionId: null, status: "not_verified", oracle: "agent_judgment", severity: "low", source: "verifier:9", contractSha256: null, detail: "Sort button has no focus ring" })] }));
-    expect(v.body.handoff.verifier).toEqual({ head: "h1", contract_sha256: "c1", judgment_required: [{ id: "AC2", priority: "should", requirement: "a screen recording of sorting 200 lists" }], unlinked_findings: [3] });
+    expect(v.body.handoff.verifier).toEqual({ head: "h1", contract_sha256: "c1", judgment_constraints: [], judgment_required: [{ id: "AC2", priority: "should", requirement: "a screen recording of sorting 200 lists" }], unlinked_findings: [3] });
     expect(JSON.stringify(v.body.handoff.verifier)).not.toMatch(/oracle|Builder|B before A/);
     expect(v.body.findings).toEqual([{ evidence: 3, criterion: null, severity: "low", title: "Sort button has no focus ring", linked: false }]);
   });

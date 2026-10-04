@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import { contracts, tasks } from "@/db/schema";
-import { canonicalJson, contractIntegrity, intentHash, lintContract, oracleCriteria, sha256, type Contract } from "@/domain/contract";
+import { canonicalJson, contractIntegrity, GATE_VERSION, gateBindings, intentHash, lintContract, sha256, type Contract } from "@/domain/contract";
 import { recordPlan } from "@/server/plans";
 import { draftPrompt, OUTCOME_DIR } from "@/domain/prompts";
 import { TaskCtx } from "./context";
@@ -195,7 +195,6 @@ export async function awaitOwnerContract(ctx: TaskCtx): Promise<void> {
 
 function taskJson(ctx: TaskCtx, c: ContractRow, existing: Record<string, unknown> | null): string {
   const now = new Date().toISOString().replace(/\.[0-9]{3}Z$/, "Z");
-  const criteria = oracleCriteria(c.body as unknown as Contract);
   const prev = (existing?.amendments as unknown[] | undefined) ?? [];
   const t = {
     id: ctx.task.key,
@@ -208,7 +207,9 @@ function taskJson(ctx: TaskCtx, c: ContractRow, existing: Record<string, unknown
       at: now.slice(0, 10),
       basis: `owner intent recorded in Agents App task ${ctx.task.id}; contract v${c.version} approved under the owner's standing V1 escalation policy (within intent) or by the owner in person; hash-bound amendment confirmed by the gate`,
     },
-    checks: Object.fromEntries(criteria.map((id) => [id, `oracle:oracle/${ctx.task.key}/check.mjs`])),
+    // every must-criterion and every constraint is bound to what proves it, by verification class (Gate phase)
+    checks: gateBindings(c.body as unknown as Contract, `oracle/${ctx.task.key}/check.mjs`),
+    gate_version: GATE_VERSION,
     probe_params: (existing?.probe_params as Record<string, unknown> | undefined) ?? {},
     oracle_timeout_s: 900,
     amendments: [

@@ -54,6 +54,31 @@ Operator checks (`src/admin/cli.ts`): `evidence_audit` (integrity of every task)
 Local-model roles on evidence (`src/domain/evidence-roles.ts`) are qualified separately from every Builder class and are evaluation
 only until approved: `finding_association` (link an unlinked Verifier finding to the criterion it reports as violated, or to none).
 
+## Gate (v3)
+
+The gate (`gate/gate.py`, owner-only path, run from the base branch) judges every requirement of a contract by its verification
+class (Contract spec v2 section 5). The task record binds each must-criterion and constraint to what proves it
+(`gateBindings` in `src/domain/contract.ts`):
+
+| Class | Proven by | Binding |
+|---|---|---|
+| `blackbox`, `measure` | the check of record written blind by the Verifier, or a probe | `oracle:...`, `probe:...` |
+| `static` | a declarative repository fact the requirement itself states (`fact`) | `static:fact` |
+| `suite` | the candidate check stage (type check, lint, tests) | `suite` |
+| `regression` constraint | the checks of earlier accepted tasks | `regression-set` |
+| `judgment` | independent judgment with captured evidence; reported by the gate, never decided by it | `judgment` |
+
+- Facts are declarative (`path_exists`, `path_absent`, `file_contains`, `file_lacks`, `dependency_present`, `dependency_absent`,
+  `unchanged`, `changed_only`), validated by lint and evaluated on the head tree. No worker-written program is involved.
+- Constraints are requirements: each is reported as `<task>:<C id>` and counted in the evidence package when the gate judged it.
+- A task record with `gate_version: 3` is strict: a requirement without a binding is Unknown and blocks. Older task records keep
+  their v2 behaviour; their constraints are reported as Unbound.
+- A failed repository fact gives `FAIL:STATIC` and goes straight back to the Builder (no arbiter: a fact has no check to be wrong).
+- A structural must-criterion is allowed with a fact. An experience must stays disabled until the Verifier phase.
+- Scanner results (secrets, dependencies, static analysis) are evidence rows. Secrets fail the gate; the other two are recorded.
+
+Tests: `python3 gate/tests/test_gate.py` (the gate's own rules) and `tests/gate.test.ts`.
+
 ## Development
 
 ```

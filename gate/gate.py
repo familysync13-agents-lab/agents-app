@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
-"""AGENTS APP bake-off gate v2 (GitHub Actions; always executed from the BASE branch, never from the PR head).
+"""AGENTS APP gate v3 (GitHub Actions; always executed from the BASE branch, never from the PR head).
+
+v3 (Gate modernization) adds, on top of v2 and without changing any v2 verdict for an existing contract:
+  - verification by CLASS (Contract spec v2 section 5): `static` requirements are proven by a declarative repository FACT the
+    contract itself states (evaluated here on the head tree; no worker-written program), `suite` by the candidate check stage,
+    `blackbox` / `measure` by the oracle of record or a probe, `regression` constraints by the regression set;
+  - CONSTRAINTS of the contract are requirements like must-criteria: each is evaluated and reported under "<task>:<C id>";
+  - `judgment` requirements are reported as "Judgment" (the independent Verifier's part) and never decided here;
+  - a task record with "gate_version": 3 is strict: a requirement without a verification binding is Unknown and blocks. Task
+    records written before v3 keep v2 behaviour: their constraints are reported as "Unbound" and do not decide the verdict.
+  - verdict FAIL:STATIC when the only failing requirements of the task are repository facts.
+
 
 Keeps the Foundation v1 verdict model and tamper/decision rules, and adds the shared bake-off gate for both candidates:
 build (repository Dockerfile), candidate checks (`check` stage: lint, types, tests), preview with non-production config
@@ -7,7 +18,7 @@ build (repository Dockerfile), candidate checks (`check` stage: lint, types, tes
 deterministic probes (layout, axe, LCP, visual baselines, error monitoring, dev-tooling), owner-approved oracles of record,
 canary scan of every client-visible surface, regression of earlier tasks, gitleaks / OSV-Scanner / Opengrep.
 
-Verdicts: DONE | AMENDMENT-OK | BLOCKED:EVIDENCE | BLOCKED:DECISION | FAIL:<TAMPER|CANARY|SECRET|BUILD|CHECK|ORACLE|REGRESSION|FOREIGN-HEAD>
+Verdicts: DONE | AMENDMENT-OK | BLOCKED:EVIDENCE | BLOCKED:DECISION | FAIL:<TAMPER|CANARY|SECRET|BUILD|CHECK|STATIC|ORACLE|REGRESSION|FOREIGN-HEAD>
 Exit status is 0 only for DONE and AMENDMENT-OK, so the required `gate` check cannot pass in any other state.
 """
 import base64, fnmatch, hashlib, json, os, re, secrets, shutil, subprocess, sys, tempfile, time, urllib.request, zlib
@@ -49,6 +60,95 @@ def plan_scope(t, plan, entry, merged_subjects):
         if k in need or any(("task/%s/%s-" % (t, k)) in s for s in merged_subjects): req.update(by[k].get("covers") or [])
     return req
 
+# ------------------------------------------------------------------ static facts (verification class `static`) -----------------
+FACT_KINDS = ("path_exists", "path_absent", "file_contains", "file_lacks", "dependency_present", "dependency_absent", "unchanged", "changed_only")
+FACT_MAX_FILE = 2_000_000
+def _safe_rel(p):
+    return isinstance(p, str) and 0 < len(p) <= 300 and not p.startswith("/") and ".." not in p.split("/") and "\\" not in p and "\0" not in p
+def _walk(root):
+    out = []
+    for d, dirs, fs in os.walk(root):
+        dirs[:] = [x for x in dirs if x not in (".git", "node_modules")]
+        for f in fs: out.append(os.path.relpath(os.path.join(d, f), root).replace(os.sep, "/"))
+    return sorted(out)
+def _glob(path, pat):
+    """`**` spans directories, `*` stays inside one path segment (unlike fnmatch, where * crosses "/")."""
+    rx = "".join(".*" if t == "**/" or t == "**" else "[^/]*" if t == "*" else "[^/]" if t == "?" else re.escape(t) for t in re.findall(r"\*\*/|\*\*|\*|\?|[^*?]+", pat))
+    return re.fullmatch(rx, path) is not None
+def eval_fact(fact, headdir, changed):
+    """One declarative repository fact, evaluated on the checked-out HEAD tree (`changed` = files the PR changes against the merge
+    base). Returns (result, detail) with result pass | fail | unknown. `unknown` only for a fact that cannot be evaluated (malformed,
+    unreadable manifest): never guessed. Deterministic: no network, no execution of repository code."""
+    if not isinstance(fact, dict) or fact.get("kind") not in FACT_KINDS: return "unknown", "no valid fact declared (kinds: %s)" % ", ".join(FACT_KINDS)
+    k = fact["kind"]
+    try:
+        if k in ("path_exists", "path_absent"):
+            pat = fact.get("path")
+            if not _safe_rel(pat): return "unknown", "fact path is missing or not a repository-relative path"
+            hits = [f for f in _walk(headdir) if _glob(f, pat) or f.startswith(pat.rstrip("/") + "/")]
+            if k == "path_exists": return ("pass", "%s exists (%d file(s))" % (pat, len(hits))) if hits else ("fail", "%s does not exist in the repository" % pat)
+            return ("pass", "%s is absent" % pat) if not hits else ("fail", "%s exists: %s" % (pat, ", ".join(hits[:5])))
+        if k in ("file_contains", "file_lacks"):
+            pat = fact.get("path"); text = fact.get("text"); rx = fact.get("pattern")
+            if not _safe_rel(pat) or (not isinstance(text, str) and not isinstance(rx, str)) or len(str(text or rx)) > 500 or len(str(text or rx)) < 1: return "unknown", "fact needs a path and a text or pattern (at most 500 characters)"
+            cre = re.compile(rx) if isinstance(rx, str) else None
+            files = [f for f in _walk(headdir) if _glob(f, pat)]
+            found = []
+            for f in files:
+                full = os.path.join(headdir, f)
+                if os.path.getsize(full) > FACT_MAX_FILE: continue
+                body = open(full, errors="replace").read()
+                if (cre.search(body) if cre else text in body): found.append(f)
+            what = "pattern /%s/" % rx if cre else "text %r" % text
+            if k == "file_contains":
+                if not files: return "fail", "no file matches %s" % pat
+                return ("pass", "%s found in %s" % (what, ", ".join(found[:5]))) if found else ("fail", "%s not found in %s" % (what, pat))
+            return ("pass", "%s occurs in none of the %d file(s) matching %s" % (what, len(files), pat)) if not found else ("fail", "%s occurs in %s" % (what, ", ".join(found[:5])))
+        if k in ("dependency_present", "dependency_absent"):
+            name = fact.get("name"); sec = fact.get("section", "dependencies"); man = fact.get("manifest", "package.json")
+            if not isinstance(name, str) or not name or not _safe_rel(man) or sec not in ("dependencies", "devDependencies", "any"): return "unknown", "fact needs a dependency name, a manifest path and a section (dependencies | devDependencies | any)"
+            full = os.path.join(headdir, man)
+            if not os.path.exists(full): return ("pass", "%s does not exist, so %s is not a dependency" % (man, name)) if k == "dependency_absent" else ("fail", "%s does not exist" % man)
+            pj = json.load(open(full))
+            secs = ["dependencies", "devDependencies"] if sec == "any" else [sec]
+            where = [x for x in secs if name in (pj.get(x) or {})]
+            if k == "dependency_present": return ("pass", "%s is in %s of %s" % (name, where[0], man)) if where else ("fail", "%s is not in %s of %s" % (name, " / ".join(secs), man))
+            return ("pass", "%s is not in %s of %s" % (name, " / ".join(secs), man)) if not where else ("fail", "%s is in %s of %s" % (name, where[0], man))
+        if k in ("unchanged", "changed_only"):
+            pats = fact.get("paths")
+            if not isinstance(pats, list) or not pats or not all(_safe_rel(x) for x in pats): return "unknown", "fact needs a list of repository-relative path patterns"
+            inside = [f for f in changed if any(_glob(f, p) or f.startswith(p.rstrip("/") + "/") for p in pats)]
+            if k == "unchanged": return ("pass", "the change touches none of %s" % ", ".join(pats)) if not inside else ("fail", "the change touches %s" % ", ".join(inside[:8]))
+            outside = [f for f in changed if f not in inside]
+            return ("pass", "all %d changed file(s) are inside %s" % (len(changed), ", ".join(pats))) if not outside else ("fail", "changed outside %s: %s" % (", ".join(pats), ", ".join(outside[:8])))
+    except re.error as e: return "unknown", "fact pattern is not a valid regular expression: %s" % e
+    except Exception as e: return "unknown", "fact could not be evaluated: %s" % str(e)[:200]
+    return "unknown", "fact kind not implemented"
+
+def requirements(contract):
+    """Every requirement of a contract the gate reports on: must-criteria and all constraints, with their verification class."""
+    out = []
+    for c in contract.get("criteria") or []:
+        if c.get("priority") == "must":
+            out.append({"id": c.get("id"), "kind": "criterion", "class": c.get("verify") or {"behavior": "blackbox", "threshold": "measure", "structural": "static", "experience": "judgment"}.get(c.get("type"), "blackbox"), "fact": c.get("fact"), "constraint_kind": None})
+    for c in contract.get("constraints") or []:
+        out.append({"id": c.get("id"), "kind": "constraint", "class": c.get("verify"), "fact": c.get("fact"), "constraint_kind": c.get("kind")})
+    return out
+
+def decide(tid, criteria, regression):
+    """The verdict from the evaluated requirements (pure). Statuses that decide: Verified, Not verified, Unknown. Statuses that do
+    not: Deferred (not yet required at this plan task), Judgment (the independent Verifier's part), Unbound (a constraint of a
+    task record written before gate v3)."""
+    cur = [v["status"] for v in criteria.values()]; old = [v["status"] for v in regression.values()]
+    failing = [v for v in criteria.values() if v["status"] == "Not verified"]
+    if failing:
+        if all(str(v.get("check") or "").startswith("static:") for v in failing): return "FAIL:STATIC", "a repository fact required by %s does not hold" % tid
+        return "FAIL:ORACLE", "a must-criterion of %s failed" % tid
+    if "Not verified" in old: return "FAIL:REGRESSION", "a must-criterion of an earlier task failed"
+    if "Unknown" in cur or "Unknown" in old: return "BLOCKED:EVIDENCE", "a must-criterion is Unknown"
+    if not [s for s in cur if s in ("Verified",)] and not [s for s in cur if s in ("Deferred", "Judgment")]: return "BLOCKED:DECISION", "contract has no must-criteria"
+    return "DONE", None
+
 def match(path, pats):
     for p in pats:
         if p.endswith("/**"):
@@ -73,7 +173,7 @@ def sh(args, timeout=1800, inp=None, check=False, quiet=False):
     if check and r.returncode != 0: raise RuntimeError("%s failed rc %d: %s" % (args[:3], r.returncode, r.stderr.decode(errors="replace")[-400:]))
     return r
 
-OUT = {"gate": "bakeoff-v2", "repo": REPO, "pr": PR.get("number"), "head_sha": None, "base_sha": None, "task": None, "contract_sha256": None,
+OUT = {"gate": "gate-v3", "repo": REPO, "pr": PR.get("number"), "head_sha": None, "base_sha": None, "task": None, "contract_sha256": None,
        "criteria": {}, "regression": {}, "checks": {}, "verdict": None, "reasons": []}
 def finish(verdict, reason=None):
     OUT["verdict"] = verdict
@@ -102,7 +202,7 @@ def finish(verdict, reason=None):
     sys.exit(0 if verdict in ("DONE", "AMENDMENT-OK") else 1)
 
 # ------------------------------------------------------------------ docker preview environment ---------------------------------
-NET = "gate-pv-%s" % secrets.token_hex(4); CNT = []; SHOTS = []
+NET = "gate-pv-%s" % secrets.token_hex(4); CNT = []; SHOTS = []; CHANGED = []
 def cleanup():
     for c in CNT: subprocess.run(["docker", "rm", "-f", c], capture_output=True)
     subprocess.run(["docker", "network", "rm", NET], capture_output=True)
@@ -136,7 +236,7 @@ def main():
     if not policy or not policy.get("owner_login"): finish("BLOCKED:EVIDENCE", "base policy.json missing owner_login")
     mb = git("merge-base", base, head).decode().strip()
     changed = [p for p in git("-c", "core.quotePath=false", "diff", "--name-only", "-z", "--no-renames", mb, head).decode("utf-8", "surrogateescape").split("\0") if p]
-    OUT["checks"]["changed_files"] = len(changed)
+    OUT["checks"]["changed_files"] = len(changed); global CHANGED; CHANGED = changed
     prot = [p for p in changed if match(p, PROTECTED)]; OUT["checks"]["protected_changed"] = prot
     never = [p for p in prot if match(p, NEVER_VIA_PR)]
     if never: finish("FAIL:TAMPER", "PR changes owner-only paths %s" % never)
@@ -306,18 +406,46 @@ def run_preview(head, base, tid, task, contract, reg, policy):
     if r_err: OUT["checks"]["runner_stderr_tail"] = r_err
     builtin = {"probe:preview-health": health_eval(h1, h2), "probe:restart": restart_eval(h2, h2b, h3), "probe:check-stage": ("pass" if check_ok else "fail", "check stage rc %s" % OUT["checks"]["check_stage"].get("rc")),
                "probe:dev-tooling": devtool_eval(headdir), "probe:canary": ("fail" if canary_hits else "pass", "canary found on %s" % canary_hits[:5] if canary_hits else "no canary on %d captured surfaces" % OUT["checks"].get("canary_surfaces", 0))}
+    contracts = dict([(tid, contract)] + [(t, c) for t, _, c in reg]); strict = dict([(tid, int(task.get("gate_version") or 2) >= 3)] + [(t, int(tj.get("gate_version") or 2) >= 3) for t, tj, _ in reg])
+    reqs = {t: {r["id"]: r for r in requirements(c)} for t, c in contracts.items()}
+    builtin["suite"] = builtin["probe:check-stage"]
+    deferred_refs = []   # bindings that depend on the other results: evaluated after them
     for crit, ref in owners.items():
-        t, ac = crit.split(":")
-        if ref in builtin: st, det = builtin[ref]
+        t, ac = crit.split(":"); rq = reqs.get(t, {}).get(ac) or {}
+        # constraints belong to the job that stated them: an earlier task's constraints are not requirements of later work
+        if t != tid and rq.get("kind") == "constraint": continue
+        if ref == "regression-set": deferred_refs.append((crit, ref)); continue
+        if ref == "judgment":
+            rec = {"status": "Judgment", "check": ref, "detail": "decided by independent judgment with the captured evidence, not by the gate"}
+        elif ref == "static:fact":
+            st, det = eval_fact(rq.get("fact"), headdir, CHANGED)
+            rec = {"status": {"pass": "Verified", "fail": "Not verified"}.get(st, "Unknown"), "check": ref, "detail": det, "fact": rq.get("fact")}
         else:
-            rs = res.get(crit) or []
-            st, det = (rs[0]["result"], rs[0]["detail"]) if len(rs) == 1 else ("unknown", "%d results" % len(rs))
-        rec = {"status": {"pass": "Verified", "fail": "Not verified"}.get(st, "Unknown"), "check": ref, "detail": det}
+            if ref in builtin: st, det = builtin[ref]
+            else:
+                rs = res.get(crit) or []
+                st, det = (rs[0]["result"], rs[0]["detail"]) if len(rs) == 1 else ("unknown", "%d results" % len(rs))
+            rec = {"status": {"pass": "Verified", "fail": "Not verified"}.get(st, "Unknown"), "check": ref, "detail": det}
         if ref.startswith("oracle:"):
             ob = show(base, ref[7:]); rec["oracle_sha256"] = sha256(ob) if ob is not None else None
+        rec["class"] = rq.get("class"); rec["kind"] = rq.get("kind") or "criterion"
         (OUT["criteria"] if t == tid else OUT["regression"])[crit] = rec
-    for crit in [c["id"] for c in contract.get("criteria", []) if c.get("priority") == "must"]:
-        if "%s:%s" % (tid, crit) not in OUT["criteria"]: OUT["criteria"]["%s:%s" % (tid, crit)] = {"status": "Unknown", "check": None, "detail": "no owner-approved oracle or probe mapped"}
+    # requirements of the task's own contract that no binding covers
+    for r in reqs[tid].values():
+        key = "%s:%s" % (tid, r["id"])
+        if key in OUT["criteria"] or key in dict(deferred_refs): continue
+        if r["kind"] == "criterion": OUT["criteria"][key] = {"status": "Unknown", "check": None, "detail": "no owner-approved oracle or probe mapped", "class": r["class"], "kind": "criterion"}
+        elif r["class"] == "judgment": OUT["criteria"][key] = {"status": "Judgment", "check": "judgment", "detail": "decided by independent judgment with the captured evidence, not by the gate", "class": "judgment", "kind": "constraint"}
+        elif strict[tid]: OUT["criteria"][key] = {"status": "Unknown", "check": None, "detail": "constraint has no verification binding in the task record", "class": r["class"], "kind": "constraint"}
+        else: OUT["criteria"][key] = {"status": "Unbound", "check": None, "detail": "constraint of a task record written before gate v3: reported, not verified by the gate", "class": r["class"], "kind": "constraint"}
+    # a `regression` constraint bound to the regression set holds when no criterion of an earlier task fails at this head
+    for crit, ref in deferred_refs:
+        t, ac = crit.split(":"); rq = reqs.get(t, {}).get(ac) or {}
+        bad = sorted(k for k, v in OUT["regression"].items() if v["status"] == "Not verified"); unk = sorted(k for k, v in OUT["regression"].items() if v["status"] == "Unknown")
+        st = "Not verified" if bad else "Unknown" if unk else "Verified"
+        rec = {"status": st, "check": ref, "detail": ("earlier accepted criteria fail: %s" % ", ".join(bad[:8])) if bad else ("earlier accepted criteria are Unknown: %s" % ", ".join(unk[:8])) if unk else "all %d criteria of earlier accepted tasks hold at this head" % len(OUT["regression"]), "class": rq.get("class"), "kind": rq.get("kind") or "constraint"}
+        (OUT["criteria"] if t == tid else OUT["regression"])[crit] = rec
+    OUT["checks"]["requirements"] = {"gate_version": 3 if strict[tid] else 2, "judgment_pending": sorted(k for k, v in OUT["criteria"].items() if v["status"] == "Judgment"), "unbound": sorted(k for k, v in OUT["criteria"].items() if v["status"] == "Unbound"), "static": sorted(k for k, v in OUT["criteria"].items() if str(v.get("check") or "").startswith("static:"))}
     shots = sorted(f for f in os.listdir(os.path.join(out, "shots"))) if os.path.isdir(os.path.join(out, "shots")) else []
     for f in shots:   # visual fingerprints (for owner baseline decisions): published as annotations by finish()
         if f.endswith(".json"): SHOTS.append((f, base64.b64encode(open(os.path.join(out, "shots", f), "rb").read()).decode()))
@@ -340,14 +468,10 @@ def run_preview(head, base, tid, task, contract, reg, policy):
     for bucket in (OUT["criteria"], OUT["regression"]):
         for crit, rec in bucket.items():
             t, ac = crit.split(":"); req = scopes.get(t)
-            if req is not None and ac not in req and rec["status"] != "Verified":
+            if req is not None and ac not in req and rec["status"] not in ("Verified", "Judgment", "Unbound"):
                 rec["detail"] = "not yet required at this plan task (was: %s) | %s" % (rec["status"], rec.get("detail")); rec["status"] = "Deferred"
-    cur = [v["status"] for v in OUT["criteria"].values()]; old = [v["status"] for v in OUT["regression"].values()]
-    if "Not verified" in cur: finish("FAIL:ORACLE", "a must-criterion of %s failed" % tid)
-    if "Not verified" in old: finish("FAIL:REGRESSION", "a must-criterion of an earlier task failed")
-    if "Unknown" in cur or "Unknown" in old: finish("BLOCKED:EVIDENCE", "a must-criterion is Unknown")
-    if not cur: finish("BLOCKED:DECISION", "contract has no must-criteria")
-    finish("DONE")
+    verdict, reason = decide(tid, OUT["criteria"], OUT["regression"])
+    finish(verdict, reason)
 
 def record_build(ok, why): OUT["checks"]["build_ok"] = ok; OUT["reasons"].append(why)
 def parse_health(h):

@@ -78,8 +78,8 @@ describe("contract v2: fields, lint, traceability", () => {
     expect(lint(exp({ given: "a", when: "b", then: "c" })).problems.join()).toMatch(/AC2: this is ordinary behaviour or a threshold/);
     expect(lint(exp({ target: "under 200 ms" })).problems.join()).toMatch(/do not label it "experience"/);
     // representable, but NOT activated: the current gate cannot verify it, so nothing is weakened (UNKNOWN can never satisfy a must)
-    expect(lint(exp({ priority: "must", verify: "judgment", evidence: "e" })).problems.join()).toMatch(/AC2: the V0 gate verifies must-criteria of type behavior\/threshold only/);
-    expect(lint(v2({ criteria: [crit({}), { id: "AC2", type: "structural", priority: "must", tags: [], rule: "r", check: "c", verify: "static", trace: { source: "intent", ref: "Let owners" } }] })).problems.join()).toMatch(/AC2: the V0 gate verifies/);
+    expect(lint(exp({ priority: "must", verify: "judgment", evidence: "e" })).problems.join()).toMatch(/AC2: the gate verifies must-criteria of type behavior, threshold and structural only/);
+    expect(lint(v2({ criteria: [crit({}), { id: "AC2", type: "structural", priority: "must", tags: [], rule: "r", check: "c", verify: "static", trace: { source: "intent", ref: "Let owners" } }] })).problems.join()).toMatch(/AC2: a structural must-criterion needs a valid "fact"/); // Gate phase: a structural must is allowed with a repository fact
   });
 
   it("criterion ids are stable across versions: no reuse of a retired id, no id changing into another requirement", () => {

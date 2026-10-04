@@ -21,7 +21,18 @@ export const CONTRACT = (key: string) => ({
 
 const ORACLE = `import { chromium } from 'playwright';\nconst base = process.argv[2];\nconsole.log(JSON.stringify({ criterion: 'AC1', result: 'pass' }));\n`;
 
-export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: (p: Record<string, unknown>) => Record<string, unknown>; localCode?: (p: Record<string, unknown>) => Record<string, unknown>; verdicts?: (items: { id: string }[]) => { id: string; pass: boolean; reason: string }[] } = {}) {
+/** Gate phase fixture: a structural must proven by a repository fact, and one constraint of every verification path. */
+export const V3_EXTRA = {
+  criterion: { id: "AC3", type: "structural", priority: "must", tags: [], statement: "The sort order is defined in one module.", check: "repository fact", verify: "static", fact: { kind: "path_exists", path: "src/domain/sort.ts" }, trace: { source: "intent", ref: "sort their lists alphabetically" } },
+  constraints: [
+    { id: "C1", kind: "regression", statement: "Everything else on the list index stays as it is.", verify: "blackbox", trace: { source: "project", ref: "earlier accepted contracts" } },
+    { id: "C2", kind: "prohibited", statement: "No database migration is added.", verify: "static", fact: { kind: "unchanged", paths: ["drizzle/**"] }, trace: { source: "necessary", ref: "AC1: sorting is a view of existing data" } },
+    { id: "C3", kind: "prohibited", statement: "Nothing is estimated or animated.", verify: "judgment", trace: { source: "intent", ref: "Let owners" } },
+    { id: "C4", kind: "security", statement: "The sort parameter is never reflected unescaped.", verify: "blackbox", trace: { source: "necessary", ref: "AC1: the sort choice travels in the URL" } },
+  ],
+};
+
+export function fixtureHandlers(opts: { v3?: { staticFailsFirst?: boolean }; draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: (p: Record<string, unknown>) => Record<string, unknown>; localCode?: (p: Record<string, unknown>) => Record<string, unknown>; verdicts?: (items: { id: string }[]) => { id: string; pass: boolean; reason: string }[] } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -157,6 +168,10 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
             // two independent deliverables (rule 2): three must-criteria in two groups
             const c0 = cj.criteria[0] as Record<string, unknown>;
             (cj as { criteria: unknown[] }).criteria = [{ ...c0, group: "sorting" }, { ...c0, id: "AC2", then: "the choice is remembered", group: "sorting" }, { ...c0, id: "AC3", then: "a filter box narrows the lists", group: "filtering" }, { ...(cj.criteria[1] as Record<string, unknown>), id: "AC4" }];
+          }
+          if (opts.v3) {
+            (cj as { criteria: unknown[] }).criteria = [...cj.criteria, V3_EXTRA.criterion];
+            (cj as Record<string, unknown>).constraints = V3_EXTRA.constraints;
           }
           if (opts.sensitiveTag) (cj.criteria[0]!.tags as string[]).push("security");
           if (opts.noTrace) delete (cj.criteria[0] as { trace?: unknown }).trace;
@@ -350,6 +365,29 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
         const verdict = failing ? "FAIL:ORACLE" : "DONE";
         return { verdict, evidence: { verdict, head_sha: tp.head, reasons: failing ? [`a must-criterion of ${tp.key} failed`] : [], criteria, regression: {}, checks: { plan_scope: { [tp.key]: required ? [...required].sort() : null } } }, check_run: p.check_run };
       }
+      if (opts.v3) {
+        // gate v3: every requirement judged by its verification class; a failing repository fact gives FAIL:STATIC
+        const bad = !!opts.v3.staticFailsFirst && tp.head === "h1";
+        const oracle = `oracle:oracle/${tp.key}/check.mjs`;
+        const verdict = bad ? "FAIL:STATIC" : "DONE";
+        return {
+          verdict,
+          evidence: {
+            gate: "gate-v3", verdict, head_sha: tp.head, reasons: bad ? [`a repository fact required by ${tp.key} does not hold`] : [],
+            criteria: {
+              [`${tp.key}:AC1`]: { status: "Verified", check: oracle, detail: "", class: "blackbox", kind: "criterion" },
+              [`${tp.key}:AC3`]: { status: bad ? "Not verified" : "Verified", check: "static:fact", detail: bad ? "src/domain/sort.ts does not exist in the repository" : "src/domain/sort.ts exists (1 file(s))", class: "static", kind: "criterion" },
+              [`${tp.key}:C1`]: { status: "Verified", check: "regression-set", detail: "all 1 criteria of earlier accepted tasks hold at this head", class: "blackbox", kind: "constraint" },
+              [`${tp.key}:C2`]: { status: "Verified", check: "static:fact", detail: "the change touches none of drizzle/**", class: "static", kind: "constraint" },
+              [`${tp.key}:C3`]: { status: "Judgment", check: "judgment", detail: "decided by independent judgment with the captured evidence, not by the gate", class: "judgment", kind: "constraint" },
+              [`${tp.key}:C4`]: { status: "Verified", check: oracle, detail: "", class: "blackbox", kind: "constraint" },
+            },
+            regression: { "T2:AC1": { status: "Verified", check: "oracle:oracle/T2/check.mjs", detail: "" } },
+            checks: { requirements: { gate_version: 3, judgment_pending: [`${tp.key}:C3`], unbound: [], static: [`${tp.key}:AC3`, `${tp.key}:C2`] }, secret_scan: "gitleaks 0 finding(s)", secret_scan_findings: 0, osv: { vulnerabilities: 2, ids: ["GHSA-aaaa", "GHSA-bbbb"] }, opengrep: { findings: 0, rules: [], where: [] } },
+          },
+          check_run: p.check_run,
+        };
+      }
       return {
         verdict: failing ? (opts.regressFail ? "FAIL:REGRESSION" : "FAIL:ORACLE") : "DONE",
         evidence: {
@@ -381,6 +419,7 @@ export function fixtureHandlers(opts: { draftBlocked?: boolean; draftBlockedTwic
         state.smokeRuns++;
         const crash = opts.smokeDefectOnce && state.smokeRuns === 1;
         if (opts.complex) return { results: ["AC1", "AC2", "AC3"].map((criterion) => ({ criterion, result: "fail", detail: "feature absent" })) };
+        if (opts.v3) return { results: [{ criterion: "AC1", result: "fail", detail: "no Sort control" }, { criterion: "C4", result: "pass", detail: "nothing reflected" }] };
         return { results: [{ criterion: "AC1", result: "fail", detail: crash ? "ReferenceError: text is not defined" : "no Sort control" }] };
       }
       return { results: [{ criterion: "T9:AC1", result: String(p.preview).endsWith("m0") ? "fail" : "pass" }] };

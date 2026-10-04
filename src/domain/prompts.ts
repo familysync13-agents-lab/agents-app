@@ -84,7 +84,8 @@ export const CONTRACT_SCHEMA_DOC = `{
  "policies": ["policy.json"],                 // references only - never copy policy text into the contract
  "constraints": [                             // ONLY constraints specific to this job (may be empty)
    {"id": "C1", "kind": "compatibility" | "security" | "privacy" | "interface" | "prohibited" | "regression" | "design",
-    "statement": "...", "verify": "static" | "suite" | "blackbox" | "measure" | "judgment", "trace": {"source": "...", "ref": "..."}}
+    "statement": "...", "verify": "static" | "suite" | "blackbox" | "measure" | "judgment", "trace": {"source": "...", "ref": "..."},
+    "fact": {"kind": "unchanged", "paths": ["drizzle/**"]}}   // REQUIRED when verify is "static" (see the rules), otherwise absent
  ],
  "assumptions": [                             // every routine ambiguity you resolved yourself (may be empty)
    {"id": "A1", "question": "...", "chosen": "...", "basis": "existing behaviour" | "stated intent" | "policy", "reversible": true}
@@ -114,6 +115,18 @@ export const CONTRACT_V2_RULES = `- TRACEABILITY (mechanically checked): every c
   is not reversible, goes to the owner anyway - so block instead when the open point is really the owner's.
 - Keep criterion ids stable across versions: in a revision, an existing id keeps its requirement; a new requirement gets a new id;
   a removed id is never reused.
+- VERIFICATION OF CONSTRAINTS (mechanically checked): every constraint is proven by its class. "blackbox" / "measure": observable
+  through the running product (the independent check of record covers it; kind "regression" is proven by re-running the checks
+  of earlier accepted tasks). "suite": the project's own type check, lint and tests. "static": a FACT ABOUT THE REPOSITORY that
+  you state as "fact" - exactly one of:
+    {"kind": "path_exists" | "path_absent", "path": "<file, directory or glob>"}
+    {"kind": "file_contains" | "file_lacks", "path": "<file or glob>", "text": "<literal>"}   (or "pattern": "<regular expression>")
+    {"kind": "dependency_present" | "dependency_absent", "name": "<package>", "section": "dependencies" | "devDependencies" | "any"}
+    {"kind": "unchanged" | "changed_only", "paths": ["<glob>", ...]}                         (what this change may touch)
+  Globs: "*" stays inside one directory, "**" spans directories. A fact states what must be true; it never names a tool. If no
+  such fact proves the constraint, its class is not "static": use "blackbox" when the product shows it, otherwise "judgment".
+- A structural criterion may be "must" only with "verify": "static" and a "fact" of the kinds above (not "unchanged" /
+  "changed_only": those describe this change and belong in a constraint). An experience criterion cannot be "must" yet.
 - Optional planning hints (they never change the outcome): "group": "<deliverable name>" on criteria when the contract contains
   two or more independent deliverables; tags "migration" and "interface-change" where they apply.`;
 
@@ -145,7 +158,7 @@ Rules for the contract
 - It states WHAT must be true, never how to implement it. The owner approves it; afterwards it is frozen.
 - Every must-criterion must be checkable black-box against the running preview (behavior: given/when/then with exact routes,
   labels, accessible names and messages; threshold: a numeric target). Use the exact interface names the implementation must use,
-  and put them in "interface". Must-criteria of type experience or structural are not supported by the V0 gate: use "should".
+  and put them in "interface". A must-criterion of type experience is not supported yet: use "should". A structural must needs a repository "fact" (see the rules).
 - Reuse the interface names of earlier contracts (sign-in, seeded users, lists, ...) where the new work touches them.
 - Keep scope to the owner's intent. Anything the intent does not ask for goes to non_goals.
 ${CONTRACT_V2_RULES}
@@ -242,7 +255,7 @@ say so in /work/out/NOTES.md. Test environment notes: ${docFiles.map((f) => `/wo
     interfaceFiles.length ? `, and for interface context only ${interfaceFiles.map((f) => `/work/${f}`).join(", ")} (their criteria are NOT yours to cover)` : ""
   }${docFiles.length ? `; test environment notes: ${docFiles.map((f) => `/work/${f}`).join(", ")}` : ""}. There is no preview and no
 source code; do not look for any. Write /work/out/check.mjs exactly as SCAFFOLD.md specifies, covering exactly these criteria:
-${criteria.join(", ")}. Use interface names verbatim. You cannot run it now: make it robust (explicit waits, unique data, try/catch per
+${criteria.join(", ")}${criteria.some((k) => /^C[0-9]+$/.test(k)) ? ' (ids starting with "C" are constraints of the contract: one result line each, exactly like a criterion)' : ""}. Use interface names verbatim. You cannot run it now: make it robust (explicit waits, unique data, try/catch per
 criterion). Check syntax with \`node --check /work/out/check.mjs\`. Put questions or contradictions in /work/out/NOTES.md. Do not create
 or change anything else. Finish with the single line VERIFIER-DONE.${
     feedback

@@ -256,17 +256,27 @@ export function buildPackage(i: PackageInput) {
   const bind = { head: i.head, contractSha256: i.contract?.sha256 ?? null };
   const key = i.task.key;
   const criteria = (i.contract?.body.criteria ?? []).map((c) => criterionState(c, key, i.rows, bind, i.inScope === null || i.inScope.includes(c.id)));
-  // constraints (Contract v2) are requirements too; their verification paths arrive with the Gate phase. They are listed with
-  // whatever evidence exists and never silently counted as satisfied.
+  // Constraints (Contract v2) are requirements like must-criteria. Since gate v3 the gate judges each by its verification class and
+  // reports it under "<task>:<C id>". A constraint COUNTS when the gate judged it; it does not when the gate only reported it:
+  // "judgment" (the independent Verifier's part), "unbound" (a task record older than gate v3) or deferred at a plan task. A
+  // constraint that does not count is listed with the reason - never silently treated as satisfied.
   const constraints = (i.contract?.body.constraints ?? []).map((c) => {
-    const ev = i.rows.filter((r) => r.criterionTask === key && r.criterionId === c.id && r.commitSha === i.head).sort(order);
-    return { id: c.id, kind: c.kind, verify: c.verify, in_scope: i.inScope === null || i.inScope.includes(c.id), status: (ev[0]?.status ?? "not_verified") as EvidenceStatus, reason: ev[0] ? first(ev[0].detail) : "no verification path produces evidence for constraints yet (Gate phase)", evidence: ev.map((r) => r.id) };
+    const ev = i.rows.filter((r) => r.criterionTask === key && r.criterionId === c.id && r.commitSha === i.head && (r.contractSha256 === null || bind.contractSha256 === null || r.contractSha256 === bind.contractSha256)).sort(order);
+    const latest = ev[0];
+    const inScope = i.inScope === null || i.inScope.includes(c.id);
+    const judged = !!latest && latest.checkName !== null && !["unbound", "judgment", "unmapped"].includes(latest.checkName) && !latest.checkName.startsWith("deferred:");
+    const why = !latest ? "the gate reported nothing for this constraint at this head" : latest.checkName === "judgment" ? "decided by independent judgment, not by the gate (Verifier phase)" : latest.checkName === "unbound" ? "the task record predates gate v3: reported, not verified" : first(latest.detail);
+    return { id: c.id, kind: c.kind, verify: c.verify, in_scope: inScope, counted: judged && inScope, status: (judged ? latest!.status : "not_verified") as EvidenceStatus, reason: judged ? (latest!.status === "verified" ? `${latest!.checkName}, ${latest!.source}` : first(latest!.detail)) : why, evidence: ev.map((r) => r.id) };
   });
   // criteria of EARLIER tasks judged at this head (regression): latest observation per subject
   const reg = new Map<string, EvRow>();
   for (const r of [...atHead].sort(order)) if (r.kind === "regression" && r.criterionTask && r.criterionTask !== key && !reg.has(r.subject)) reg.set(r.subject, r);
   const regressions = [...reg.values()].sort((a, b) => a.subject.localeCompare(b.subject)).map((r) => ({ subject: r.subject, status: r.status, evidence: r.id, reason: r.status === "verified" ? "" : first(r.detail) }));
   const findings = atHead.filter((r) => r.kind === "finding").sort((a, b) => a.id - b.id).map((r) => ({ evidence: r.id, criterion: r.criterionId, severity: String(r.severity ?? "low").toLowerCase(), title: first(r.detail), linked: r.criterionId !== null }));
+  // scanner results of the head (latest per scanner): recorded facts; only what the gate's policy makes deciding affects its verdict
+  const sc = new Map<string, EvRow>();
+  for (const r of [...atHead].sort(order)) if (r.kind === "scan" && !sc.has(r.subject)) sc.set(r.subject, r);
+  const scans = [...sc.values()].sort((a, b) => a.subject.localeCompare(b.subject)).map((r) => ({ scanner: r.subject.replace(/^scan:/, ""), status: r.status, evidence: r.id, detail: first(r.detail) }));
   const vr = atHead.filter((r) => r.kind === "verifier_run").sort(order)[0];
   const verifier = { status: vr ? (vr.status === "verified" ? "no_defect_found" : "unknown") : findings.length ? "findings" : "not_run", run: vr?.runId ?? null, evidence: vr?.id ?? null, reason: vr && vr.status !== "verified" ? first(vr.detail) : "" };
 
@@ -283,10 +293,11 @@ export function buildPackage(i: PackageInput) {
   if (i.gate && i.gate.headSha !== i.head) inconsistent.push(`the gate result is for ${i.gate.headSha.slice(0, 8)}, not for the judged head ${i.head.slice(0, 8)}`);
   if (i.gate && i.contract && i.gate.contractSha256 && i.gate.contractSha256 !== i.contract.sha256) inconsistent.push("the gate evaluated a different contract version than the approved one");
   for (const c of must) if (c.status !== "verified" && c.status !== "waived") gaps.push(`${key}:${c.id} is ${c.status.replace("_", " ")}: ${c.reason}`);
+  for (const c of constraints) if (c.counted && c.status !== "verified" && c.status !== "waived") gaps.push(`${key}:${c.id} (constraint) is ${c.status.replace("_", " ")}: ${c.reason}`);
   for (const r of regressions) if (r.status !== "verified" && r.status !== "waived") gaps.push(`${r.subject} (earlier task) is ${String(r.status).replace("_", " ")}: ${r.reason}`);
   // a passing gate verdict that the criterion evidence of the same head does not carry is a contradiction, never a pass
   if (i.gate?.kind === "pass" && gaps.length) inconsistent.push(`the gate verdict is ${i.gate.verdict}, but the evidence bound to this head does not verify every required criterion`);
-  const status: PackageStatus = inconsistent.length ? "inconsistent" : must.some((c) => c.status === "unknown") ? "blocked" : gaps.length ? "incomplete" : "complete";
+  const status: PackageStatus = inconsistent.length ? "inconsistent" : must.some((c) => c.status === "unknown") || constraints.some((c) => c.counted && c.status === "unknown") ? "blocked" : gaps.length ? "incomplete" : "complete";
 
   const counts = (xs: { status: string }[]) => Object.fromEntries(["verified", "partially_verified", "not_verified", "unknown", "waived"].map((s) => [s, xs.filter((x) => x.status === s).length]));
   const evidenceIndex = atHead.filter((r) => r.kind !== "other" || r.artifactId !== null).sort((a, b) => a.id - b.id).map((r) => ({
@@ -307,6 +318,7 @@ export function buildPackage(i: PackageInput) {
     criteria,
     constraints,
     regressions,
+    scans,
     findings,
     verifier,
     evidence: evidenceIndex,
@@ -317,8 +329,8 @@ export function buildPackage(i: PackageInput) {
     handoff: {
       gate: { must_in_scope: must.map((c) => c.id), unknown: must.filter((c) => c.status === "unknown").map((c) => c.id), missing: must.filter((c) => c.status === "not_verified" && c.evidence.length === 0).map((c) => c.id), failing: must.filter((c) => c.status === "not_verified" && c.evidence.length > 0).map((c) => c.id), regressions_failing: regressions.filter((r) => r.status !== "verified").map((r) => r.subject) },
       // the Verifier is blind to the code and to the Builder's narrative: it gets criterion ids and evidence REQUIREMENTS only
-      verifier: { head: i.head, contract_sha256: i.contract?.sha256 ?? null, judgment_required: criteria.filter((c) => c.required_proof === "judgment").map((c) => ({ id: c.id, priority: c.priority, requirement: (i.contract?.body.criteria.find((k) => k.id === c.id)?.evidence as string | undefined) ?? null })), unlinked_findings: findings.filter((f) => !f.linked).map((f) => f.evidence) },
-      decision: { status, must_total: must.length, must: counts(must), should: counts(criteria.filter((c) => c.in_scope && c.priority === "should")), waived: must.filter((c) => c.status === "waived").map((c) => c.id), blocking: [...inconsistent, ...gaps].slice(0, 20), contradicted: criteria.filter((c) => c.contradicted_by.length).map((c) => c.id) },
+      verifier: { head: i.head, contract_sha256: i.contract?.sha256 ?? null, judgment_constraints: constraints.filter((c) => c.verify === "judgment").map((c) => c.id), judgment_required: criteria.filter((c) => c.required_proof === "judgment").map((c) => ({ id: c.id, priority: c.priority, requirement: (i.contract?.body.criteria.find((k) => k.id === c.id)?.evidence as string | undefined) ?? null })), unlinked_findings: findings.filter((f) => !f.linked).map((f) => f.evidence) },
+      decision: { status, must_total: must.length, constraints_counted: constraints.filter((c) => c.counted).length, constraints_not_counted: constraints.filter((c) => !c.counted).map((c) => c.id), must: counts(must), should: counts(criteria.filter((c) => c.in_scope && c.priority === "should")), waived: must.filter((c) => c.status === "waived").map((c) => c.id), blocking: [...inconsistent, ...gaps].slice(0, 20), contradicted: criteria.filter((c) => c.contradicted_by.length).map((c) => c.id) },
     },
   };
   const text = stable(body);

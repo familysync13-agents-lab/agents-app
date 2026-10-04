@@ -265,7 +265,7 @@ export const gateResults = pgTable(
 
 export const EVIDENCE_STATUSES = ["verified", "partially_verified", "not_verified", "unknown", "waived"] as const;
 export type EvidenceStatus = (typeof EVIDENCE_STATUSES)[number];
-export const EVIDENCE_KINDS = ["criterion", "regression", "finding", "verifier_run", "attribution", "oracle_calibration", "oracle_validation", "oracle_mutation", "regression_oracle", "other"] as const;
+export const EVIDENCE_KINDS = ["criterion", "regression", "finding", "verifier_run", "attribution", "oracle_calibration", "oracle_validation", "oracle_mutation", "regression_oracle", "scan", "other"] as const;
 export type EvidenceKind = (typeof EVIDENCE_KINDS)[number];
 export type EvidenceScope = "task" | "plan_task" | "integrated";
 

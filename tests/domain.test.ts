@@ -20,7 +20,7 @@ describe("contract lint (Architecture Baseline section 7)", () => {
     expect(r.problems.join("\n")).toMatch(/AC1: behavior criteria need given\/when\/then/);
     expect(r.problems.join("\n")).toMatch(/open_questions must be empty/);
     expect(r.problems.join("\n")).toMatch(/AC3: experience criteria need at least one reference/);
-    expect(r.problems.join("\n")).toMatch(/AC3: the V0 gate verifies must-criteria of type behavior\/threshold only/);
+    expect(r.problems.join("\n")).toMatch(/AC3: the gate verifies must-criteria of type behavior, threshold and structural only/);
   });
   it("forces the critical tier for authz / data-loss / money / pii tags", () => {
     const c = structuredClone(CONTRACT("T9")) as { criteria: { tags: string[] }[] };

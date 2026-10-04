@@ -8,8 +8,8 @@ export interface GateEvidence {
   base_sha?: string;
   task?: string;
   contract_sha256?: string;
-  criteria?: Record<string, { status?: string; check?: string; detail?: string; oracle_sha256?: string }>;
-  regression?: Record<string, { status?: string; check?: string; detail?: string }>;
+  criteria?: Record<string, { status?: string; check?: string | null; detail?: string; oracle_sha256?: string; class?: string | null; kind?: string }>;
+  regression?: Record<string, { status?: string; check?: string | null; detail?: string; class?: string | null; kind?: string }>;
   checks?: Record<string, unknown>;
 }
 
@@ -21,7 +21,16 @@ export interface CriterionEvidence {
   detail: string;
   check: string;
   regression: boolean;
+  /**
+   * Does this record decide the verdict? Not when the gate reported it without judging it: "Deferred" (not yet required at this
+   * plan task), "Judgment" (the independent Verifier's part) or "Unbound" (a constraint of a task record older than gate v3).
+   */
+  deciding: boolean;
+  /** "criterion" | "constraint" (gate v3) */
+  requirement: string;
+  verifyClass: string | null;
 }
+const NON_DECIDING = ["deferred", "judgment", "unbound"];
 
 /** The gate reports Verified / Not verified / Unknown; anything else is Unknown (never guessed). */
 export function mapStatus(s: string | undefined): EvidenceStatus {
@@ -59,7 +68,11 @@ export function criteriaFromGate(ev: GateEvidence): CriterionEvidence[] {
   ] as const) {
     for (const [subject, v] of Object.entries(rec)) {
       const check = v.check ?? "unmapped";
+      const raw = (v.status ?? "").toLowerCase();
       out.push({
+        deciding: !NON_DECIDING.includes(raw),
+        requirement: v.kind ?? "criterion",
+        verifyClass: v.class ?? null,
         subject,
         status: mapStatus(v.status),
         oracle: oracleOf(check),
@@ -73,12 +86,31 @@ export function criteriaFromGate(ev: GateEvidence): CriterionEvidence[] {
   return out;
 }
 
+export interface ScanEvidence { subject: string; status: EvidenceStatus; detail: string; severity: string }
+/**
+ * The gate's scanners as evidence (Gate phase). Policy today: a secret finding fails the gate (FAIL:SECRET); dependency and static
+ * analysis findings are recorded with their ids and never decide the verdict - they are shown as Partially verified, not hidden.
+ */
+export function scansFromGate(ev: GateEvidence): ScanEvidence[] {
+  const out: ScanEvidence[] = [];
+  const ch = ev.checks ?? {};
+  if (typeof ch.secret_scan_findings === "number") {
+    const n = ch.secret_scan_findings;
+    out.push({ subject: "scan:secrets", status: n === 0 ? "verified" : "not_verified", severity: n === 0 ? "info" : "critical", detail: n === 0 ? "gitleaks: no secret in the head tree" : `gitleaks: ${n} secret(s): ${JSON.stringify(ch.secret_scan_detail ?? []).slice(0, 600)}` });
+  }
+  const osv = ch.osv as { vulnerabilities?: number; ids?: string[]; error?: string } | undefined;
+  if (osv) out.push(osv.error ? { subject: "scan:dependencies", status: "unknown", severity: "info", detail: `OSV-Scanner did not complete: ${String(osv.error).slice(0, 200)}` } : { subject: "scan:dependencies", status: (osv.vulnerabilities ?? 0) === 0 ? "verified" : "partially_verified", severity: "info", detail: (osv.vulnerabilities ?? 0) === 0 ? "OSV-Scanner: no known vulnerability in the dependency set" : `OSV-Scanner: ${osv.vulnerabilities} known vulnerabilit${osv.vulnerabilities === 1 ? "y" : "ies"} recorded (not gate-deciding): ${(osv.ids ?? []).slice(0, 20).join(", ")}` });
+  const og = ch.opengrep as { findings?: number; rules?: string[]; where?: string[]; error?: string } | undefined;
+  if (og) out.push(og.error ? { subject: "scan:static-analysis", status: "unknown", severity: "info", detail: `Opengrep did not complete: ${String(og.error).slice(0, 200)}` } : { subject: "scan:static-analysis", status: (og.findings ?? 0) === 0 ? "verified" : "partially_verified", severity: "info", detail: (og.findings ?? 0) === 0 ? "Opengrep: no finding" : `Opengrep: ${og.findings} finding(s) recorded (not gate-deciding): ${(og.rules ?? []).join(", ")} at ${(og.where ?? []).slice(0, 10).join(", ")}` });
+  return out;
+}
+
 /** Details handed to the Builder for a correction: only what failed, verbatim from the gate (never the oracle source). */
 export function correctionDetails(ev: GateEvidence): string {
   const lines: string[] = [];
   for (const r of ev.reasons ?? []) lines.push(`- ${r}`);
   for (const c of criteriaFromGate(ev)) {
-    if (c.status === "verified") continue;
+    if (c.status === "verified" || !c.deciding) continue;
     lines.push(`- ${c.subject} (${c.regression ? "regression of an earlier task" : c.check}): ${c.status.replace("_", " ")}${c.detail ? ` - ${c.detail.trim().slice(0, 600)}` : ""}`);
   }
   const checkStage = (ev.checks?.check_stage as string | undefined) ?? "";
@@ -95,7 +127,7 @@ import { isOracleDefect } from "./oracle-check";
 
 /** Failing criteria of the task itself that are oracle defects (all of them, or null when any failure may be the implementation's). */
 export function oracleDefects(ev: GateEvidence): CriterionEvidence[] | null {
-  const failing = criteriaFromGate(ev).filter((c) => !c.regression && c.status !== "verified");
+  const failing = criteriaFromGate(ev).filter((c) => !c.regression && c.deciding && c.status !== "verified");
   if (failing.length === 0) return null;
   const defects = failing.filter((c) => c.check.startsWith("oracle:") && isOracleDefect(c.detail));
   return defects.length === failing.length ? defects : null;

@@ -16,6 +16,28 @@ export const TRACE_SOURCES = ["intent", "policy", "project", "necessary"] as con
 export const Trace = z.object({ source: z.enum(TRACE_SOURCES), ref: Text }).loose();
 export type Trace = z.infer<typeof Trace>;
 
+/**
+ * A declarative fact about the repository: how a `static` requirement is proven (Gate phase). It is part of the requirement itself
+ * - what must be true of the repository - never a program and never a tool name. The gate evaluates it on the head tree
+ * (gate/gate.py eval_fact). "unchanged" / "changed_only" speak about the change and are valid for constraints only.
+ */
+export const FACT_KINDS = ["path_exists", "path_absent", "file_contains", "file_lacks", "dependency_present", "dependency_absent", "unchanged", "changed_only"] as const;
+const RelPath = z.string().min(1).max(300).refine((p) => !p.startsWith("/") && !p.split("/").includes("..") && !p.includes("\\") && !p.includes("\0"), "must be a repository-relative path");
+const safeRegex = (p: string) => { try { new RegExp(p); return true; } catch { return false; } };
+const Needle = { text: z.string().min(1).max(500).optional(), pattern: z.string().min(1).max(500).refine(safeRegex, "must be a valid regular expression").optional() };
+export const Fact = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("path_exists"), path: RelPath }).strict(),
+  z.object({ kind: z.literal("path_absent"), path: RelPath }).strict(),
+  z.object({ kind: z.literal("file_contains"), path: RelPath, ...Needle }).strict().refine((f) => (f.text === undefined) !== (f.pattern === undefined), "needs exactly one of text or pattern"),
+  z.object({ kind: z.literal("file_lacks"), path: RelPath, ...Needle }).strict().refine((f) => (f.text === undefined) !== (f.pattern === undefined), "needs exactly one of text or pattern"),
+  z.object({ kind: z.literal("dependency_present"), name: z.string().min(1).max(200), manifest: RelPath.optional(), section: z.enum(["dependencies", "devDependencies", "any"]).optional() }).strict(),
+  z.object({ kind: z.literal("dependency_absent"), name: z.string().min(1).max(200), manifest: RelPath.optional(), section: z.enum(["dependencies", "devDependencies", "any"]).optional() }).strict(),
+  z.object({ kind: z.literal("unchanged"), paths: z.array(RelPath).min(1).max(20) }).strict(),
+  z.object({ kind: z.literal("changed_only"), paths: z.array(RelPath).min(1).max(20) }).strict(),
+]);
+export type Fact = z.infer<typeof Fact>;
+const CHANGE_RELATIVE: readonly string[] = ["unchanged", "changed_only"];
+
 export const Criterion = z
   .object({
     id: z.string().regex(/^AC[0-9]+$/),
@@ -39,13 +61,15 @@ export const Criterion = z
     /** v2: optional deliverable group, used only by the plan's shape rules */
     group: z.string().optional(),
     trace: Trace.optional(),
+    /** Gate phase: the repository fact that proves a `static` criterion (validated by lint, not by the schema, so old contracts still load) */
+    fact: z.unknown().optional(),
   })
   .loose();
 export type Criterion = z.infer<typeof Criterion>;
 
 export const CONSTRAINT_KINDS = ["compatibility", "security", "privacy", "interface", "prohibited", "regression", "design"] as const;
 export const Constraint = z
-  .object({ id: z.string().regex(/^C[0-9]+$/), kind: z.enum(CONSTRAINT_KINDS), statement: Text, verify: z.enum(VERIFY_CLASSES), trace: Trace })
+  .object({ id: z.string().regex(/^C[0-9]+$/), kind: z.enum(CONSTRAINT_KINDS), statement: Text, verify: z.enum(VERIFY_CLASSES), trace: Trace, fact: z.unknown().optional() })
   .loose();
 export type Constraint = z.infer<typeof Constraint>;
 
@@ -99,10 +123,11 @@ export const VERIFY_FOR: Record<Criterion["type"], readonly VerifyClass[]> = {
 };
 
 /**
- * Must-criteria the CURRENT gate can prove. structural/experience musts are representable (verify static / judgment + evidence) but
- * stay disabled until the Gate phase provides their verification paths: nothing is weakened to enable them early.
+ * Must-criteria the gate can prove. Gate phase: a structural must is proven by its declared repository fact (verify static).
+ * An experience must (verify judgment + evidence) is representable and the gate reports it as "Judgment", but it stays disabled
+ * until the Verifier phase provides the per-criterion judgment that completes it: nothing is weakened to enable it early.
  */
-export const GATED_MUST_TYPES: readonly Criterion["type"][] = ["behavior", "threshold"];
+export const GATED_MUST_TYPES: readonly Criterion["type"][] = ["behavior", "threshold", "structural"];
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 export const intentHash = (intent: string) => sha256(intent);
@@ -140,8 +165,16 @@ export function lintContract(raw: unknown, expect: { id: string; tier: "standard
   for (const k of c.criteria)
     if (k.priority === "must" && !GATED_MUST_TYPES.includes(k.type))
       problems.push(
-        `${k.id}: the V0 gate verifies must-criteria of type behavior/threshold only; make it "should" or express it as behavior`,
+        `${k.id}: the gate verifies must-criteria of type behavior, threshold and structural only; make it "should" or express it as behavior`,
       );
+  // a structural must is proven by a repository fact it declares itself (deterministic; no worker-written check)
+  for (const k of c.criteria) {
+    if (k.type === "structural" && k.priority === "must") {
+      const f = Fact.safeParse(k.fact);
+      if (!f.success) problems.push(`${k.id}: a structural must-criterion needs a valid "fact" (${FACT_KINDS.join(" | ")}): ${f.error.issues[0]?.message ?? "missing"}`);
+      else if (CHANGE_RELATIVE.includes(f.data.kind)) problems.push(`${k.id}: "${f.data.kind}" describes this change, not the product; state it as a constraint`);
+    } else if (k.fact !== undefined && !Fact.safeParse(k.fact).success) problems.push(`${k.id}: "fact" is not a valid repository fact`);
+  }
   if (c.open_questions.length > 0) problems.push("open_questions must be empty before approval");
   if (v2) problems.push(...lintV2(c, v2));
   return { ok: problems.length === 0, problems };
@@ -180,6 +213,11 @@ function lintV2(c: Contract, ctx: V2Context): string[] {
     if (ids.has(x.id)) problems.push(`${x.id}: duplicate id`);
     ids.add(x.id);
     trace(x.id, x.trace);
+    // Gate phase: every constraint has a verification path by class. static = a declared repository fact.
+    if (x.verify === "static") {
+      const f = Fact.safeParse(x.fact);
+      if (!f.success) problems.push(`${x.id}: a static constraint needs a valid "fact" (${FACT_KINDS.join(" | ")}); if no repository fact proves it, its class is judgment or blackbox`);
+    } else if (x.fact !== undefined) problems.push(`${x.id}: "fact" belongs to static constraints only`);
   }
   const aids = new Set<string>();
   for (const a of c.assumptions ?? []) {
@@ -265,5 +303,38 @@ export const sha256 = (s: string | Buffer) => createHash("sha256").update(s).dig
 
 /** The must-criteria that the gate maps to the oracle of record (behavior and threshold: black-box checkable). */
 export function oracleCriteria(c: Contract): string[] {
-  return c.criteria.filter((k) => k.priority === "must" && (k.type === "behavior" || k.type === "threshold")).map((k) => k.id);
+  return [
+    ...c.criteria.filter((k) => k.priority === "must" && (k.type === "behavior" || k.type === "threshold")).map((k) => k.id),
+    // Gate phase: a constraint observable through the running product (other than "nothing earlier regresses", which the regression
+    // set proves) is checked by the same check of record
+    ...(c.constraints ?? []).filter((x) => (x.verify === "blackbox" || x.verify === "measure") && x.kind !== "regression").map((x) => x.id),
+  ];
 }
+
+/**
+ * Criterion / constraint -> verification binding of the task record (Contract spec v2 sections 5 and 11): the class named by the
+ * contract resolved to what the gate runs. Deterministic; `oracle` is the path of the check of record.
+ *   blackbox / measure -> the check of record        static -> the requirement's own repository fact
+ *   suite -> the candidate check stage                regression constraint -> the regression set
+ *   judgment -> reported by the gate, decided by independent judgment (Verifier phase)
+ */
+export function gateBindings(c: Contract, oracle: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const k of c.criteria) {
+    if (k.priority !== "must") continue;
+    if (k.type === "structural") out[k.id] = "static:fact";
+    else if (k.type === "experience") out[k.id] = "judgment";
+    else out[k.id] = `oracle:${oracle}`;
+  }
+  for (const x of c.constraints ?? []) {
+    if (x.verify === "static") {
+      if (Fact.safeParse(x.fact).success) out[x.id] = "static:fact"; // a pre-Gate contract without a fact stays unbound (reported, not verified)
+    } else if (x.verify === "suite") out[x.id] = "suite";
+    else if (x.verify === "judgment") out[x.id] = "judgment";
+    else if (x.kind === "regression") out[x.id] = "regression-set";
+    else out[x.id] = `oracle:${oracle}`;
+  }
+  return out;
+}
+/** Task records written from the Gate phase on are strict: a requirement without a binding is Unknown at the gate. */
+export const GATE_VERSION = 3;
