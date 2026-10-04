@@ -13,7 +13,7 @@ import { Ago, buttonPrimary, Card, CardHeader, cx, Empty, EvidenceChip, RoleTag,
 import { acceptanceResidualGroups, currentEvidencePackage, taskDetail } from "@/server/queries";
 import { ResidualList, type ResidualGroups } from "@/components/residual-list";
 import { requireOwner } from "@/server/auth";
-import { shortenTitle } from "@/domain/text";
+import { parseTaskId, shortenTitle } from "@/domain/text";
 
 export const metadata = { title: "Task" };
 
@@ -26,7 +26,9 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
   // checked here too: the layout renders concurrently, so its check alone would let page data stream into the redirect
   await requireOwner();
   const { id } = await params;
-  const d = await taskDetail(Number(id));
+  const taskId = parseTaskId(id);
+  if (taskId === null) notFound();
+  const d = await taskDetail(taskId);
   if (!d) notFound();
   const pkg = await currentEvidencePackage(d.task.id);
   const t = d.task;

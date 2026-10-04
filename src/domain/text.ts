@@ -17,3 +17,13 @@ export function shortenTitle(title: string, max = TITLE_MAX): string {
   const kept = head.slice(0, cut).join("").trimEnd() || head.join("").trimEnd();
   return `${kept}…`;
 }
+
+/**
+ * Task number from a route segment: only decimal digits with a value of at least 1 ("12", not "0", "1.5", "-3", "+5",
+ * "1e3", "0x10", "NaN", "Infinity" or "12abc"); anything else is null.
+ */
+export function parseTaskId(id: string): number | null {
+  if (!/^[0-9]+$/.test(id)) return null;
+  const n = Number(id);
+  return n >= 1 ? n : null;
+}
