@@ -39,8 +39,9 @@ async function openTask(page, key) {
   assert.equal(new URL(page.url()).pathname, '/', 'Preview sign-in must redirect to /');
   const project = await page.goto(new URL('/projects/demo', base).href, { waitUntil: 'domcontentloaded' });
   assert.equal(project?.status(), 200, 'Demo Project must open');
-  // The contract guarantees the task key in the link, but permits its title there too.
-  const links = page.getByRole('link').filter({ hasText: new RegExp(`(^|[^A-Za-z0-9_])${key}([^A-Za-z0-9_]|$)`) });
+  // Match the task key within its own element: adjacent title text can make
+  // the link's aggregated text "T1Demo: ..." without a textual boundary.
+  const links = page.getByRole('link').filter({ has: page.getByText(key, { exact: true }) });
   const taskLinks = links.and(page.locator('a[href^="/tasks/"]'));
   await eventually(async () => assert.equal(await taskLinks.count(), 1, `Expected one task link for ${key}`), 'Find demo task');
   const href = await taskLinks.getAttribute('href');
