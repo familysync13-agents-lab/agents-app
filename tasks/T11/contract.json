@@ -1,0 +1,169 @@
+{
+ "assumptions": [
+  {
+   "basis": "stated intent",
+   "chosen": "Only an identifier made of the decimal digits 0-9 whose value is at least 1 (no sign, decimal point, exponent, hexadecimal prefix, letters or whitespace). Anything else, including 0, 1.5, -3, +5, 1e3, 0x10, NaN, Infinity and 12abc, is malformed and shows Not found.",
+   "id": "A1",
+   "question": "Which identifiers count as a positive whole number?",
+   "reversible": true
+  },
+  {
+   "basis": "existing behaviour",
+   "chosen": "The page the product already shows for a task number that does not exist: HTTP status 404 and the visible text \"This page could not be found.\"; it does not show the task page (no \"Evidence package\" heading).",
+   "id": "A2",
+   "question": "What does 'the ordinary Not found page' show, for a blind check?",
+   "reversible": true
+  },
+  {
+   "basis": "stated intent",
+   "chosen": "Yes: it shows the same Not found page with HTTP status 404 and never a server error.",
+   "id": "A3",
+   "question": "Does a well-formed positive whole number too large to be any task's number (for example 99999999999) count as 'a task number that does not exist'?",
+   "reversible": true
+  }
+ ],
+ "canary_routes": [
+  "/",
+  "/projects/demo"
+ ],
+ "constraints": [
+  {
+   "id": "C1",
+   "kind": "regression",
+   "statement": "Everything accepted in earlier tasks keeps working and their checks of record keep passing (T0, T1, T4, T5, T6, T7, T8, T9, T10); in particular the task page /tasks/{id} of an existing task, reached from the links on /projects/demo, still opens with HTTP status 200 and its content.",
+   "trace": {
+    "ref": "Contracts T0, T1, T4, T5, T6, T7, T8, T9, T10 (accepted task page, decisions and command page behaviour)",
+    "source": "project"
+   },
+   "verify": "blackbox"
+  }
+ ],
+ "criteria": [
+  {
+   "given": "the owner is signed in (GET /auth/preview)",
+   "id": "AC1",
+   "priority": "must",
+   "tags": [],
+   "then": "the response has HTTP status 404 and the page shows the visible text \"This page could not be found.\" and no h2 \"Evidence package\"",
+   "trace": {
+    "ref": "Opening a task page with an identifier that is not a positive whole number (for example /tasks/invalid",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "they open /tasks/invalid"
+  },
+  {
+   "given": "the owner is signed in (GET /auth/preview)",
+   "id": "AC2",
+   "priority": "must",
+   "tags": [],
+   "then": "the response has HTTP status 404 and the page shows the visible text \"This page could not be found.\" and no h2 \"Evidence package\"",
+   "trace": {
+    "ref": "for example /tasks/invalid, /tasks/1.5 or /tasks/-3) shows the ordinary Not found page",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "they open /tasks/1.5"
+  },
+  {
+   "given": "the owner is signed in (GET /auth/preview)",
+   "id": "AC3",
+   "priority": "must",
+   "tags": [],
+   "then": "the response has HTTP status 404 and the page shows the visible text \"This page could not be found.\" and no h2 \"Evidence package\"",
+   "trace": {
+    "ref": "or /tasks/-3) shows the ordinary Not found page with HTTP status 404",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "they open /tasks/-3"
+  },
+  {
+   "given": "the owner is signed in (GET /auth/preview)",
+   "id": "AC4",
+   "priority": "must",
+   "tags": [],
+   "then": "every one of these responses has HTTP status 404 and shows the visible text \"This page could not be found.\" and no h2 \"Evidence package\"",
+   "trace": {
+    "ref": "an identifier that is not a positive whole number",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "they open, one at a time, /tasks/0, /tasks/+5, /tasks/1e3, /tasks/0x10, /tasks/NaN, /tasks/Infinity and /tasks/12abc"
+  },
+  {
+   "given": "the owner is signed in (GET /auth/preview) and no task has the number 999999 or 99999999999",
+   "id": "AC5",
+   "priority": "must",
+   "tags": [],
+   "then": "both responses have HTTP status 404 and show the visible text \"This page could not be found.\" and no h2 \"Evidence package\"",
+   "trace": {
+    "ref": "the same as a task number that does not exist",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "they open /tasks/999999 and /tasks/99999999999"
+  },
+  {
+   "given": "the owner is signed in (GET /auth/preview)",
+   "id": "AC6",
+   "priority": "must",
+   "tags": [],
+   "then": "no response has an HTTP status from 500 to 599, and no page shows an error page instead of the Not found page (no text \"Application error\" and no text \"Internal Server Error\")",
+   "trace": {
+    "ref": "It never shows a server error.",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "they open each of the task addresses named in AC1 to AC5"
+  },
+  {
+   "given": "the owner is signed in (GET /auth/preview) and is on /projects/demo",
+   "id": "AC7",
+   "priority": "must",
+   "tags": [],
+   "then": "the response has HTTP status 200, the document title is \"Task · Agents\", the h1 contains \"T3\" and the page has an h2 \"Evidence package\"; it does not show the text \"This page could not be found.\"",
+   "trace": {
+    "ref": "AC1-AC5: Not found must be shown only for malformed or non-existent task numbers; a fix that answered every task address with Not found would satisfy them while breaking real task pages",
+    "source": "necessary"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "they follow the link whose text contains the task key \"T3\" to its task page /tasks/{id}"
+  }
+ ],
+ "id": "T11",
+ "intent_sha256": "f4b1e6facb5f9a9240c5d33496631cea882de51fd651fadf6bc065373fc363f9",
+ "interface": {
+  "ui": "Sign-in for the gate preview: GET /auth/preview (redirects to / with an owner session). Demo Project page /projects/demo, where each demo task's key (\"T1\", \"T2\", \"T3\") is shown in a link to its task page /tasks/{id} (id = decimal digits); an existing task page responds with HTTP status 200, document title \"Task · Agents\" and a card headed (h2) \"Evidence package\". Task page route /tasks/{id}. Not found page: HTTP status 404, visible text \"This page could not be found.\", no h2 \"Evidence package\". Malformed identifiers used by the checks: \"invalid\", \"1.5\", \"-3\", \"0\", \"+5\", \"1e3\", \"0x10\", \"NaN\", \"Infinity\", \"12abc\". Non-existent well-formed task numbers used by the checks: \"999999\" and \"99999999999\". No new routes, headings, labels, buttons or messages."
+ },
+ "non_goals": [
+  "Changing the content, design or wording of the Not found page itself.",
+  "Identifier handling of other routes, including the evidence-file page /tasks/{id}/artifacts/{aid}, /projects/{slug} and API routes.",
+  "Defining whether an all-digit identifier with leading zeros (for example /tasks/007) opens the task with that number or shows Not found.",
+  "Changing what a visitor without an owner session sees on /tasks/{id} (sign-in handling is unchanged).",
+  "Any change to the database schema, migrations, the control loop or the preview demo data."
+ ],
+ "open_questions": [],
+ "policies": [
+  "policy.json"
+ ],
+ "scope": {
+  "paths": [
+   "**"
+  ],
+  "summary": "Opening the task page route /tasks/{id} as the signed-in owner with an identifier that is not a positive whole number (for example /tasks/invalid, /tasks/1.5, /tasks/-3, /tasks/0) responds with HTTP status 404 and the ordinary Not found page, exactly like a well-formed task number for which no task exists (for example /tasks/999999 or a number too large to be any task's number). No such request ever responds with a server error (HTTP 5xx) or an error page. Task pages of existing tasks keep working."
+ },
+ "tier": "standard",
+ "title": "A malformed task address shows Not found, not a server error",
+ "traces_to": [
+  "OWNER-INTENT-T11"
+ ],
+ "version": 2
+}
