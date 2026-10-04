@@ -115,7 +115,11 @@ async function retryAuthoring(ctx: TaskCtx, what: string, problems: string[], ru
   });
   if (attempt < MAX_ATTEMPTS) {
     await ctx.log("system", `The oracle failed ${what} (attempt ${attempt}); returned to the Verifier with the findings: ${problems.join("; ").slice(0, 300)}`, { run: runId });
-    return ctx.goto("oracle_start", { ...keep(ctx), attempt: attempt + 1, feedback: problems.join("\n") });
+    // a repair keeps the defect it is repairing in view: a rejected attempt adds its own findings, it never replaces the original
+    // ones (T9, live: the second attempt saw only the calibration finding, returned the defective check unchanged, and looped)
+    const original = ctx.data.mode === "repair" ? String(ctx.data.repairReason ?? "") : "";
+    const feedback = original ? `${original}\n\nYour previous repair attempt (attempt ${attempt}) fixed the above but was rejected by ${what} - keep that fix and also resolve:\n${problems.join("\n")}` : problems.join("\n");
+    return ctx.goto("oracle_start", { ...keep(ctx), attempt: attempt + 1, feedback });
   }
   return blockEvidence(ctx, `The Verifier could not produce a valid oracle in ${MAX_ATTEMPTS} attempts (${what}): ${problems.join("; ").slice(0, 300)}`, { run: runId, stage: what });
 }
@@ -137,6 +141,11 @@ export async function oracleCollect(ctx: TaskCtx): Promise<void> {
   if (syntax) return retryAuthoring(ctx, "the syntax check", [syntax], runId);
   const problems = staticOracleProblems(js);
   if (problems.length) return retryAuthoring(ctx, "static environment validation", problems, runId);
+  // a "repair" that returns the defective check byte for byte repairs nothing: it would fail the gate again for the same reason
+  if (ctx.data.mode === "repair") {
+    const cur = await currentContract(ctx);
+    if (cur?.oracleJs && sha256(cur.oracleJs) === sha256(js)) return retryAuthoring(ctx, "the repair check", ["the repaired check is identical to the defective check it replaces: the defect is still in it"], runId);
+  }
   await ctx.goto("oracle_calibrate", { ...keep(ctx), js, notes, runId, attempt: ctx.data.attempt ?? 1 });
 }
 

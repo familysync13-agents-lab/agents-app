@@ -32,7 +32,7 @@ export const V3_EXTRA = {
   ],
 };
 
-export function fixtureHandlers(opts: { v3?: { staticFailsFirst?: boolean }; verifierLegacy?: boolean; verifierSkips?: string[]; judgmentNo?: boolean; verifierExtra?: Record<string, unknown>[]; verifierBlocked?: { class: string; reason: string }; repro?: "reproduced" | "not_reproduced" | "none"; draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: (p: Record<string, unknown>) => Record<string, unknown>; localCode?: (p: Record<string, unknown>) => Record<string, unknown>; verdicts?: (items: { id: string }[]) => { id: string; pass: boolean; reason: string }[] } = {}) {
+export function fixtureHandlers(opts: { repairUnchangedOnce?: boolean; v3?: { staticFailsFirst?: boolean }; verifierLegacy?: boolean; verifierSkips?: string[]; judgmentNo?: boolean; verifierExtra?: Record<string, unknown>[]; verifierBlocked?: { class: string; reason: string }; repro?: "reproduced" | "not_reproduced" | "none"; draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: (p: Record<string, unknown>) => Record<string, unknown>; localCode?: (p: Record<string, unknown>) => Record<string, unknown>; verdicts?: (items: { id: string }[]) => { id: string; pass: boolean; reason: string }[] } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -188,7 +188,9 @@ export function fixtureHandlers(opts: { v3?: { staticFailsFirst?: boolean }; ver
       }
       if (paths.includes("out/check.mjs")) {
         state.oraclesAuthored++;
-        out["out/check.mjs"] = b64(opts.badImport && state.oraclesAuthored === 1 ? `import _ from 'lodash';\n${ORACLE}` : ORACLE);
+        // every authored version differs from the previous one - except a "repair" that returns the defective check unchanged
+        const rev = state.oraclesAuthored > 1 && !(opts.repairUnchangedOnce && state.oraclesAuthored === 2) ? `${ORACLE}\n// revision ${state.oraclesAuthored}` : ORACLE;
+        out["out/check.mjs"] = b64(opts.badImport && state.oraclesAuthored === 1 ? `import _ from 'lodash';\n${ORACLE}` : rev);
       }
       if (paths.includes(".bakeoff/plan.json") && opts.complex) {
         const pl = opts.complex.plans[Math.min(state.plansServed, opts.complex.plans.length - 1)];

@@ -191,6 +191,22 @@ describe("control loop (scripted executor)", () => {
     expect(ev.find((e) => e.subject === "attribution:T9:AC1")!.detail).toContain("ORACLE");
   });
 
+  it("a repair that returns the defective check unchanged is refused, and the next attempt still sees the original defect (T9, live)", async () => {
+    const { db, project } = await setup();
+    const clk = clock();
+    const { state, h } = scenario({ failFirstGate: true, arbiter: "oracle", repairUnchangedOnce: true });
+    const ex = new FakeExecutor(db, h);
+    const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "DONE");
+    expect(state.oraclesAuthored).toBe(3); // the original, the unchanged "repair" (refused), the real repair
+    const ev = await db.select().from(evidence).where(eq(evidence.taskId, id));
+    expect(ev.some((e) => e.subject === "oracle-validation:T9" && /identical to the defective check it replaces/.test(e.detail ?? ""))).toBe(true);
+    const last = state.verifierPrompts.filter((p) => p.includes("Your previous repair attempt")).at(-1)!;
+    expect(last).toMatch(/observed in the app/); // the arbiter's finding is still in front of the Verifier
+    expect(last).toMatch(/identical to the defective check/);
+    expect((await taskRow(db, id)).corrections).toBe(0);
+  });
+
   it("updates a stale regression check of an earlier task (owner approves on GitHub) instead of blaming the Builder", async () => {
     const { db, project } = await setup();
     const clk = clock();
