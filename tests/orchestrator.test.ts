@@ -207,6 +207,33 @@ describe("control loop (scripted executor)", () => {
     expect((await taskRow(db, id)).corrections).toBe(0);
   });
 
+  it("a check that keeps failing after three repairs goes to the owner instead of a further repair (T9, live: six rounds)", async () => {
+    const { db, project } = await setup();
+    const clk = clock();
+    const { state, h } = scenario({ gateAlwaysFails: true, arbiter: "oracle" });
+    const ex = new FakeExecutor(db, h);
+    const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "BLOCKED_DECISION");
+    const [dec] = (await openDecisions(db, id)).filter((d) => d.kind === "block");
+    expect(dec).toMatchObject({ title: "The check of T9 cannot be repaired automatically", recommendation: null });
+    expect(dec!.why).toMatch(/repaired 3 times/);
+    expect(state.oraclesAuthored).toBe(4); // the original and exactly three repairs
+    expect((await taskRow(db, id)).corrections).toBe(0);
+  });
+
+  it("a quota pause of the arbiter repeats the arbiter with its inputs; nothing falls through without them (T9, live)", async () => {
+    const { db, project } = await setup();
+    const clk = clock();
+    const { h } = scenario({ failFirstGate: true, arbiter: "oracle", arbiterQuotaOnce: true });
+    const ex = new FakeExecutor(db, h);
+    const id = await createTask(db, { projectId: project.id, title: "Sort lists", intent: "Let owners sort their lists alphabetically on the list index.", tier: "standard" });
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).step === "await_quota");
+    expect(((await taskRow(db, id)).stepData as { restartStep: string; restartData: { failure?: unknown } })).toMatchObject({ restartStep: "attribute_start", restartData: { failure: expect.anything() } });
+    clk.advance(Math.ceil((((await taskRow(db, id)).stepData as { until: number }).until - clk.now().getTime()) / 1000) + 5);
+    await runUntil(db, ex, clk, async () => (await taskRow(db, id)).state === "DONE");
+    expect((await taskRow(db, id)).corrections).toBe(0);
+  });
+
   it("updates a stale regression check of an earlier task (owner approves on GitHub) instead of blaming the Builder", async () => {
     const { db, project } = await setup();
     const clk = clock();

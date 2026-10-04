@@ -93,9 +93,15 @@ export async function attributeStart(ctx: TaskCtx): Promise<void> {
   await ctx.goto("attribute_poll", { failure: f as unknown as Record<string, unknown>, n, runId, container, started: ctx.now().getTime(), envRetried: ctx.data.envRetried ?? false });
 }
 
+/** After this many repairs of a task's check, another arbiter-confirmed check defect goes to the owner instead of a further repair. */
+export const MAX_ORACLE_REPAIRS = 3;
+
 export async function attributePoll(ctx: TaskCtx): Promise<void> {
   const r = await finishSession(ctx, ctx.data.runId as number, ctx.data.container as string);
   if (r === "running") {
+    // a quota pause moved the task to await_quota (its step data replaced this step's): nothing more to do here (T9, live: the
+    // missing "started" fell through to attribute_collect without its inputs)
+    if (ctx.task.step !== "attribute_poll" || !("started" in ctx.data)) return;
     if ((ctx.now().getTime() - Number(ctx.data.started)) / 1000 < 30 * 60) return;
     await ctx.submit("session", { name: ctx.data.container, kill: true });
   }
@@ -181,6 +187,26 @@ export async function attributeCollect(ctx: TaskCtx): Promise<void> {
     return ctx.goto("regress_start", { targets: [...map.values()], i: 0, done: [], head: f.head, round: n });
   }
   if (by("oracle").length) {
+    // A check that was repaired again and again and still fails on work the arbiter finds correct is not something another
+    // repair fixes: the requirement cannot be checked as written. That is a genuine blocker for the owner, never an endless loop
+    // (T9, live: six rounds, the Verifier's quota spent).
+    const { contracts } = await import("@/db/schema");
+    const revisions = (await ctx.db.select({ kind: contracts.kind }).from(contracts).where(eq(contracts.taskId, ctx.task.id))).filter((r) => r.kind === "oracle_revision").length;
+    if (revisions >= MAX_ORACLE_REPAIRS) {
+      await ctx.transition("BLOCKED_DECISION", `The check of ${ctx.task.key} was repaired ${revisions} times and still fails at ${f.head.slice(0, 8)} on work the arbiter finds correct`, fact, { resumeState: "VERIFYING" });
+      await ctx.openDecision({
+        kind: "block",
+        title: `The check of ${ctx.task.key} cannot be repaired automatically`,
+        why: `The acceptance check was repaired ${revisions} times. Each time the independent arbiter found the work correct and the check at fault: ${by("oracle").map((x) => `${String(x.criterion).replace(/^.*:/, "")}: ${x.reason ?? ""}`).join("\n").slice(0, 2400)}`,
+        options: [
+          { id: "o1", label: "Revise the contract so the requirement can be checked (write what to change in the note)", consequence: "The contract is revised with your note and a new check is written; the Builder continues from the revised contract." },
+          { id: "abandon", label: "Abandon the task", consequence: "Nothing is merged." },
+        ],
+        recommendation: null,
+        context: { stage: "build", artifactId: art, oracleRepairs: revisions },
+      });
+      return ctx.goto("await_decision", {});
+    }
     // repair the check first (the Builder's work is kept); implementation failures, if any, are re-judged against the repaired check
     const c = await currentContract(ctx);
     const reason = by("oracle")

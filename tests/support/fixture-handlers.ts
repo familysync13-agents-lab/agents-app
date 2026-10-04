@@ -32,7 +32,7 @@ export const V3_EXTRA = {
   ],
 };
 
-export function fixtureHandlers(opts: { repairUnchangedOnce?: boolean; v3?: { staticFailsFirst?: boolean }; verifierLegacy?: boolean; verifierSkips?: string[]; judgmentNo?: boolean; verifierExtra?: Record<string, unknown>[]; verifierBlocked?: { class: string; reason: string }; repro?: "reproduced" | "not_reproduced" | "none"; draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: (p: Record<string, unknown>) => Record<string, unknown>; localCode?: (p: Record<string, unknown>) => Record<string, unknown>; verdicts?: (items: { id: string }[]) => { id: string; pass: boolean; reason: string }[] } = {}) {
+export function fixtureHandlers(opts: { arbiterQuotaOnce?: boolean; gateAlwaysFails?: boolean; repairUnchangedOnce?: boolean; v3?: { staticFailsFirst?: boolean }; verifierLegacy?: boolean; verifierSkips?: string[]; judgmentNo?: boolean; verifierExtra?: Record<string, unknown>[]; verifierBlocked?: { class: string; reason: string }; repro?: "reproduced" | "not_reproduced" | "none"; draftBlocked?: boolean; draftBlockedTwice?: boolean; smokeDefectOnce?: boolean; oracleCrash?: boolean; arbiter?: "implementation" | "oracle" | "environment"; regressFail?: boolean; badImport?: boolean; failFirstGate?: boolean; verifierHigh?: boolean; repoRequiresOwner?: boolean; rulesetRefusesMerge?: boolean; draftClass?: "routine"; sensitiveTag?: boolean; draftBlocks?: Record<string, unknown>[]; noTrace?: boolean; draftSequence?: { tag?: string; assumptions?: number; then?: string }[]; complex?: { plans: unknown[]; failFirstHeadOf?: string }; quotaOnBuild?: number; verifierQuota?: number; mainMovedOnce?: boolean; taskBehindOnce?: boolean; localLlm?: (p: Record<string, unknown>) => Record<string, unknown>; localCode?: (p: Record<string, unknown>) => Record<string, unknown>; verdicts?: (items: { id: string }[]) => { id: string; pass: boolean; reason: string }[] } = {}) {
   const state = {
     main: "m0",
     sessions: new Map<string, number>(),
@@ -135,6 +135,10 @@ export function fixtureHandlers(opts: { repairUnchangedOnce?: boolean; v3?: { st
       state.verifierFiles.set(String(p.work_vol), (p.files ?? {}) as Record<string, string>);
       const name = `bko-verifier-${++state.n}`;
       state.sessions.set(name, 0);
+      if (opts.arbiterQuotaOnce && state.quotaServed < 1 && /attribution\.json/.test(String(p.prompt ?? ""))) {
+        state.quotaServed++;
+        state.verifierQuotaSessions.add(name);
+      }
       if (opts.verifierQuota && state.quotaServed < opts.verifierQuota) {
         state.quotaServed++;
         state.verifierQuotaSessions.add(name);
@@ -269,7 +273,7 @@ export function fixtureHandlers(opts: { repairUnchangedOnce?: boolean; v3?: { st
           state.gateCalls++;
           const tp = state.taskPrs.get(Number(op.pr))!; if (!tp) return new Error(`unknown pr ${String(op.pr)} known ${[...state.taskPrs.keys()].join(",")} contract ${[...state.contractPrs.keys()].join(",")}`);
           const entryFail = !!opts.complex?.failFirstHeadOf && (state.branches.get(Number(op.pr)) ?? "").includes(`/${opts.complex.failFirstHeadOf}-`) && tp.n === 1;
-          const failing = (opts.failFirstGate && tp.head === "h1") || entryFail;
+          const failing = (opts.failFirstGate && tp.head === "h1") || !!opts.gateAlwaysFails || entryFail;
           state.runPr.set(1000 + state.gateCalls, Number(op.pr));
           const approved = state.approvedPrs.has(Number(op.pr)) || (state.ownerApprovedTask && Number(op.pr) === 102);
           return {
@@ -359,7 +363,7 @@ export function fixtureHandlers(opts: { repairUnchangedOnce?: boolean; v3?: { st
       const tp = state.taskPrs.get(pr)!;
       const branch = state.branches.get(pr) ?? "";
       const entry = /^task\/T[0-9]+\/([a-z])-/.exec(branch)?.[1] ?? null;
-      const failing = (opts.failFirstGate && tp.head === "h1") || (!!opts.complex?.failFirstHeadOf && branch.includes(`/${opts.complex.failFirstHeadOf}-`) && tp.n === 1);
+      const failing = (opts.failFirstGate && tp.head === "h1") || !!opts.gateAlwaysFails || (!!opts.complex?.failFirstHeadOf && branch.includes(`/${opts.complex.failFirstHeadOf}-`) && tp.n === 1);
       if (opts.complex) {
         // the real gate: a plan task (single-letter branch) is judged on the criteria it covers; anything else on the whole contract
         const plan = opts.complex.plans.find((x) => x && typeof x === "object" && Array.isArray((x as { tasks?: unknown[] }).tasks) && ((x as { tasks: { covers?: string[] }[] }).tasks.length ?? 0) > 1) as { tasks: { id: string; covers?: string[]; depends_on?: string[] }[] } | undefined;
