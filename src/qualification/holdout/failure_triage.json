@@ -1,0 +1,512 @@
+{
+ "class": "failure_triage",
+ "version": 1,
+ "statement": "Classify the cause of a failed step from its error text into the fixed failure vocabulary, quoting the deciding phrase verbatim.",
+ "holdout": true,
+ "cases": [
+  {
+   "id": "fh-01",
+   "source": "historical",
+   "input": "PROPOSED → BLOCKED_DECISION: The intent needs an owner decision before it can become a contract",
+   "expect": {
+    "class": "owner_decision",
+    "evidence": "The intent needs an owner decision"
+   }
+  },
+  {
+   "id": "fh-02",
+   "source": "historical",
+   "input": "IN_PROGRESS → BLOCKED_DECISION: The Builder blocked (decision): The gate fails T11 only on regressions of T9:AC1 (amended), T10:AC1 and T10:AC2: the Books section must contain the 'Sort by' select and 'Sort' button between the h2 'Books' and the book list. That is",
+   "expect": {
+    "class": "owner_decision",
+    "evidence": "The Builder blocked (decision)"
+   }
+  },
+  {
+   "id": "fh-03",
+   "source": "historical",
+   "input": "IN_PROGRESS → BLOCKED_DECISION: The Builder blocked (decision): The T4:AC5 oracle waits for getByRole('heading', { name: 'Command', exact: true, level: 1 }) on /. The Command page (src/app/(app)/page.tsx) has never rendered any h1, neither in the baseline nor afte",
+   "expect": {
+    "class": "owner_decision",
+    "evidence": "The Builder blocked (decision)"
+   }
+  },
+  {
+   "id": "fh-04",
+   "source": "historical",
+   "input": "I didn't write a contract for T9. I wrote `/work/.bakeoff/BLOCKED.json` (`BLOCKED:DECISION`) instead, because the intent leaves one product decision open that you need to make. No other files in the repository were changed.\n\n**The open question:** is the chosen sort order a temporary view on the owner's list page, or a saved setting that also controls the order share-link readers see on `/s/{token}`?\n\nThis can't be settled by reading the code. It changes what anonymous share-link readers see, it may need a database schema change, and the acceptance criteria depend on it (what happens after a reload, and what order the share page shows). Right now `/lists/{id}` and `/s/{token}` use the same books component, and both list books in the order they were added.\n\n| Option | What it means |\n|---|---|\n| **View-only sort on the owner's list page** (recommended) | On `/lists/{id}` the owner picks \"",
+   "expect": {
+    "class": "owner_decision",
+    "evidence": "the intent leaves one product decision open that you need to make"
+   }
+  },
+  {
+   "id": "fh-05",
+   "source": "historical",
+   "input": "I didn't write a contract for T10. Instead I wrote `/work/.bakeoff/BLOCKED.json`, because the task can't be done without overriding a decision you already approved for T9.\n\n**Why it's blocked:** T9's contract and its check script (`oracle/T9/check.mjs`) require two things of the \"Sort by\" control:\n- It must sit outside the Books `<section>`.\n- It must come after the \"Books\" heading in the page's underlying order.\n\nThe Books section holds both the \"Books\" heading and the books. Anything outside the section therefore comes either before the heading or after all the books. No spot is after the heading, before the books, and outside the section, so T10 can't pass without changing one of T9's rules and its check script.\n\n**Options I listed:**\n- **A (recommended): put the control inside the Books section, between the heading and the books.** The reading order then matches what's shown on scree",
+   "expect": {
+    "class": "owner_decision",
+    "evidence": "the task can't be done without overriding a decision you already approved for T9"
+   }
+  },
+  {
+   "id": "fh-06",
+   "source": "historical",
+   "input": "I didn't write a contract for T11. I wrote `/work/.bakeoff/BLOCKED.json` (type `BLOCKED:DECISION`) instead, because the intent clashes with work that's already accepted. That file is valid JSON, and no other files in the repo were changed.\n\n**The clash:** Task T6 already shipped an optional list description. It has a \"Description\" field on the create and edit forms and shows directly below the list name on `/lists/{id}` and `/s/{token}`. Its frozen contract, and the check script that verifies it (`oracle/T6/check.mjs`), require a 500-character limit, with exactly 500 characters accepted. The T11 intent asks for the same feature with a 280-character limit.\n\nGetting to 280 would mean amending the T6 contract and its check. You would also have to decide what happens to stored descriptions of 281–500 characters. Cutting them short would lose data, which would make this a critical-tier task. ",
+   "expect": {
+    "class": "owner_decision",
+    "evidence": "the intent clashes with work that's already accepted"
+   }
+  },
+  {
+   "id": "fh-07",
+   "source": "historical",
+   "input": "I didn't write a contract for T2. I wrote `/work/.bakeoff/BLOCKED.json` instead, which asks for an owner decision (it is valid JSON).\n\n**Why it's blocked:** T2 is filed under the Agents App project. Its repository is `/work`, and every check runs against the Agents App preview. But the intent asks for a separate, independent product in `~/Desktop/BATS_MONEY_FACTORY`:\n- That folder is outside this repository, and it doesn't exist in this environment.\n- Building the scaffold inside the Agents App repository would go against the intent's own rule that Money Factory 2 must not depend on the control system.\n- The intent doesn't say which language, runtime or test framework the scaffold should use.\n\nWhere it lives and what stack it uses are architecture decisions for the owner, so I didn't guess. I also couldn't write black-box checks against a preview that wouldn't contain the product.\n\n**Opt",
+   "expect": {
+    "class": "owner_decision",
+    "evidence": "asks for an owner decision"
+   }
+  },
+  {
+   "id": "fh-08",
+   "source": "historical",
+   "input": "DONE → BLOCKED_EVIDENCE: updating the task branch with main failed 4 times in the executor (infrastructure, not the work): {\"t\":\"2026-10-03T03:04:39.403Z\",\"id\":\"u\",\"ok\":false,\"op\":\"update_branch\",\"status\":422,\"message\":\"There are no new commits on the base branch.\"}",
+   "expect": {
+    "class": "infrastructure",
+    "evidence": "updating the task branch with main failed 4 times in the executor"
+   }
+  },
+  {
+   "id": "fh-09",
+   "source": "historical",
+   "input": "builder: JobError: a Builder session of v0 is still running",
+   "expect": {
+    "class": "infrastructure",
+    "evidence": "a Builder session of v0 is still running"
+   }
+  },
+  {
+   "id": "fh-10",
+   "source": "controlled",
+   "input": "preview: Error response from daemon: driver failed programming external connectivity on endpoint bko-pv-t12-web (5d1f0c): Bind for 127.0.0.1:18080 failed: port is already allocated",
+   "expect": {
+    "class": "infrastructure",
+    "evidence": "port is already allocated"
+   }
+  },
+  {
+   "id": "fh-11",
+   "source": "controlled",
+   "input": "transport: {\"t\":\"2026-10-03T09:12:44.101Z\",\"id\":\"f\",\"ok\":false,\"op\":\"fetch_tree\",\"status\":502,\"message\":\"Server Error\"}",
+   "expect": {
+    "class": "infrastructure",
+    "evidence": "\"status\":502,\"message\":\"Server Error\""
+   }
+  },
+  {
+   "id": "fh-12",
+   "source": "controlled",
+   "input": "session: the Verifier session container disappeared (docker: Error response from daemon: No such container: bko-verifier-5120331); its output volume is empty",
+   "expect": {
+    "class": "infrastructure",
+    "evidence": "No such container: bko-verifier-5120331"
+   }
+  },
+  {
+   "id": "fh-13",
+   "source": "controlled",
+   "input": "app-job-start id=2211 op=dump\nTraceback (most recent call last):\n  File \"bko.py\", line 904, in op_dump\n    data = out[p]\nKeyError: 'out/findings.json'\napp-job-end id=2211 op=dump status=error seconds=0",
+   "expect": {
+    "class": "infrastructure",
+    "evidence": "KeyError: 'out/findings.json'"
+   }
+  },
+  {
+   "id": "fh-14",
+   "source": "controlled",
+   "input": "gate: docker volume create agents-gw-t14 failed: Error response from daemon: create agents-gw-t14: error while creating volume: no space left on device",
+   "expect": {
+    "class": "infrastructure",
+    "evidence": "no space left on device"
+   }
+  },
+  {
+   "id": "fh-15",
+   "source": "controlled",
+   "input": "builder: JobError: the Builder container bko-builder-v0-51 exited before the session started (OCI runtime create failed: unable to start container process: exec: \"claude\": executable file not found in $PATH)",
+   "expect": {
+    "class": "infrastructure",
+    "evidence": "OCI runtime create failed"
+   }
+  },
+  {
+   "id": "fh-16",
+   "source": "historical",
+   "input": "IN_PROGRESS → BLOCKED_EVIDENCE: The Builder blocked (evidence): Whether the implementation meets these criteria cannot be verified: the oracle of record (oracle/T9/check.mjs, sha256 7f87febf...8a2d13bd1411d668a48640e3e955b246da288, amendment A3) fails before it in",
+   "expect": {
+    "class": "check_defect",
+    "evidence": "the oracle of record"
+   }
+  },
+  {
+   "id": "fh-17",
+   "source": "historical",
+   "input": "The oracle failed calibration against main (attempt 1); returned to the Verifier with the findings: AC4: the previous check FAILED on main (the feature does not exist there) but the repaired check PASSES there - the repair made the check weaker; keep every product assertion and fix only the harness",
+   "expect": {
+    "class": "check_defect",
+    "evidence": "the repair made the check weaker"
+   }
+  },
+  {
+   "id": "fh-18",
+   "source": "historical",
+   "input": "The oracle failed the output check (attempt 1); returned to the Verifier with the findings: no out/check.mjs was written",
+   "expect": {
+    "class": "check_defect",
+    "evidence": "no out/check.mjs was written"
+   }
+  },
+  {
+   "id": "fh-19",
+   "source": "controlled",
+   "input": "Gate verdict for 6b7c8d9e: FAIL:ORACLE (a must-criterion of T12 failed)\n- T12:AC1 (oracle:oracle/T12/check.mjs): not verified - HARNESS: TypeError: Cannot read properties of undefined (reading 'click')\n    at file:///tmp/check.mjs:88:31",
+   "expect": {
+    "class": "check_defect",
+    "evidence": "HARNESS: TypeError: Cannot read properties of undefined (reading 'click')"
+   }
+  },
+  {
+   "id": "fh-20",
+   "source": "controlled",
+   "input": "Oracle calibration against main 41d2aa07 failed for AC2: locator.click: Error: strict mode violation: getByRole('button', { name: 'Save' }) resolved to 3 elements",
+   "expect": {
+    "class": "check_defect",
+    "evidence": "strict mode violation"
+   }
+  },
+  {
+   "id": "fh-21",
+   "source": "controlled",
+   "input": "oracle_run: oracle exit 1\nfile:///tmp/check.mjs:17\n  await expect(page.getByText('Saved')).toBeVisible());\n                                                  ^\nSyntaxError: Unexpected token ')'",
+   "expect": {
+    "class": "check_defect",
+    "evidence": "SyntaxError: Unexpected token ')'"
+   }
+  },
+  {
+   "id": "fh-22",
+   "source": "controlled",
+   "input": "The Verifier could not produce a valid oracle in 3 attempts (the output check): out/check.mjs prints no result line for AC3, AC4",
+   "expect": {
+    "class": "check_defect",
+    "evidence": "out/check.mjs prints no result line for AC3, AC4"
+   }
+  },
+  {
+   "id": "fh-23",
+   "source": "historical",
+   "input": "Worker quota exhausted (ERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://). The job is paused with all state kept and resumes automatically at 2026-10-03T06:07Z.",
+   "expect": {
+    "class": "quota",
+    "evidence": "You’ve hit your usage limit"
+   }
+  },
+  {
+   "id": "fh-24",
+   "source": "controlled",
+   "input": "Builder session ended (exit 1, 12 turns): Claude usage limit reached. Your limit will reset at 3pm (UTC).|1791126000",
+   "expect": {
+    "class": "quota",
+    "evidence": "Claude usage limit reached"
+   }
+  },
+  {
+   "id": "fh-25",
+   "source": "controlled",
+   "input": "Builder session ended (exit 1, 7 turns): You're out of extra usage · resets 9am (UTC)",
+   "expect": {
+    "class": "quota",
+    "evidence": "You're out of extra usage"
+   }
+  },
+  {
+   "id": "fh-26",
+   "source": "controlled",
+   "input": "author_oracle: codex exited 1\nstream error: exceeded retry limit, last status: 429 Too Many Requests",
+   "expect": {
+    "class": "quota",
+    "evidence": "429 Too Many Requests"
+   }
+  },
+  {
+   "id": "fh-27",
+   "source": "controlled",
+   "input": "Independent Verifier stopped: ERROR: Rate limit reached for requests. Limit: 50 / min. Please try again in 38s.",
+   "expect": {
+    "class": "quota",
+    "evidence": "Rate limit reached for requests"
+   }
+  },
+  {
+   "id": "fh-28",
+   "source": "controlled",
+   "input": "The planner session ended without a plan (exit 1, 2 turns): 5-hour limit reached ∙ resets 02:00",
+   "expect": {
+    "class": "quota",
+    "evidence": "5-hour limit reached"
+   }
+  },
+  {
+   "id": "fh-29",
+   "source": "controlled",
+   "input": "Builder session ended (exit 1, 1 turns): Invalid API key · Please run /login",
+   "expect": {
+    "class": "credential",
+    "evidence": "Invalid API key · Please run /login"
+   }
+  },
+  {
+   "id": "fh-30",
+   "source": "controlled",
+   "input": "Verifier session ended (exit 1): ERROR: unexpected status 401 Unauthorized: Your authentication token has expired. Please sign in again.",
+   "expect": {
+    "class": "credential",
+    "evidence": "Your authentication token has expired"
+   }
+  },
+  {
+   "id": "fh-31",
+   "source": "controlled",
+   "input": "author_oracle: codex exited 1\nERROR: Not logged in. Run `codex login` to authenticate.",
+   "expect": {
+    "class": "credential",
+    "evidence": "Not logged in"
+   }
+  },
+  {
+   "id": "fh-32",
+   "source": "controlled",
+   "input": "Builder session bko-builder-v0-44 ended: {\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"num_turns\":1,\"result\":\"OAuth token revoked · Please run /login\"}",
+   "expect": {
+    "class": "credential",
+    "evidence": "OAuth token revoked"
+   }
+  },
+  {
+   "id": "fh-33",
+   "source": "controlled",
+   "input": "Independent Verifier could not start: the verifier login volume agents-codex-home contains no auth.json (the Verifier has never been signed in on this host).",
+   "expect": {
+    "class": "credential",
+    "evidence": "contains no auth.json"
+   }
+  },
+  {
+   "id": "fh-34",
+   "source": "controlled",
+   "input": "Contract drafter session ended (exit 1, 1 turns): Failed to authenticate. API Error: 401 {\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"OAuth token has expired. Please obtain a new token or refresh your existing token.\"}}",
+   "expect": {
+    "class": "credential",
+    "evidence": "OAuth token has expired"
+   }
+  },
+  {
+   "id": "fh-35",
+   "source": "historical",
+   "input": "PROPOSED → BLOCKED_EVIDENCE: GitHub permission missing: the agent App has no access to familysync13-agents-lab/agents-app (preparing the worktree)",
+   "expect": {
+    "class": "access",
+    "evidence": "the agent App has no access to familysync13-agents-lab/agents-app"
+   }
+  },
+  {
+   "id": "fh-36",
+   "source": "controlled",
+   "input": "worktree: JobError: ACCESS: the installation does not include repository money-notes (the App is installed for selected repositories only)",
+   "expect": {
+    "class": "access",
+    "evidence": "the installation does not include repository money-notes"
+   }
+  },
+  {
+   "id": "fh-37",
+   "source": "controlled",
+   "input": "PROPOSED → BLOCKED_EVIDENCE: GitHub permission missing: the agent App lacks the \"Pull requests: write\" permission on familysync13-agents-lab/reading-list (opening the pull request)",
+   "expect": {
+    "class": "access",
+    "evidence": "the agent App lacks the \"Pull requests: write\" permission"
+   }
+  },
+  {
+   "id": "fh-38",
+   "source": "controlled",
+   "input": "transport: {\"t\":\"2026-10-03T10:41:07.300Z\",\"id\":\"p\",\"ok\":false,\"op\":\"push_branch\",\"status\":403,\"message\":\"Write access to repository not granted.\"}",
+   "expect": {
+    "class": "access",
+    "evidence": "Write access to repository not granted."
+   }
+  },
+  {
+   "id": "fh-39",
+   "source": "controlled",
+   "input": "gate_evidence: {\"ok\":false,\"op\":\"check_run\",\"status\":404,\"message\":\"Not Found\",\"hint\":\"the gate App is not installed on repository reading-list; install it for this repository\"}",
+   "expect": {
+    "class": "access",
+    "evidence": "the gate App is not installed on repository reading-list"
+   }
+  },
+  {
+   "id": "fh-40",
+   "source": "controlled",
+   "input": "Independent Verifier stopped: the session exceeded 45 minutes without writing findings.",
+   "expect": {
+    "class": "timeout",
+    "evidence": "exceeded 45 minutes"
+   }
+  },
+  {
+   "id": "fh-41",
+   "source": "controlled",
+   "input": "gate: the candidate check stage was stopped after 1800 s (time limit); last line: ' RUN  v5.0.2 /work'",
+   "expect": {
+    "class": "timeout",
+    "evidence": "stopped after 1800 s (time limit)"
+   }
+  },
+  {
+   "id": "fh-42",
+   "source": "controlled",
+   "input": "Contract drafter: the session exceeded 20 minutes and was stopped; it had produced no further output.",
+   "expect": {
+    "class": "timeout",
+    "evidence": "exceeded 20 minutes"
+   }
+  },
+  {
+   "id": "fh-43",
+   "source": "controlled",
+   "input": "planner: the step exceeded 900 seconds; the session was terminated by the executor.",
+   "expect": {
+    "class": "timeout",
+    "evidence": "exceeded 900 seconds"
+   }
+  },
+  {
+   "id": "fh-44",
+   "source": "controlled",
+   "input": "worktree: npm ci did not finish within 600 s and was stopped (no error output).",
+   "expect": {
+    "class": "timeout",
+    "evidence": "did not finish within 600 s"
+   }
+  },
+  {
+   "id": "fh-45",
+   "source": "historical",
+   "input": "Gate verdict for 3cc51291: FAIL:BUILD (docker build failed; the repository Dockerfile does not build)",
+   "expect": {
+    "class": "implementation",
+    "evidence": "the repository Dockerfile does not build"
+   }
+  },
+  {
+   "id": "fh-46",
+   "source": "controlled",
+   "input": "Gate verdict for 9d0e1f2a: FAIL:CHECK (candidate check stage (lint/types/tests) did not pass)\nCheck stage output (tail):\n/work/src/app/(app)/lists/page.tsx\n  22:9  error  'total' is assigned a value but never used  @typescript-eslint/no-unused-vars\n\n✖ 1 problem (1 error, 0 warnings)",
+   "expect": {
+    "class": "implementation",
+    "evidence": "'total' is assigned a value but never used"
+   }
+  },
+  {
+   "id": "fh-47",
+   "source": "controlled",
+   "input": "Independent Verifier: 1 finding(s).\n- Signed-out visitors can open /projects/demo/tasks and see task titles. Expected: a redirect to /signed-out. Observed: HTTP 200 with the task list.",
+   "expect": {
+    "class": "implementation",
+    "evidence": "Observed: HTTP 200 with the task list"
+   }
+  },
+  {
+   "id": "fh-48",
+   "source": "controlled",
+   "input": "Gate verdict for 55aa01bc: FAIL:ORACLE (a must-criterion of T12 failed)\n- T12:AC2 (oracle:oracle/T12/check.mjs): failed - /lists/7/export: expected HTTP 200, got 500",
+   "expect": {
+    "class": "implementation",
+    "evidence": "expected HTTP 200, got 500"
+   }
+  },
+  {
+   "id": "fh-49",
+   "source": "controlled",
+   "input": "Gate verdict for 0c9d8e7f: FAIL:CHECK (candidate check stage (lint/types/tests) did not pass)\nCheck stage output (tail):\n FAIL  tests/export.test.ts > export > writes a header row\nAssertionError: expected 'title;author' to be 'title,author' // Object.is equality",
+   "expect": {
+    "class": "implementation",
+    "evidence": "AssertionError: expected 'title;author' to be 'title,author'"
+   }
+  },
+  {
+   "id": "fh-50",
+   "source": "controlled",
+   "input": "Gate verdict for 3e4f5a6b: FAIL:BUILD (next build failed)\n./src/components/share-link.tsx:14:5\nType error: Property 'slug' does not exist on type 'List'.",
+   "expect": {
+    "class": "implementation",
+    "evidence": "Type error: Property 'slug' does not exist on type 'List'."
+   }
+  },
+  {
+   "id": "fh-51",
+   "source": "controlled",
+   "input": "Verifier session ended (exit 1): ERROR: You've reached your weekly usage limit for this model. It resets on Oct 6, 2026 at 2:00 AM.",
+   "expect": {
+    "class": "quota",
+    "evidence": "You've reached your weekly usage limit"
+   }
+  },
+  {
+   "id": "fh-52",
+   "source": "controlled",
+   "input": "Builder session ended (exit 1, 1 turns): Credentials file /home/agent/.claude/.credentials.json is missing; no login found. Please run /login",
+   "expect": {
+    "class": "credential",
+    "evidence": "no login found"
+   }
+  },
+  {
+   "id": "fh-53",
+   "source": "controlled",
+   "input": "transport: {\"t\":\"2026-10-03T11:02:19.554Z\",\"id\":\"o\",\"ok\":false,\"op\":\"open_pr\",\"status\":403,\"message\":\"Resource not accessible by integration\",\"hint\":\"the agent App has no pull-request permission on this repository\"}",
+   "expect": {
+    "class": "access",
+    "evidence": "Resource not accessible by integration"
+   }
+  },
+  {
+   "id": "fh-54",
+   "source": "controlled",
+   "input": "preview: docker compose up failed: Error response from daemon: network bko-pv-t15 not found",
+   "expect": {
+    "class": "infrastructure",
+    "evidence": "network bko-pv-t15 not found"
+   }
+  },
+  {
+   "id": "fh-55",
+   "source": "controlled",
+   "input": "Builder: the correction session exceeded 60 minutes and was stopped by the executor; no outcome file was written.",
+   "expect": {
+    "class": "timeout",
+    "evidence": "exceeded 60 minutes"
+   }
+  },
+  {
+   "id": "fh-56",
+   "source": "controlled",
+   "input": "Gate verdict for 7a8b9c0d: FAIL:CHECK (candidate check stage (lint/types/tests) did not pass)\nCheck stage output (tail):\nsrc/domain/sort.ts(12,3): error TS2322: Type 'string | undefined' is not assignable to type 'string'.",
+   "expect": {
+    "class": "implementation",
+    "evidence": "error TS2322: Type 'string | undefined' is not assignable to type 'string'."
+   }
+  }
+ ]
+}

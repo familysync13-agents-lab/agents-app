@@ -35,7 +35,8 @@ describe("LW1 Router: two local workers, per-class qualification, Claude Code as
     expect(WORKERS["local-llm"]).toMatchObject({ model: GENERAL, provider: "ollama-host", meteredCost: false, envelope: { filesystem: "none", repository: "none", credentials: "none" } });
     expect(WORKERS["local-coder"]).toMatchObject({ model: CODER, provider: "ollama-host", meteredCost: false, envelope: { credentials: "none", tools: expect.stringMatching(/one bounded structured request/) } });
     expect(Object.values(WORKERS).some((w) => EMBEDDING_ONLY_MODELS.some((m) => w.model.includes(m)))).toBe(false);
-    for (const c of ["classification", "summarization", "structured_extraction", "log_summary"] as const) expect(ROUTES[c]).toEqual({ trusted: "claude-code", alternatives: ["local-llm"] });
+    for (const c of ["summarization", "structured_extraction", "log_summary"] as const) expect(ROUTES[c]).toEqual({ trusted: "claude-code", alternatives: ["local-llm"] });
+    expect(ROUTES.classification).toEqual({ trusted: "claude-code", alternatives: ["local-qwen38", "local-llm"] });
     for (const c of ["small_code", "bounded_repair"] as const) expect(ROUTES[c]).toEqual({ trusted: "claude-code", alternatives: ["local-coder"] });
     // complex, architecture- or security-sensitive work has no local alternative at all
     for (const c of ["contract_draft", "plan", "mutants", "check_author", "acceptance_check", "attribution"] as const) expect(ROUTES[c].alternatives).toEqual([]);

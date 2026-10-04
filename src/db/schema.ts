@@ -450,8 +450,8 @@ export const qualificationRecords = pgTable(
     id: serial("id").primaryKey(),
     worker: text("worker").notNull(),
     taskClass: text("task_class").notNull(),
-    /** shadow / harness = qualification evidence; production = a routed job whose output the control plane used */
-    mode: text("mode").$type<"shadow" | "harness" | "production">().notNull(),
+    /** shadow / harness = qualification evidence; production = a routed job whose output the control plane used; holdout = an unseen-case sample of a promotion check; promoted / promotion_rejected = the recorded promotion decision of a class for a worker */
+    mode: text("mode").$type<"shadow" | "harness" | "production" | "holdout" | "promoted" | "promotion_rejected">().notNull(),
     taskId: integer("task_id").references(() => tasks.id),
     inputSha256: text("input_sha256").notNull(),
     /** what the trusted path decided for the same input */

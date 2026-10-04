@@ -66,6 +66,8 @@ export interface WorkerDef {
   enabled: boolean;
   disabledReason?: string;
   envelope: Envelope;
+  /** evaluation-candidate ids whose recorded evidence belongs to this worker (same model, recorded before it became a worker) */
+  evidenceFrom?: string[];
 }
 
 export const WORKERS: Record<string, WorkerDef> = {
@@ -110,6 +112,25 @@ export const WORKERS: Record<string, WorkerDef> = {
     privateCode: true,
     meteredCost: false,
     enabled: true,
+    envelope: {
+      filesystem: "none",
+      network: "none (the executor calls the model on the host loopback)",
+      repository: "none",
+      tools: "none: one bounded structured request, schema-validated output",
+      credentials: "none",
+    },
+  },
+  // The larger general local model (second Ollama server on the external SSD). Same envelope as local-llm. It was qualified as the
+  // evaluation candidate "cand-qwen38"; that evidence counts for it. Routed only where the owner approved it (see ROUTES, PROMOTABLE).
+  "local-qwen38": {
+    id: "local-qwen38",
+    harness: "local-provider",
+    provider: "ollama-host",
+    model: "qwen3.8:27b",
+    privateCode: true,
+    meteredCost: false,
+    enabled: true,
+    evidenceFrom: ["cand-qwen38"],
     envelope: {
       filesystem: "none",
       network: "none (the executor calls the model on the host loopback)",
@@ -169,7 +190,8 @@ export const WORKERS: Record<string, WorkerDef> = {
  * them. Their evidence is recorded and reported exactly like a worker's; adding one to a route is an owner decision.
  */
 export const CANDIDATES: Record<string, { id: string; model: string; kind: "semantic" | "code"; note: string }> = {
-  "cand-qwen38": { id: "cand-qwen38", model: "qwen3.8:27b", kind: "semantic", note: "evaluation only: semantic and research classes" },
+  // the evidence id of the worker local-qwen38 (its records were made under this id); on its own it is still in no route
+  "cand-qwen38": { id: "cand-qwen38", model: "qwen3.8:27b", kind: "semantic", note: "evaluation records of local-qwen38: semantic and research classes" },
   "cand-devstral": { id: "cand-devstral", model: "devstral-small-2:24b", kind: "code", note: "evaluation only: coding classes" },
 };
 /** The exact model a worker or an evaluation candidate runs. */
@@ -177,7 +199,8 @@ export const modelOf = (id: string): string | undefined => WORKERS[id]?.model ??
 
 /** The trusted path per class, and which alternatives may be considered for it (in order). */
 export const ROUTES: Record<AnyTaskClass, { trusted: string; alternatives: string[] }> = {
-  classification: { trusted: "claude-code", alternatives: ["local-llm"] },
+  // owner decision 2026-10-03: qwen3.8:27b takes classification (20/20 on the pinned set); qwen3:14b stays qualified behind it
+  classification: { trusted: "claude-code", alternatives: ["local-qwen38", "local-llm"] },
   summarization: { trusted: "claude-code", alternatives: ["local-llm"] },
   structured_extraction: { trusted: "claude-code", alternatives: ["local-llm"] },
   small_code: { trusted: "claude-code", alternatives: ["local-coder"] },
@@ -197,6 +220,28 @@ export const ROUTES: Record<AnyTaskClass, { trusted: string; alternatives: strin
 /** Initial calibration values for qualification (to be revised from data). */
 export const QUALIFY = { minSamples: 20, minAgreement: 0.95, rejectBelow: 0.8 };
 
+/*
+ * PROMOTION BY HOLDOUT (owner decision 2026-10-03). A worker listed here is NOT an alternative of the class: it is routed only
+ * after a fresh holdout of at least HOLDOUT.size previously unseen cases reached QUALIFY.minAgreement AND a promotion decision was
+ * recorded in the qualification records (mode "promoted"). A recorded rejection (mode "promotion_rejected") is final for that
+ * model. Until then the trusted path runs and nothing is sent to the worker by the Router.
+ */
+export const HOLDOUT = { size: 50 };
+export const PROMOTABLE: Partial<Record<AnyTaskClass, string[]>> = { structured_extraction: ["local-qwen38"], failure_triage: ["local-qwen38"] };
+export type PromotionStatus = { status: "holdout_pending" | "awaiting_decision" | "promoted" | "rejected"; samples: number; agree: number; agreement: number | null };
+/** Promotion status of one worker for one class, from the holdout samples and the recorded decision only. */
+export function promotion(records: QualRecord[], worker: string, taskClass: string): PromotionStatus {
+  const model = modelOf(worker);
+  const mine = records.filter((r) => r.worker === worker && r.taskClass === taskClass && !r.voided && (r.model == null || r.model === model));
+  const hs = mine.filter((r) => r.mode === "holdout" && r.agree !== null);
+  const agree = hs.filter((r) => r.agree === true && r.valid === true).length;
+  const base = { samples: hs.length, agree, agreement: hs.length ? agree / hs.length : null };
+  if (mine.some((r) => r.mode === "promotion_rejected")) return { status: "rejected", ...base };
+  const enough = hs.length >= HOLDOUT.size && agree / hs.length >= QUALIFY.minAgreement;
+  if (mine.some((r) => r.mode === "promoted") && enough) return { status: "promoted", ...base };
+  return { status: hs.length >= HOLDOUT.size ? "awaiting_decision" : "holdout_pending", ...base };
+}
+
 export interface QualRecord {
   worker: string;
   taskClass: string;
@@ -213,7 +258,9 @@ export type QualStatus = { status: "unqualified" | "shadow" | "qualified" | "rej
 /** Qualification of one worker for one task class, from recorded evidence only (never from reputation). */
 export function qualification(records: QualRecord[], worker: string, taskClass: string): QualStatus {
   const model = modelOf(worker);
-  const rs = records.filter((r) => r.worker === worker && r.taskClass === taskClass && r.agree !== null && !r.voided && r.mode !== "production" && (r.model == null || r.model === model));
+  const ids = [worker, ...(WORKERS[worker]?.evidenceFrom ?? [])];
+  // production runs, holdout samples and promotion decisions are not qualification samples
+  const rs = records.filter((r) => ids.includes(r.worker) && r.taskClass === taskClass && r.agree !== null && !r.voided && !["production", "holdout", "promoted", "promotion_rejected"].includes(r.mode ?? "") && (r.model == null || r.model === model));
   if (rs.length === 0) return { status: "unqualified", samples: 0, agreement: null };
   const agreement = rs.filter((r) => r.agree === true && r.valid === true).length / rs.length;
   if (rs.length < QUALIFY.minSamples) return { status: "shadow", samples: rs.length, agreement };
@@ -249,6 +296,11 @@ export function route(i: RouteInput): RouteDecision {
   const shadow: string[] = [];
   const usable = (id: string) => WORKERS[id]!.enabled && !WORKERS[id]!.meteredCost && (!i.available || i.available.includes(id) || id === r.trusted) && !(i.unavailable ?? []).includes(id);
   let pick: { id: string; reason: string } | null = null;
+  // a worker promoted by holdout takes the class (standard tier only); before promotion it receives nothing
+  for (const w of PROMOTABLE[i.taskClass] ?? []) {
+    const p = promotion(i.records, w, i.taskClass);
+    if (!pick && p.status === "promoted" && WORKERS[w]!.enabled && i.risk !== "critical" && usable(w)) pick = { id: w, reason: `promoted for ${i.taskClass} by holdout: ${p.agree} of ${p.samples} unseen cases agreed (${Math.round((p.agreement ?? 0) * 100)}%)` };
+  }
   for (const alt of r.alternatives) {
     const w = WORKERS[alt]!;
     if (!w.enabled) continue;

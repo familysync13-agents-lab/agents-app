@@ -1,0 +1,736 @@
+{
+ "class": "structured_extraction",
+ "version": 1,
+ "statement": "Extract the fixed fields (task, criterion, error kind, timeout, first named element) from one finding of a browser check.",
+ "holdout": true,
+ "cases": [
+  {
+   "id": "sh-01",
+   "source": "historical",
+   "input": "T9:AC1 · oracle:oracle/T9/check.mjs · Fixture setup failed: Fixture needs at least three distinct titles and first authors",
+   "expect": {
+    "task": "T9",
+    "criterion": "AC1",
+    "error_kind": "harness",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-02",
+   "source": "historical",
+   "input": "T4:AC1 · regression · oracle:oracle/T4/check.mjs · Shared page is missing persisted title/author content",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC1",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-03",
+   "source": "historical",
+   "input": "T4:AC3 · regression · oracle:oracle/T4/check.mjs · First link lost its books",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC3",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-04",
+   "source": "historical",
+   "input": "T9:AC8 · oracle:oracle/T9/check.mjs · Cannot measure AC8: axe-core is unavailable; provide AXE_CORE_PATH (see NOTES.md)",
+   "expect": {
+    "task": "T9",
+    "criterion": "AC8",
+    "error_kind": "harness",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-05",
+   "source": "historical",
+   "input": "T9:AC1 · oracle:oracle/T9/check.mjs · Selection: locator.evaluate: ReferenceError: text is not defined\n    at eval (eval at evaluate (:311:30), <anonymous>:1:80)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+   "expect": {
+    "task": "T9",
+    "criterion": "AC1",
+    "error_kind": "harness",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-06",
+   "source": "historical",
+   "input": "T9:AC1 · oracle:oracle/T9/check.mjs · Books: Books order/count: The HobbitJ.R.R. TolkienFirst published 1937DuneFrank HerbertFirst published 1965Animal FarmGeorge OrwellFirst published 1945",
+   "expect": {
+    "task": "T9",
+    "criterion": "AC1",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-07",
+   "source": "historical",
+   "input": "T9:AC1 · regression · oracle:oracle/T9/check.mjs · Sort controls violate Books/common-container/document-order placement",
+   "expect": {
+    "task": "T9",
+    "criterion": "AC1",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-08",
+   "source": "historical",
+   "input": "T9:AC7 · regression · oracle:oracle/T9/check.mjs · Books contains sorting control text: Sort byDate addedTitleAuthorSortThe Hobbit J.R.R. Tolkien First published 1937 Dune Frank Herbert First published 1965 Animal Farm George Orwell First published 1945",
+   "expect": {
+    "task": "T9",
+    "criterion": "AC7",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-09",
+   "source": "historical",
+   "input": "T0:AC4 · oracle:oracle/T0/check.mjs · locator.waitFor: Error: strict mode violation: getByText('Your decision', { exact: true }) resolved to 2 elements:\n    1) <div class=\"font-medium\">Your decision</div> aka getByText('Your decision').first()\n    2) <div class=\"text-xs font-semibold tracking-wide text-owner uppercase\">Your decision</div> aka getByText('Your decision').nth(1)\n\nCall log:\n  - waiting for getByText('Your decision', { exact: true }) to be visible",
+   "expect": {
+    "task": "T0",
+    "criterion": "AC4",
+    "error_kind": "harness",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-10",
+   "source": "historical",
+   "input": "T9:AC1 · regression · oracle:oracle/T9/check.mjs · Expected Books heading, Sort by, Sort, then books inside Books section",
+   "expect": {
+    "task": "T9",
+    "criterion": "AC1",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-11",
+   "source": "historical",
+   "input": "T10:AC1 · regression · oracle:oracle/T10/check.mjs · Sort by outside Books section",
+   "expect": {
+    "task": "T10",
+    "criterion": "AC1",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-12",
+   "source": "historical",
+   "input": "T10:AC2 · regression · oracle:oracle/T10/check.mjs · AX order is not heading, Sort by, Sort, book list",
+   "expect": {
+    "task": "T10",
+    "criterion": "AC2",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-13",
+   "source": "historical",
+   "input": "T4:AC5 · oracle:oracle/T4/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Command', exact: true, level: 1 }).first() to be visible",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC5",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "heading",
+    "target_name": "Command"
+   }
+  },
+  {
+   "id": "sh-14",
+   "source": "historical",
+   "input": "T4:AC2 · regression · oracle:oracle/T4/check.mjs · Project list must be within the Project Capabilities section\n\n4 !== 1",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC2",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-15",
+   "source": "historical",
+   "input": "T4:AC5 · regression · oracle:oracle/T4/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Command', exact: true, level: 1 }).first() to be visible",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC5",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "heading",
+    "target_name": "Command"
+   }
+  },
+  {
+   "id": "sh-16",
+   "source": "historical",
+   "input": "T4:AC2 · oracle:oracle/T4/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Project Capabilities', exact: true, level: 2 }).locator('xpath=ancestor::*[descendant::table][1]') to be visible",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC2",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "heading",
+    "target_name": "Project Capabilities"
+   }
+  },
+  {
+   "id": "sh-17",
+   "source": "historical",
+   "input": "T6:AC2 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 12000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Recent worker runs', exact: true, level: 2 }) to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC2",
+    "error_kind": "timeout",
+    "timeout_ms": 12000,
+    "target_role": "heading",
+    "target_name": "Recent worker runs"
+   }
+  },
+  {
+   "id": "sh-18",
+   "source": "historical",
+   "input": "T6:AC6 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 12000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Routing and qualification', exact: true, level: 2 }) to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC6",
+    "error_kind": "timeout",
+    "timeout_ms": 12000,
+    "target_role": "heading",
+    "target_name": "Routing and qualification"
+   }
+  },
+  {
+   "id": "sh-19",
+   "source": "historical",
+   "input": "T4:AC1 · regression · oracle:oracle/T4/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Project Capabilities', exact: true, level: 2 }).locator('xpath=ancestor::*[descendant::li][1]').getByRole('listitem').filter({ has: getByRole('heading', { name: 'Demo Project', exact: true, level: 3 }) }) to be visible",
+   "expect": {
+    "task": "T4",
+    "criterion": "AC1",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "heading",
+    "target_name": "Project Capabilities"
+   }
+  },
+  {
+   "id": "sh-20",
+   "source": "historical",
+   "input": "T5:AC1 · regression · oracle:oracle/T5/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Project Capabilities', exact: true, level: 2 }).locator('xpath=ancestor::*[descendant::table][1]').getByRole('table').first() to be visible",
+   "expect": {
+    "task": "T5",
+    "criterion": "AC1",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "heading",
+    "target_name": "Project Capabilities"
+   }
+  },
+  {
+   "id": "sh-21",
+   "source": "historical",
+   "input": "T6:AC2 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Recent worker runs', exact: true, level: 2 }) to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC2",
+    "error_kind": "timeout",
+    "timeout_ms": 10000,
+    "target_role": "heading",
+    "target_name": "Recent worker runs"
+   }
+  },
+  {
+   "id": "sh-22",
+   "source": "historical",
+   "input": "T6:AC6 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Routing and qualification', exact: true, level: 2 }) to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC6",
+    "error_kind": "timeout",
+    "timeout_ms": 10000,
+    "target_role": "heading",
+    "target_name": "Routing and qualification"
+   }
+  },
+  {
+   "id": "sh-23",
+   "source": "historical",
+   "input": "T6:AC11 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Recent worker runs', exact: true, level: 2 }) to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC11",
+    "error_kind": "timeout",
+    "timeout_ms": 10000,
+    "target_role": "heading",
+    "target_name": "Recent worker runs"
+   }
+  },
+  {
+   "id": "sh-24",
+   "source": "historical",
+   "input": "T6:AC11 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Routing and qualification', exact: true, level: 2 }) to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC11",
+    "error_kind": "timeout",
+    "timeout_ms": 10000,
+    "target_role": "heading",
+    "target_name": "Routing and qualification"
+   }
+  },
+  {
+   "id": "sh-25",
+   "source": "controlled",
+   "input": "T12:AC3 · oracle:oracle/T12/check.mjs · /api/lists: expected HTTP 201, got 403",
+   "expect": {
+    "task": "T12",
+    "criterion": "AC3",
+    "error_kind": "http_status",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-26",
+   "source": "controlled",
+   "input": "T3:AC1 · regression · oracle:oracle/T3/check.mjs · GET /signed-out returned HTTP 404 (expected HTTP 200)",
+   "expect": {
+    "task": "T3",
+    "criterion": "AC1",
+    "error_kind": "http_status",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-27",
+   "source": "controlled",
+   "input": "T14:AC6 · oracle:oracle/T14/check.mjs · /system: expected HTTP 200, got 502",
+   "expect": {
+    "task": "T14",
+    "criterion": "AC6",
+    "error_kind": "http_status",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-28",
+   "source": "controlled",
+   "input": "T19:AC3 · oracle:oracle/T19/check.mjs · /projects/demo/new: expected HTTP 303, got 200",
+   "expect": {
+    "task": "T19",
+    "criterion": "AC3",
+    "error_kind": "http_status",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-29",
+   "source": "controlled",
+   "input": "T26:AC1 · oracle:oracle/T26/check.mjs · /api/health: expected HTTP 200, got 503",
+   "expect": {
+    "task": "T26",
+    "criterion": "AC1",
+    "error_kind": "http_status",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-30",
+   "source": "controlled",
+   "input": "T2:AC4 · oracle:oracle/T2/check.mjs · HARNESS: browserType.launch: Executable doesn't exist at /ms-playwright/chromium-1187/chrome-linux/chrome",
+   "expect": {
+    "task": "T2",
+    "criterion": "AC4",
+    "error_kind": "harness",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-31",
+   "source": "controlled",
+   "input": "T7:AC2 · regression · oracle:oracle/T7/check.mjs · HARNESS: SyntaxError: Unexpected token ')'",
+   "expect": {
+    "task": "T7",
+    "criterion": "AC2",
+    "error_kind": "harness",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-32",
+   "source": "controlled",
+   "input": "T8:AC5 · oracle:oracle/T8/check.mjs · HARNESS: preview is unreachable: page.goto: net::ERR_NAME_NOT_RESOLVED at http://preview:8080/lists",
+   "expect": {
+    "task": "T8",
+    "criterion": "AC5",
+    "error_kind": "harness",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-33",
+   "source": "controlled",
+   "input": "T22:AC1 · oracle:oracle/T22/check.mjs · HARNESS: ReferenceError: ownerPage is not defined\n    at file:///tmp/check.mjs:52:9",
+   "expect": {
+    "task": "T22",
+    "criterion": "AC1",
+    "error_kind": "harness",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-34",
+   "source": "controlled",
+   "input": "T12:AC1 · oracle:oracle/T12/check.mjs · locator.fill: Timeout 20000ms exceeded.\nCall log:\n  - waiting for getByRole('textbox', { name: 'List name' })",
+   "expect": {
+    "task": "T12",
+    "criterion": "AC1",
+    "error_kind": "timeout",
+    "timeout_ms": 20000,
+    "target_role": "textbox",
+    "target_name": "List name"
+   }
+  },
+  {
+   "id": "sh-35",
+   "source": "controlled",
+   "input": "T13:AC2 · regression · oracle:oracle/T13/check.mjs · locator.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for getByRole('link', { name: 'New intent for Demo Project', exact: true })\n  - locator resolved to hidden <a href=\"/projects/demo/new\">New intent</a>",
+   "expect": {
+    "task": "T13",
+    "criterion": "AC2",
+    "error_kind": "timeout",
+    "timeout_ms": 5000,
+    "target_role": "link",
+    "target_name": "New intent for Demo Project"
+   }
+  },
+  {
+   "id": "sh-36",
+   "source": "controlled",
+   "input": "T15:AC4 · oracle:oracle/T15/check.mjs · expect(locator).toBeVisible: Timeout 8000ms exceeded.\nCall log:\n  - waiting for getByText('Saved', { exact: true })",
+   "expect": {
+    "task": "T15",
+    "criterion": "AC4",
+    "error_kind": "timeout",
+    "timeout_ms": 8000,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-37",
+   "source": "controlled",
+   "input": "T11:AC3 · oracle:oracle/T11/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('table', { name: 'Recent worker runs' }).getByRole('row', { name: 'claude-code build' }) to be visible",
+   "expect": {
+    "task": "T11",
+    "criterion": "AC3",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "table",
+    "target_name": "Recent worker runs"
+   }
+  },
+  {
+   "id": "sh-38",
+   "source": "controlled",
+   "input": "T18:AC1 · oracle:oracle/T18/check.mjs · page.waitForResponse: Timeout 10000ms exceeded while waiting for event \"response\"",
+   "expect": {
+    "task": "T18",
+    "criterion": "AC1",
+    "error_kind": "timeout",
+    "timeout_ms": 10000,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-39",
+   "source": "controlled",
+   "input": "T6:AC9 · oracle:oracle/T6/check.mjs · not yet required at this plan task (was: Not verified) | locator.waitFor: Timeout 12000ms exceeded.\nCall log:\n  - waiting for getByRole('cell', { name: 'qualified' }).first() to be visible",
+   "expect": {
+    "task": "T6",
+    "criterion": "AC9",
+    "error_kind": "timeout",
+    "timeout_ms": 12000,
+    "target_role": "cell",
+    "target_name": "qualified"
+   }
+  },
+  {
+   "id": "sh-40",
+   "source": "controlled",
+   "input": "T20:AC5 · regression · oracle:oracle/T20/check.mjs · locator.selectOption: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('combobox', { name: 'Sort by' })\n  - locator resolved to <select name=\"sort\" disabled>…</select>",
+   "expect": {
+    "task": "T20",
+    "criterion": "AC5",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "combobox",
+    "target_name": "Sort by"
+   }
+  },
+  {
+   "id": "sh-41",
+   "source": "controlled",
+   "input": "T10:AC3 · oracle:oracle/T10/check.mjs · page.goto: Timeout 45000ms exceeded.\nCall log:\n  - navigating to \"http://preview:8080/lists/3\", waiting until \"load\"",
+   "expect": {
+    "task": "T10",
+    "criterion": "AC3",
+    "error_kind": "timeout",
+    "timeout_ms": 45000,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-42",
+   "source": "controlled",
+   "input": "T23:AC7 · oracle:oracle/T23/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for locator('#books-heading') to be visible",
+   "expect": {
+    "task": "T23",
+    "criterion": "AC7",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-43",
+   "source": "controlled",
+   "input": "T24:AC2 · regression · oracle:oracle/T24/check.mjs · locator.check: Timeout 7000ms exceeded.\nCall log:\n  - waiting for getByRole('checkbox', { name: 'Share this list' })",
+   "expect": {
+    "task": "T24",
+    "criterion": "AC2",
+    "error_kind": "timeout",
+    "timeout_ms": 7000,
+    "target_role": "checkbox",
+    "target_name": "Share this list"
+   }
+  },
+  {
+   "id": "sh-44",
+   "source": "controlled",
+   "input": "T27:AC3 · oracle:oracle/T27/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Decisions', exact: true, level: 2 }).locator('xpath=ancestor::section[1]').getByRole('button', { name: 'Decide' }) to be visible",
+   "expect": {
+    "task": "T27",
+    "criterion": "AC3",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": "heading",
+    "target_name": "Decisions"
+   }
+  },
+  {
+   "id": "sh-45",
+   "source": "controlled",
+   "input": "T16:AC1 · oracle:oracle/T16/check.mjs · Title length\n\nExpected: 100\nReceived: 103",
+   "expect": {
+    "task": "T16",
+    "criterion": "AC1",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-46",
+   "source": "controlled",
+   "input": "T5:AC2 · regression · oracle:oracle/T5/check.mjs · Row count of the capabilities table\n\n3 !== 1",
+   "expect": {
+    "task": "T5",
+    "criterion": "AC2",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-47",
+   "source": "controlled",
+   "input": "T9:AC6 · oracle:oracle/T9/check.mjs · Sort select value after reload\n\nExpected: \"title\"\nReceived: \"added\"",
+   "expect": {
+    "task": "T9",
+    "criterion": "AC6",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-48",
+   "source": "controlled",
+   "input": "T17:AC2 · oracle:oracle/T17/check.mjs · State of the Save button while the form is empty\n\nExpected: \"disabled\"\nReceived: \"enabled\"",
+   "expect": {
+    "task": "T17",
+    "criterion": "AC2",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-49",
+   "source": "controlled",
+   "input": "T21:AC2 · oracle:oracle/T21/check.mjs · Heading text\n\nExpected: \"Project Capabilities\"\nReceived: \"Capabilities\"",
+   "expect": {
+    "task": "T21",
+    "criterion": "AC2",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-50",
+   "source": "controlled",
+   "input": "T25:AC4 · oracle:oracle/T25/check.mjs · Total shown on the invoice\n\nExpected: \"12.50\"\nReceived: \"12.5\"",
+   "expect": {
+    "task": "T25",
+    "criterion": "AC4",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-51",
+   "source": "controlled",
+   "input": "T28:AC2 · oracle:oracle/T28/check.mjs · /lists/9/share: expected HTTP 200, got 401",
+   "expect": {
+    "task": "T28",
+    "criterion": "AC2",
+    "error_kind": "http_status",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-52",
+   "source": "controlled",
+   "input": "T29:AC1 · regression · oracle:oracle/T29/check.mjs · HARNESS: preview is unreachable: page.goto: net::ERR_CONNECTION_RESET at http://preview:8080/system",
+   "expect": {
+    "task": "T29",
+    "criterion": "AC1",
+    "error_kind": "harness",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-53",
+   "source": "controlled",
+   "input": "T30:AC4 · oracle:oracle/T30/check.mjs · locator.click: Timeout 9000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Create list' })",
+   "expect": {
+    "task": "T30",
+    "criterion": "AC4",
+    "error_kind": "timeout",
+    "timeout_ms": 9000,
+    "target_role": "button",
+    "target_name": "Create list"
+   }
+  },
+  {
+   "id": "sh-54",
+   "source": "controlled",
+   "input": "T31:AC2 · regression · oracle:oracle/T31/check.mjs · Number of book rows\n\nExpected: 3\nReceived: 2",
+   "expect": {
+    "task": "T31",
+    "criterion": "AC2",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-55",
+   "source": "controlled",
+   "input": "T32:AC5 · oracle:oracle/T32/check.mjs · locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByTestId('share-link') to be visible",
+   "expect": {
+    "task": "T32",
+    "criterion": "AC5",
+    "error_kind": "timeout",
+    "timeout_ms": 15000,
+    "target_role": null,
+    "target_name": null
+   }
+  },
+  {
+   "id": "sh-56",
+   "source": "controlled",
+   "input": "T33:AC1 · oracle:oracle/T33/check.mjs · Page title\n\nExpected: \"Agents App - System\"\nReceived: \"Agents App\"",
+   "expect": {
+    "task": "T33",
+    "criterion": "AC1",
+    "error_kind": "assertion",
+    "timeout_ms": null,
+    "target_role": null,
+    "target_name": null
+   }
+  }
+ ]
+}

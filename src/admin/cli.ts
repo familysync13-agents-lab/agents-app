@@ -9,7 +9,7 @@ import type { SemanticClass } from "@/domain/router";
 import { runAdmin } from "@/server/admin";
 import { proposeIntent } from "@/server/proposals";
 import { routeTable } from "@/worker/shadow";
-import { qualifyRun, qualifyStatus, qualifyVerify, routeTableAll, submitSemantic } from "@/worker/qualify";
+import { holdoutDecide, holdoutReference, holdoutStatus, qualifyRun, qualifyStatus, qualifyVerify, routeTableAll, submitSemantic } from "@/worker/qualify";
 
 async function main() {
   const chunks: Buffer[] = [];
@@ -25,9 +25,14 @@ async function main() {
   const op = (req as { op?: string }).op;
   const out = (o: unknown) => { process.stdout.write(JSON.stringify(o) + "\n"); process.exit(0); };
   // the Router's rule table (read-only): the ten primary classes, or with all:true also the local-worker classes
+  if (op === "route_brief") out({ ok: true, routes: (await routeTableAll(db)).map((r) => `${r.taskClass} -> ${r.worker} (${r.model})${r.promotable.length ? ` | promotable: ${r.promotable.map((p) => `${p.worker} ${p.status} ${p.agree}/${p.samples}`).join(", ")}` : ""}`) });
   if (op === "route_table") out({ ok: true, routes: (req as { all?: boolean }).all ? await routeTableAll(db) : await routeTable(db) });
   // qualification harness of the local workers: run the pinned cases of a class, read the evidence, verify, void
-  if (op === "qualify_run") out({ ok: true, ...(await qualifyRun(db, String((req as { class?: string }).class), { ids: (req as { ids?: string[] }).ids, repo: (req as { repo?: string }).repo, worker: (req as { worker?: string }).worker })) });
+  if (op === "qualify_run") out({ ok: true, ...(await qualifyRun(db, String((req as { class?: string }).class), { ids: (req as { ids?: string[] }).ids, repo: (req as { repo?: string }).repo, worker: (req as { worker?: string }).worker, holdout: (req as { holdout?: boolean }).holdout === true })) });
+  // promotion by holdout: calibrate the references, read the evidence, record the decision in the qualification records
+  if (op === "holdout_reference") out({ ok: true, ...(await holdoutReference(db, String((req as { class?: string }).class))) });
+  if (op === "holdout_status") out({ ok: true, status: await holdoutStatus(db) });
+  if (op === "holdout_decide") { const r = req as { class: string; worker: string; decision: "promoted" | "rejected"; note?: string }; out({ ok: true, ...(await holdoutDecide(db, { cls: r.class, worker: r.worker, decision: r.decision, note: String(r.note ?? "") })) }); }
   if (op === "qualify_status") out({ ok: true, status: await qualifyStatus(db), batches: await db.select().from(qualificationBatches).orderBy(desc(qualificationBatches.id)).limit(12) });
   if (op === "qualify_verify") out({ ok: true, ...(await qualifyVerify(db, (req as { class?: string }).class)) });
   if (op === "qualify_void") {

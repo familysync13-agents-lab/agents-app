@@ -33,10 +33,11 @@ describe("EC1 candidates are evidence-only: no route can select them", () => {
   });
   it("a perfect candidate record changes no routing decision; existing routing is unchanged", () => {
     const perfect: QualRecord[] = ALL_TASK_CLASSES.flatMap((c) => Array.from({ length: 40 }, () => ({ worker: c === "small_code" || c === "bounded_repair" ? "cand-devstral" : "cand-qwen38", taskClass: c, valid: true, agree: true, model: c === "small_code" || c === "bounded_repair" ? "devstral-small-2:24b" : "qwen3.8:27b" })));
-    for (const c of ALL_TASK_CLASSES) expect(route({ taskClass: c, risk: "standard", records: perfect }).worker).toBe(ROUTES[c].trusted);
+    // owner decision 2026-10-03: classification is the one class the qwen3.8:27b evidence routes (as the worker local-qwen38)
+    for (const c of ALL_TASK_CLASSES) expect(route({ taskClass: c, risk: "standard", records: perfect }).worker).toBe(c === "classification" ? "local-qwen38" : ROUTES[c].trusted);
     expect(qualification(perfect, "cand-qwen38", "summarization").status).toBe("qualified"); // the evidence itself is still read correctly
     const cls14: QualRecord[] = Array.from({ length: 20 }, (_, i) => ({ worker: "local-llm", taskClass: "classification", valid: true, agree: i < 19, model: "qwen3:14b" }));
-    expect(route({ taskClass: "classification", risk: "standard", records: [...perfect, ...cls14] }).worker).toBe("local-llm");
+    expect(route({ taskClass: "classification", risk: "standard", records: [...perfect, ...cls14] }).worker).toBe("local-qwen38");
   });
 });
 
@@ -117,7 +118,7 @@ describe("EC3 research pack: 8 classes x 20 pinned cases, deterministic gates, e
 describe("EC4 the same pinned cases for a second model, and the edit-based coding path as a separate class", () => {
   it("runs the existing classes for a candidate without touching the first model's records", async () => {
     const { db, ex, clk } = await start({ localLlm: (p) => ({ ok: true, available: true, model: String(p.model), ms: 700, output: { tags: [] } }) });
-    await qualifyRun(db, "classification");
+    await qualifyRun(db, "classification", { worker: "local-llm" });
     await qualifyRun(db, "classification", { worker: "cand-qwen38" });
     await settle(db, ex, clk, 4);
     const rs = await db.select().from(qualificationRecords);
