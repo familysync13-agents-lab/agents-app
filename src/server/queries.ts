@@ -23,7 +23,7 @@ import {
 } from "@/db/schema";
 import { qualification, route, ROUTES, TASK_CLASSES, WORKERS, type QualRecord } from "@/domain/router";
 import type { RoutingRow } from "@/components/routing-table";
-import { withoutProofStatement } from "@/domain/decision";
+import { residualGroups, withoutProofStatement } from "@/domain/decision";
 
 const TERMINAL: TaskState[] = ["ACCEPTED", "REJECTED", "ABANDONED"];
 
@@ -234,12 +234,42 @@ export async function openDecisionsList() {
     .orderBy(desc(decisions.createdAt));
 }
 
+type DecisionRow = { d: { id: number; taskId: number; kind: string; context: unknown } };
+
 /**
  * The recorded decision record of each open acceptance decision, as its "accepted without proof" statement (decision id -> text).
  * Read from the decision-record artifact the decision's context references (same task, kind "decision-record"); a decision without
  * one (e.g. opened before decision records existed) is absent. Read-only.
  */
-export async function acceptanceProofStatements(rows: { d: { id: number; taskId: number; kind: string; context: unknown } }[], db?: Db) {
+export async function acceptanceProofStatements(rows: DecisionRow[], db?: Db) {
+  const out = new Map<number, string>();
+  for (const [decisionId, content] of await recordedDecisionRecords(rows, db)) {
+    const s = withoutProofStatement(content);
+    if (s) out.set(decisionId, s);
+  }
+  return out;
+}
+
+/**
+ * The residual lines listed in each acceptance decision's context, grouped by the kind of the matching item in its recorded
+ * decision record (decision id -> groups; task page). A decision without a record, or whose lines cannot be matched to it, is
+ * absent. Read-only.
+ */
+export async function acceptanceResidualGroups(rows: DecisionRow[], db?: Db) {
+  const out = new Map<number, { review: string[]; noted: string[] }>();
+  const records = await recordedDecisionRecords(rows, db);
+  for (const { d } of rows) {
+    const content = records.get(d.id);
+    const lines = (d.context as { decisionRecord?: { residual?: unknown } } | null)?.decisionRecord?.residual;
+    if (content === undefined || !Array.isArray(lines) || !lines.every((x) => typeof x === "string")) continue;
+    const g = residualGroups(lines, content);
+    if (g) out.set(d.id, g);
+  }
+  return out;
+}
+
+/** The stored decision-record artifact text of each acceptance decision (decision id -> content), as referenced by its context. */
+async function recordedDecisionRecords(rows: DecisionRow[], db?: Db) {
   const refs = new Map<number, { taskId: number; artifactId: number }>();
   for (const { d } of rows) {
     if (d.kind !== "acceptance") continue;
@@ -256,9 +286,7 @@ export async function acceptanceProofStatements(rows: { d: { id: number; taskId:
   const byId = new Map(arts.map((a) => [a.id, a]));
   for (const [decisionId, ref] of refs) {
     const a = byId.get(ref.artifactId);
-    if (!a || a.taskId !== ref.taskId) continue;
-    const s = withoutProofStatement(a.content);
-    if (s) out.set(decisionId, s);
+    if (a && a.taskId === ref.taskId) out.set(decisionId, a.content);
   }
   return out;
 }

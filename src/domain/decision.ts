@@ -120,6 +120,16 @@ export function ownerSummary(r: DecisionRecord): { why: string; lines: string[] 
  * not a decision record (nothing recorded, nothing shown). Read-only: counts the recorded residual, never recomputes the record.
  */
 export function withoutProofStatement(content: string): string | null {
+  const rec = parseRecord(content);
+  if (!rec) return null;
+  const n = rec.residual.filter((x) => x && !isNoted(x.kind)).length;
+  return n === 0 ? "Nothing is accepted without proof" : n === 1 ? "1 item would be accepted without proof" : `${n} items would be accepted without proof`;
+}
+
+/** Residual kinds that are only noted (not gated by contract); every other kind needs the owner's review. */
+const isNoted = (kind: unknown) => kind === "should" || kind === "advisory_constraint";
+
+function parseRecord(content: string): { residual: (Partial<Residual> | null)[] } | null {
   let r: unknown;
   try {
     r = JSON.parse(content);
@@ -128,6 +138,20 @@ export function withoutProofStatement(content: string): string | null {
   }
   const rec = r as Partial<DecisionRecord> | null;
   if (!rec || rec.schema !== "agents-app/decision-record@1" || !Array.isArray(rec.residual)) return null;
-  const n = rec.residual.filter((x) => x && x.kind !== "should" && x.kind !== "advisory_constraint").length;
-  return n === 0 ? "Nothing is accepted without proof" : n === 1 ? "1 item would be accepted without proof" : `${n} items would be accepted without proof`;
+  return { residual: rec.residual };
+}
+
+/**
+ * The listed residual lines of an acceptance decision (its recorded context, in the record's order) split by the kind of the
+ * matching item in the stored decision record: should-criteria and advisory constraints are only noted, every other item needs
+ * review - the same split as the "accepted without proof" count. Null when the stored text is not a decision record or lists a
+ * different number of items (lines cannot be matched to kinds). Read-only: never recomputes the record.
+ */
+export function residualGroups(lines: string[], content: string): { review: string[]; noted: string[] } | null {
+  const rec = parseRecord(content);
+  if (!rec || rec.residual.length !== lines.length) return null;
+  const review: string[] = [];
+  const noted: string[] = [];
+  lines.forEach((line, i) => (isNoted(rec.residual[i]?.kind) ? noted : review).push(line));
+  return { review, noted };
 }
