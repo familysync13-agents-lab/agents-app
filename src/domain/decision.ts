@@ -64,7 +64,12 @@ export function decide(body: Body, pkgSha256: string, opts: { strict: boolean } 
     }
   }
   // 3. what else is accepted without proof
-  for (const c of body.criteria.filter((x) => x.in_scope && x.priority === "should" && x.status !== "verified")) residual.push({ kind: "should", id: c.id, text: `should-criterion ${v.judgments.some((j) => j.id === c.id && j.verdict === "not_satisfied") ? "judged NOT satisfied by the independent Verifier" : v.judgments.some((j) => j.id === c.id && j.verdict === "cannot_judge") ? "not verified (the independent Verifier could not judge it)" : c.status.replace("_", " ")}` });
+  // a should-criterion the gate did not verify: say exactly what the independent Verifier made of it (four distinct states)
+  for (const c of body.criteria.filter((x) => x.in_scope && x.priority === "should" && x.status !== "verified")) {
+    const j = v.judgments.find((y) => y.id === c.id)?.verdict ?? null;
+    const state = j === "satisfied" || c.independent === "conforms" ? "Verifier satisfied" : j === "not_satisfied" || c.independent === "violated" ? "Verifier NOT satisfied" : j === "cannot_judge" ? "Verifier could not judge" : "Verifier did not check";
+    residual.push({ kind: "should", id: c.id, text: `should-criterion, not gated - ${state}` });
+  }
   for (const c of must.filter((x) => x.status === "waived")) residual.push({ kind: "waiver", id: c.id, text: "must-criterion waived by the owner" });
   for (const f of body.findings.filter((x) => ["medium", "low"].includes(x.severity))) residual.push({ kind: "finding", id: f.criterion, text: `[${f.severity}] ${f.title}` });
   if (v.status === "not_run" || v.status === "unknown") residual.push({ kind: "verifier", id: null, text: `the independent Verifier gave no result${v.failure_class ? ` (${v.failure_class})` : ""}${v.reason ? `: ${v.reason}` : ""}` });

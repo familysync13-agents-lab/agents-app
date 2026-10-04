@@ -129,6 +129,11 @@ export const CONTRACT_V2_RULES = `- TRACEABILITY (mechanically checked): every c
   observable behaviour or the repository fact that shows it holds. "judgment" is allowed only with "advisory": true - a
   constraint that is explicitly non-blocking and never decides acceptance. A security, privacy or prohibited constraint is
   never advisory and never "judgment".
+- VERIFIABLE BLIND (mechanically checked): the check of each must-criterion is written by someone who has ONLY this contract -
+  no earlier task's wording, no fixture or demo data beyond what this contract states, no build from before the change. So a
+  criterion never says "as defined by T0", "as before", "unchanged", "the existing wording": it states the observable behaviour
+  itself - the exact text, value, count or link target. "Nothing earlier breaks" is one regression constraint (proven by the
+  earlier tasks' own checks), never a must-criterion.
 - A structural criterion may be "must" only with "verify": "static" and a "fact" of the kinds above (not "unchanged" /
   "changed_only": those describe this change and belong in a constraint). An experience criterion cannot be "must" yet.
 - Optional planning hints (they never change the outcome): "group": "<deliverable name>" on criteria when the contract contains

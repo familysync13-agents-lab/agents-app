@@ -68,6 +68,29 @@ export const Criterion = z
 export type Criterion = z.infer<typeof Criterion>;
 
 export const CONSTRAINT_KINDS = ["compatibility", "security", "privacy", "interface", "prohibited", "regression", "design"] as const;
+/*
+ * Verifiability at the Contract boundary (owner rule, after T9): the check of record is written BLIND - its author has this
+ * contract and nothing else: no earlier task's wording, no fixture, no build before the change. A requirement that points at
+ * something the author cannot see cannot be checked, however often the check is repaired. Such a requirement is refused here, before
+ * the contract can become authoritative: it must state the observable behaviour itself (the exact text, count, link target ...),
+ * or - when it means "nothing earlier breaks" - be a regression constraint, which the checks of the earlier tasks prove.
+ */
+const UNSEEN: [RegExp, string][] = [
+  [/\b(?:as|like)\s+(?:defined|specified|described|required|stated|accepted|established|introduced|implemented|written|shown|set)\s+(?:by|in|for|under|with)\s+(?:the\s+)?(?:task\s+|contract\s+(?:of\s+)?)?T[0-9]+\b/i, "defers to what another task defined"],
+  [/\b(?:defined|specified|accepted|established|introduced)\s+(?:by|in)\s+(?:an?\s+|the\s+)?(?:earlier|previous|prior|existing|accepted)\b/i, "defers to what an earlier task defined"],
+  [/\b(?:as|like)\s+(?:before|today|now|currently|previously|on\s+main|it\s+(?:is|was)(?:\s+(?:now|today|before))?)(?![\w-])/i, "defers to how the product behaves before this change"],
+  [/\b(?:unchanged|stays?\s+the\s+same|remains?\s+(?:the\s+same|as\s+(?:it\s+)?(?:is|was))|keeps?\s+its\s+(?:current|existing|present)\b)/i, "requires something to stay as it is, without saying what it is"],
+  [/\b(?:existing|current|present|original|seeded|demo|fixture)\s+(?:wording|text|copy|title|label|explanation|message|content)s?\b/i, "refers to wording it does not state"],
+];
+export function unverifiableReferences(text: string): string[] {
+  const out: string[] = [];
+  for (const [re, what] of UNSEEN) {
+    const m = re.exec(text);
+    if (m) out.push(`"${m[0]}" ${what}: the check is written blind and its author cannot see that. State the observable behaviour itself (the exact text, value or link), or make it a regression constraint proven by the earlier tasks' checks`);
+  }
+  return out;
+}
+
 /** Constraint kinds that always materially affect acceptance: never left to judgment (Decision phase, owner rule). */
 export const MATERIAL_KINDS: readonly string[] = ["security", "privacy", "prohibited"];
 export const Constraint = z
@@ -207,6 +230,7 @@ function lintV2(c: Contract, ctx: V2Context): string[] {
     if (k.priority === "must" && !k.verify) problems.push(`${k.id}: a must-criterion needs a verification class (verify)`);
     if (k.verify && !VERIFY_FOR[k.type].includes(k.verify)) problems.push(`${k.id}: verify "${k.verify}" does not fit type ${k.type} (allowed: ${VERIFY_FOR[k.type].join(", ")})`);
     if (k.verify === "judgment" && !nonEmpty(k.evidence)) problems.push(`${k.id}: a judgment-class criterion must state its evidence requirement`);
+    if (k.priority === "must" && (k.verify === "blackbox" || k.verify === "measure")) for (const why of unverifiableReferences([k.statement, k.given, k.when, k.then, k.target, k.rule].filter(nonEmpty).join(" "))) problems.push(`${k.id}: ${why}`);
     if (k.type === "experience" && ((nonEmpty(k.given) && nonEmpty(k.when) && nonEmpty(k.then)) || /[0-9]/.test(k.target ?? "")))
       problems.push(`${k.id}: this is ordinary behaviour or a threshold; do not label it "experience"`);
   }
@@ -220,6 +244,7 @@ function lintV2(c: Contract, ctx: V2Context): string[] {
       const f = Fact.safeParse(x.fact);
       if (!f.success) problems.push(`${x.id}: a static constraint needs a valid "fact" (${FACT_KINDS.join(" | ")}); if no repository fact proves it, its class is judgment or blackbox`);
     } else if (x.fact !== undefined) problems.push(`${x.id}: "fact" belongs to static constraints only`);
+    if ((x.verify === "blackbox" || x.verify === "measure") && x.kind !== "regression") for (const why of unverifiableReferences(x.statement)) problems.push(`${x.id}: ${why}`);
     // Decision phase (owner rule): a requirement nobody can prove is never a normal final state. A judgment-class constraint either
     // is rewritten into a provable form, or is declared advisory - explicitly non-blocking, shown to the owner as such.
     if (x.verify === "judgment") {

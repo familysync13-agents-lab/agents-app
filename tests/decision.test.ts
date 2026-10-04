@@ -32,7 +32,15 @@ describe("DC1 readiness: deterministic failures decide first", () => {
     expect(decide(body({ verifier: { ...v, judgments: [{ id: "AC1", verdict: "not_satisfied", evidence: 1 }] } }), "p").blockers.join()).toMatch(/AC1: independent judgment says not satisfied/);
     // T8 (live): a SHOULD-criterion judged not satisfied never blocks; it is listed for the owner
     const sh = decide(body({ verifier: { ...v, judgments: [{ id: "AC2", verdict: "not_satisfied", evidence: 1 }] } }), "p");
-    expect(sh).toMatchObject({ outcome: "ready", residual: [{ kind: "should", id: "AC2", text: "should-criterion judged NOT satisfied by the independent Verifier" }] });
+    expect(sh).toMatchObject({ outcome: "ready", residual: [{ kind: "should", id: "AC2", text: "should-criterion, not gated - Verifier NOT satisfied" }] });
+    // T9 (live): a should the Verifier judged satisfied was shown as "not verified". Four distinct states, never that label.
+    const st = (j: unknown[], independent: string | null = null) => decide(body({ criteria: [{ id: "AC1", priority: "must", in_scope: true, status: "verified" }, { id: "AC2", priority: "should", in_scope: true, status: "not_verified", independent }], verifier: { ...v, judgments: j } }), "p").residual.find((r) => r.id === "AC2")!.text;
+    expect(st([{ id: "AC2", verdict: "satisfied" }])).toBe("should-criterion, not gated - Verifier satisfied");
+    expect(st([{ id: "AC2", verdict: "cannot_judge" }])).toBe("should-criterion, not gated - Verifier could not judge");
+    expect(st([])).toBe("should-criterion, not gated - Verifier did not check");
+    expect(st([], "conforms")).toBe("should-criterion, not gated - Verifier satisfied");
+    expect(st([], "violated")).toBe("should-criterion, not gated - Verifier NOT satisfied");
+    for (const j of [[{ id: "AC2", verdict: "satisfied" }], [{ id: "AC2", verdict: "cannot_judge" }], []]) expect(st(j)).not.toMatch(/not verified/);
   });
 });
 

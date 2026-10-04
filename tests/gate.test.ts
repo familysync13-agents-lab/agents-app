@@ -33,6 +33,26 @@ describe("GT1 repository facts: the declarative proof of a static requirement", 
   });
 });
 
+describe("GT1b verifiability at the Contract boundary: a blind check author sees only this contract (T9, live)", () => {
+  const must = (o: Record<string, unknown>) => ({ id: "AC4", type: "behavior", priority: "must", tags: [], verify: "blackbox", trace: { source: "intent", ref: "Let owners" }, given: "the owner signed in", when: "the owner opens /decisions", then: "each item shows its kind label", ...o });
+  const withMust = (o: Record<string, unknown>) => lint(v3({ criteria: [...CONTRACT("T9").criteria, V3_EXTRA.criterion, must(o)] }));
+  it("refuses a must-criterion that depends on wording, fixtures or earlier state the check author cannot see", () => {
+    // the criterion that looped six times on T9, as it was written
+    const t9 = withMust({ then: 'each item still shows its kind label ("Contract review" / "Decision"), its decision title as defined by T0 and its explanation text' });
+    expect(t9.problems.join()).toMatch(/AC4: "as defined by T0" defers to what another task defined: the check is written blind/);
+    expect(withMust({ then: "the list looks as before" }).problems.join()).toMatch(/AC4: "as before" defers to how the product behaves before this change/);
+    expect(withMust({ then: "the page title is unchanged" }).problems.join()).toMatch(/AC4: "unchanged" requires something to stay as it is/);
+    expect(withMust({ then: "each row keeps the existing wording" }).problems.join()).toMatch(/AC4: "existing wording" refers to wording it does not state/);
+    expect(withMust({ then: "the title is the one established by an earlier task" }).problems.join()).toMatch(/AC4: "established by an earlier" defers to what an earlier task defined/);
+    expect(lint(v3({ constraints: [...V3_EXTRA.constraints, { id: "C5", kind: "interface", statement: "The export link stays the same.", verify: "blackbox", trace: { source: "intent", ref: "Let owners" } }] })).problems.join()).toMatch(/C5: "stays the same"/);
+  });
+  it("accepts the same requirement stated as observable behaviour, a regression constraint, and what the gate or judgment proves", () => {
+    expect(lint(v3())).toEqual({ ok: true, problems: [] }); // C1 "stays as it is" is a regression constraint: earlier checks prove it
+    expect(withMust({ then: 'the item of T2 shows the kind label "Decision", the line "Demo Project · T2" and exactly one link, to /tasks/2' }).ok).toBe(true); // names demo tasks, states the values
+    expect(lint(v3({ criteria: [...CONTRACT("T9").criteria, V3_EXTRA.criterion, must({ priority: "should", then: "the list looks as before" })] })).ok).toBe(true); // a should never decides
+  });
+});
+
 describe("GT2 lint: structural musts and static constraints need a fact; experience musts stay disabled", () => {
   it("accepts the Gate-phase contract and refuses each missing or misplaced fact", () => {
     expect(lint(v3())).toEqual({ ok: true, problems: [] });
