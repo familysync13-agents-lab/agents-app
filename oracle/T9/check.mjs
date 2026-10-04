@@ -159,6 +159,9 @@ const checks = {
     for (const key of ['T4', 'T5']) assert.deepEqual(await snapshot(await decision(key, 'Acceptance'), key), before[key], `${key} changed after reload (excluding age)`);
   },
   AC5: async () => {
+    // The frozen inputs do not supply the historical title/explanation fixtures.
+    // Check all independently specified consequences before reporting that gap;
+    // observing this build cannot establish its own unchanged-wording baseline.
     await openDecisions();
     for (const [key, kind] of [['T1', 'Contract review'], ['T2', 'Decision']]) {
       const row = await decision(key, kind);
