@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, inArray } from "drizzle-orm";
 import { artifacts, decisions, evidencePackages, qualificationRecords, runs, tasks } from "@/db/schema";
 import { PREVIEW_PROJECTS, seedProjects } from "@/db/seed";
 import { DEMO_HEAD, seedPreviewDemo } from "@/db/preview-demo";
@@ -56,8 +56,8 @@ describe("gate preview demo data", () => {
     const db = await previewDb();
     await seedPreviewDemo(db);
     await seedPreviewDemo(db);
-    expect((await db.select().from(tasks)).map((t) => t.key)).toEqual(["T1", "T2", "T3"]);
-    expect((await db.select().from(decisions)).map((d) => d.kind).sort()).toEqual(["block", "contract_approval"]);
+    expect((await db.select().from(tasks)).map((t) => t.key)).toEqual(["T1", "T2", "T3", "T4", "T5"]);
+    expect((await db.select().from(decisions)).map((d) => d.kind).sort()).toEqual(["acceptance", "acceptance", "block", "contract_approval"]);
   });
 
   it("seeds the two demo worker runs (newest first: T3 build, then T1 contract draft) and three shadow records, once", async () => {
@@ -84,7 +84,7 @@ describe("gate preview demo data", () => {
     await db.delete(qualificationRecords);
     await seedPreviewDemo(db);
     await seedPreviewDemo(db);
-    expect((await db.select().from(tasks)).map((t) => t.key)).toEqual(["T1", "T2", "T3"]);
+    expect((await db.select().from(tasks)).map((t) => t.key)).toEqual(["T1", "T2", "T3", "T4", "T5"]);
     expect(await ledger(db)).toEqual(RUNS);
     expect(await db.select().from(qualificationRecords)).toHaveLength(3);
   });
@@ -119,7 +119,7 @@ describe("gate preview demo data", () => {
     expect(p).toMatchObject({ taskId: t3.id, headSha: DEMO_HEAD, status: "incomplete", sha256: "ea3524e95164fa82395285b83ee8e5d34a7beced8fd0f31d4c774562be0e5b19" });
     const [a] = await db.select().from(artifacts).where(eq(artifacts.id, p.artifactId));
     expect(a).toMatchObject({ taskId: t3.id, kind: "evidence-package", sha256: p.sha256, workerAuthored: false });
-    expect(await db.select().from(artifacts)).toHaveLength(1);
+    expect(await db.select().from(artifacts).where(eq(artifacts.kind, "evidence-package"))).toHaveLength(1);
     // what the task page card and the control loop read
     const cur = (await currentEvidencePackage(t3.id, db))!;
     expect(cur.status).toBe("incomplete");
@@ -135,17 +135,17 @@ describe("gate preview demo data", () => {
     const db = await previewDb();
     await seedPreviewDemo(db);
     await db.delete(evidencePackages);
-    await db.delete(artifacts);
-    await db.update(tasks).set({ headSha: null });
+    await db.delete(artifacts).where(eq(artifacts.kind, "evidence-package"));
+    await db.update(tasks).set({ headSha: null }).where(inArray(tasks.key, ["T1", "T2", "T3"]));
     const before = (await db.select().from(tasks).orderBy(asc(tasks.id))).map(({ headSha: _h, updatedAt: _u, ...t }) => t);
     await seedPreviewDemo(db);
     await seedPreviewDemo(db);
     const after = (await db.select().from(tasks).orderBy(asc(tasks.id))).map(({ headSha: _h, updatedAt: _u, ...t }) => t);
     expect(after).toEqual(before);
     expect(await db.select().from(evidencePackages)).toHaveLength(1);
-    expect(await db.select().from(artifacts)).toHaveLength(1);
+    expect(await db.select().from(artifacts).where(eq(artifacts.kind, "evidence-package"))).toHaveLength(1);
     expect(await ledger(db)).toEqual(RUNS);
-    expect((await db.select().from(decisions)).map((d) => d.kind).sort()).toEqual(["block", "contract_approval"]);
+    expect((await db.select().from(decisions)).map((d) => d.kind).sort()).toEqual(["acceptance", "acceptance", "block", "contract_approval"]);
   });
 
   it("seeds nothing without the demo project (production has none)", async () => {

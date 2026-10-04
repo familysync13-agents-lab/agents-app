@@ -108,3 +108,7 @@ export function ownerSummary(r: DecisionRecord): { why: string; lines: string[] 
   const why = r.attention === "clean" ? `${proven} Nothing is accepted without proof. Merging needs your approval of the exact head on GitHub.` : `${proven} ${r.residual.filter((x) => x.kind !== "should" && x.kind !== "advisory_constraint").length} item(s) would be accepted without proof - listed below. Merging needs your approval of the exact head on GitHub.`;
   return { why, lines };
 }
+
+/** Items of a recorded residual that are accepted without proof - the count ownerSummary states (should-criteria and advisory constraints are listed, not counted). */
+export const withoutProofCount = (residual: readonly { kind: string }[]) => residual.filter((x) => x.kind !== "should" && x.kind !== "advisory_constraint").length;
+export const withoutProofText = (n: number) => (n === 0 ? "Nothing is accepted without proof" : n === 1 ? "1 item would be accepted without proof" : `${n} items would be accepted without proof`);

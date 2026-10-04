@@ -21,6 +21,7 @@ import {
   transitions,
   type TaskState,
 } from "@/db/schema";
+import { withoutProofCount } from "@/domain/decision";
 import { qualification, route, ROUTES, TASK_CLASSES, WORKERS, type QualRecord } from "@/domain/router";
 import type { RoutingRow } from "@/components/routing-table";
 
@@ -231,6 +232,34 @@ export async function openDecisionsList() {
     .innerJoin(projects, eq(projects.id, tasks.projectId))
     .where(eq(decisions.status, "open"))
     .orderBy(desc(decisions.createdAt));
+}
+
+/**
+ * For each acceptance decision: how many items its recorded decision record (the decision-record artifact the decision references)
+ * would accept without proof. Only recorded facts: a decision without a readable record of its own task (or whose stored artifact
+ * does not carry the hash the decision recorded) has no entry.
+ */
+export async function recordedWithoutProof(ds: { id: number; taskId: number; kind: string; context: unknown }[], db?: Db) {
+  const refs = ds
+    .filter((d) => d.kind === "acceptance")
+    .map((d) => ({ d, rec: (d.context as { decisionRecord?: { artifactId?: unknown; sha256?: unknown } } | null)?.decisionRecord }))
+    .filter((x): x is { d: (typeof ds)[number]; rec: { artifactId: number; sha256?: unknown } } => Number.isInteger(x.rec?.artifactId));
+  const out = new Map<number, number>();
+  if (!refs.length) return out;
+  const d0 = db ?? (await getDb());
+  const arts = new Map((await d0.select().from(artifacts).where(inArray(artifacts.id, refs.map((x) => x.rec.artifactId)))).map((a) => [a.id, a]));
+  for (const { d, rec } of refs) {
+    const a = arts.get(rec.artifactId);
+    if (!a || a.kind !== "decision-record" || a.taskId !== d.taskId || (typeof rec.sha256 === "string" && rec.sha256 !== a.sha256)) continue;
+    let residual: unknown;
+    try {
+      residual = (JSON.parse(a.content) as { residual?: unknown } | null)?.residual;
+    } catch {
+      continue;
+    }
+    if (Array.isArray(residual) && residual.every((x) => typeof (x as { kind?: unknown } | null)?.kind === "string")) out.set(d.id, withoutProofCount(residual as { kind: string }[]));
+  }
+  return out;
 }
 
 export async function activeRunsByTask(taskIds: number[]) {
