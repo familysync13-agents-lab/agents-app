@@ -40,8 +40,9 @@ async function task(page, key) {
   const project = await page.goto(`${baseURL}/projects/demo`);
   assert.equal(project?.status(), 200, 'Demo Project response must be HTTP 200');
   await settled(page);
-  // A task link may include its title as well as the documented key.
-  const link = page.getByRole('link', { name: new RegExp(`(^|\\s)${key}(?=$|[\\s:·—–-])`) });
+  // CSS spacing between the key and title need not add accessible-name whitespace.
+  // Accept e.g. T1Demo: ..., while keeping T1 distinct from T10 and T11.
+  const link = page.getByRole('link', { name: new RegExp(`(^|\\s)${key}(?![0-9])`) });
   await link.first().waitFor({ state: 'visible' });
   const candidates = [];
   for (let i = 0; i < await link.count(); i++) {
