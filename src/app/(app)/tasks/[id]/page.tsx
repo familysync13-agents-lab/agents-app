@@ -10,7 +10,8 @@ import { currentTime } from "@/domain/time";
 import { LiveRefresh } from "@/components/live-refresh";
 import { stepInfo } from "@/components/steps";
 import { Ago, buttonPrimary, Card, CardHeader, cx, Empty, EvidenceChip, RoleTag, Sha, StateChip, type Role } from "@/components/ui";
-import { currentEvidencePackage, taskDetail } from "@/server/queries";
+import { acceptanceResidualGroups, currentEvidencePackage, taskDetail } from "@/server/queries";
+import { ResidualList, type ResidualGroups } from "@/components/residual-list";
 import { requireOwner } from "@/server/auth";
 import { shortenTitle } from "@/domain/text";
 
@@ -35,6 +36,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
   const contract = d.contracts[0];
   const approved = d.contracts.find((c) => c.status === "merged");
   const open = d.decisions.filter((x) => x.status === "open");
+  const residual = await acceptanceResidualGroups(open.map((x) => ({ d: x })));
 
   return (
     <div className="space-y-6">
@@ -92,7 +94,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
         </div>
         {open.map((dec) => (
           <div key={dec.id} className="border-t border-owner/30 bg-owner/[0.04] px-5 py-5">
-            <OwnerAction d={d} dec={dec} />
+            <OwnerAction d={d} dec={dec} groups={residual.get(dec.id) ?? null} />
           </div>
         ))}
       </Card>
@@ -251,19 +253,15 @@ function Stepper({ d }: { d: Detail }) {
   );
 }
 
-function OwnerAction({ d, dec }: { d: Detail; dec: Detail["decisions"][number] }) {
+function OwnerAction({ d, dec, groups }: { d: Detail; dec: Detail["decisions"][number]; groups: ResidualGroups | null }) {
   const ctx = dec.context as Record<string, unknown>;
   const heading = (
     <div className="mb-4 break-words">
       <div className="text-xs font-semibold tracking-wide text-owner uppercase">Your decision</div>
       <h2 className="mt-1 text-lg font-semibold">{dec.title}</h2>
       <p className="mt-1 max-w-3xl text-sm text-ink-2">{dec.why}</p>
-      {Array.isArray((dec.context as { decisionRecord?: { residual?: string[] } }).decisionRecord?.residual) && (dec.context as { decisionRecord: { residual: string[] } }).decisionRecord.residual.length ? (
-        <ul className="mt-2 max-w-3xl list-disc pl-5 text-sm text-ink-2">
-          {(dec.context as { decisionRecord: { residual: string[] } }).decisionRecord.residual.map((x, i) => (
-            <li key={i}>{x}</li>
-          ))}
-        </ul>
+      {Array.isArray((dec.context as { decisionRecord?: { residual?: string[] } }).decisionRecord?.residual) ? (
+        <ResidualList lines={(dec.context as { decisionRecord: { residual: string[] } }).decisionRecord.residual} groups={dec.kind === "acceptance" ? groups : null} />
       ) : null}
     </div>
   );
