@@ -198,3 +198,26 @@ export async function latestPackage(db: Db, taskId: number, head: string) {
   const [p] = await db.select().from(evidencePackages).where(and(eq(evidencePackages.taskId, taskId), eq(evidencePackages.headSha, head))).orderBy(desc(evidencePackages.id)).limit(1);
   return p;
 }
+
+/**
+ * Decision replay: the decision record of every head that was offered for acceptance (a DONE transition), recomputed from its
+ * evidence. Every offered head must come out "ready"; what each acceptance took without proof is listed.
+ */
+export async function replayDecisions(db: Db, taskId?: number) {
+  const { transitions } = await import("@/db/schema");
+  const { decide, strictFor } = await import("@/domain/decision");
+  const ts = await db.select().from(transitions).where(taskId ? and(eq(transitions.taskId, taskId), eq(transitions.toState, "DONE")) : eq(transitions.toState, "DONE")).orderBy(asc(transitions.id));
+  const out: { task: string; head: string; state: string; outcome: string; attention: string; blockers: string[]; residual: string[] }[] = [];
+  const seen = new Set<string>();
+  for (const tr of ts) {
+    const head = String((tr.fact as { head?: string } | null)?.head ?? "");
+    if (!head || seen.has(`${tr.taskId}|${head}`)) continue;
+    seen.add(`${tr.taskId}|${head}`);
+    const [t] = await db.select().from(tasks).where(eq(tasks.id, tr.taskId));
+    if (!t) continue;
+    const p = await assemblePackage(db, t, { head, stage: "audit", scope: { scope: "task", planTask: null, inScope: null } });
+    const r = decide(p.pkg.body, p.sha256, { strict: strictFor(p.pkg.body.constraints) });
+    out.push({ task: t.key ?? String(t.id), head: head.slice(0, 8), state: t.state, outcome: r.outcome, attention: r.attention, blockers: r.blockers, residual: r.residual.map((x) => `${x.kind}${x.id ? ` ${x.id}` : ""}`) });
+  }
+  return { offered: out.length, ready: out.filter((x) => x.outcome === "ready").length, clean: out.filter((x) => x.attention === "clean").length, not_ready: out.filter((x) => x.outcome !== "ready"), results: out.map((x) => `${x.task} ${x.head} ${x.state}: ${x.outcome}/${x.attention}${x.residual.length ? ` [${x.residual.join(", ")}]` : ""}`) };
+}

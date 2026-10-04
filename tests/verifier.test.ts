@@ -95,7 +95,9 @@ describe("VT5 judgment: a verdict with captured evidence per judgment-class requ
     expect(assessVerifier(C, "T9", OUT(), null).judgments).toEqual([{ id: "AC2", verdict: "cannot_judge", evidence: "", reason: "the Verifier gave no judgment" }, { id: "C3", verdict: "satisfied", evidence: "Opened /lists three times; values static, nothing animated.", reason: "recorded values only" }]);
     expect(assessVerifier(C, "T9", OUT({ judgments: [{ id: "C3", verdict: "satisfied", evidence: "ok" }] }), null).judgments[1]).toMatchObject({ verdict: "cannot_judge", reason: "a judgment needs the evidence it rests on" });
     const no = assessVerifier(C, "T9", OUT({ judgments: [{ id: "C3", verdict: "not_satisfied", evidence: "A spinner animates an estimated completion time on /lists.", reason: "an estimate is shown" }] }), null);
-    expect(no).toMatchObject({ verdict: "defects_confirmed", blocking: [{ finding: null, criterion: "C3", text: expect.stringMatching(/C3 is not satisfied: an estimate is shown/) }] });
+    expect(no).toMatchObject({ verdict: "no_blocking_defect", blocking: [] }); // C3 is advisory: reported, never sent back
+    const legacy = { ...C, constraints: (C.constraints ?? []).map((x) => (x.id === "C3" ? { ...x, advisory: undefined } : x)) } as typeof C;
+    expect(assessVerifier(legacy, "T9", OUT({ judgments: [{ id: "C3", verdict: "not_satisfied", evidence: "A spinner animates an estimated completion time on /lists.", reason: "an estimate is shown" }] }), null)).toMatchObject({ verdict: "defects_confirmed", blocking: [{ finding: null, criterion: "C3", text: expect.stringMatching(/C3 is not satisfied: an estimate is shown/) }] });
   });
 });
 
@@ -141,7 +143,7 @@ describe("VT7 end to end: structured result, reproduction by the control plane, 
     const body = JSON.parse((await db.select().from(artifacts).where(eq(artifacts.id, final.artifactId)))[0]!.content);
     expect(body).toMatchObject({ status: "complete", head: "h2", verifier: { status: "no_defect_found", coverage: { checked: 3, required: 3, conforms: 3, violated: 0 }, findings: { blocking: 0 }, judgments: [{ id: "AC2", verdict: "cannot_judge" }, { id: "C3", verdict: "satisfied" }] } });
     expect(body.criteria.find((k: { id: string }) => k.id === "AC1")).toMatchObject({ status: "verified", independent: "conforms" });
-    expect(body.constraints.find((k: { id: string }) => k.id === "C3")).toMatchObject({ counted: true, status: "verified", reason: expect.stringMatching(/independent judgment, verifier:/) });
+    expect(body.constraints.find((k: { id: string }) => k.id === "C3")).toMatchObject({ counted: false, advisory: true, status: "verified", reason: expect.stringMatching(/independent judgment, verifier:/) });
     expect(body.handoff.decision.verifier).toEqual({ status: "no_defect_found", failure_class: null, coverage: "3/3", findings: { blocking: 0, unconfirmed: 0, not_implementation: 0, advisory: 0 }, judgments: ["AC2=cannot_judge", "C3=satisfied"] });
     // the assessment is stored for Decision, tied to head, run and contract version
     const rep = JSON.parse((await db.select().from(artifacts).where(eq(artifacts.taskId, id))).filter((a) => a.kind === "verifier-report").at(-1)!.content);
@@ -168,10 +170,12 @@ describe("VT7 end to end: structured result, reproduction by the control plane, 
       expect([state.reproRuns, (await taskRow(db, id)).corrections]).toEqual([0, 1]);
     }
   });
-  it("a judgment-class constraint judged not satisfied goes back to the Builder; a check or infrastructure finding never does", async () => {
+  it("an advisory constraint judged not satisfied is reported to the owner and never sent back; a check or infrastructure finding never goes back", async () => {
     const a = await start({ v3: {}, judgmentNo: true });
     await runUntil(a.db, a.ex, a.clk, async () => (await taskRow(a.db, a.id)).step === "await_acceptance");
-    expect(a.state.builderPrompts.find((p) => p.includes("VERDICT: VERIFIER:DEFECT"))).toMatch(/\[judgment\] C3 is not satisfied: a progress animation is shown/);
+    expect(a.state.builderPrompts.some((p) => p.includes("C3 is not satisfied"))).toBe(false);
+    const [acc] = (await openDecisions(a.db, a.id)).filter((d) => d.kind === "acceptance");
+    expect(((acc!.context as { decisionRecord: { residual: string[] } }).decisionRecord.residual).join("\n")).toMatch(/C3: advisory \(non-blocking by contract\): judged NOT satisfied/);
     const b = await start({ verifierExtra: [{ id: "F1", severity: "critical", class: "infrastructure", criterion: "AC1", title: "Preview returned 502 twice", expected: "200", observed: "502" }, { id: "F2", severity: "high", class: "check", criterion: "AC1", title: "AC1 does not say which locale sorts", expected: "-", observed: "-" }] });
     await runUntil(b.db, b.ex, b.clk, async () => (await taskRow(b.db, b.id)).step === "await_acceptance");
     expect((await taskRow(b.db, b.id)).corrections).toBe(0);

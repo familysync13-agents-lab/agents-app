@@ -110,6 +110,7 @@ export function assessVerifier(c: Contract, taskKey: string, raw: unknown, repro
   const required = scope.observe.map((x) => x.id);
   const known = new Set([...c.criteria.map((k) => k.id), ...(c.constraints ?? []).map((x) => x.id)]);
   const must = new Set([...c.criteria.filter((k) => k.priority === "must").map((k) => k.id), ...(c.constraints ?? []).map((x) => x.id)]);
+  const advisory = new Set((c.constraints ?? []).filter((x) => x.advisory === true).map((x) => x.id));
   const problems: string[] = [];
   const parsed = VerifierOutput.safeParse(raw);
   const empty: Assessment = { schema: "agents-app/verifier-assessment@1", valid: false, problems, coverage: { required, conforms: [], violated: [], not_checked: required, ratio: required.length ? 0 : 1 }, judgments: scope.judge.map((j) => ({ id: j.id, verdict: "cannot_judge", evidence: "", reason: "no usable Verifier output" })), findings: [], blocked: null, verdict: "unverified", blocking: [] };
@@ -171,7 +172,8 @@ export function assessVerifier(c: Contract, taskKey: string, raw: unknown, repro
   const blocked = o.blocked && typeof o.blocked.reason === "string" ? { class: cls(o.blocked.class) === "implementation" ? ("infrastructure" as const) : cls(o.blocked.class), reason: o.blocked.reason.slice(0, 600) } : null;
   const blocking = [
     ...findings.filter((f) => f.disposition === "blocking").map((f) => ({ finding: f.id, criterion: f.criterion, text: `[${f.severity}] ${f.criterion ?? (f.security ? "security" : "")} - ${f.title}\n   expected: ${f.expected}\n   observed: ${f.observed}\n   steps: ${f.repro.join(" | ")}${f.reproduction === "reproduced" ? "\n   (reproduced by the control system against this build)" : ""}` })),
-    ...judgments.filter((j) => j.verdict === "not_satisfied").map((j) => ({ finding: null, criterion: j.id, text: `[judgment] ${j.id} is not satisfied: ${j.reason || "(no reason given)"}\n   observed: ${j.evidence}` })),
+    // an advisory constraint is explicitly non-blocking: its judgment is reported, never sent back
+    ...judgments.filter((j) => j.verdict === "not_satisfied" && !advisory.has(j.id)).map((j) => ({ finding: null, criterion: j.id, text: `[judgment] ${j.id} is not satisfied: ${j.reason || "(no reason given)"}\n   observed: ${j.evidence}` })),
   ];
   const verdict: Assessment["verdict"] = blocking.length ? "defects_confirmed" : blocked ? "unverified" : "no_blocking_defect";
   return { schema: "agents-app/verifier-assessment@1", valid: true, problems, coverage: { required, conforms, violated, not_checked: notChecked, ratio: required.length ? (conforms.length + violated.length) / required.length : 1 }, judgments, findings, blocked, verdict, blocking };

@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray, like, ne, notInArray, sql } from "drizzle-orm";
+import { decide, ownerSummary, recordSha, recordText, strictFor } from "@/domain/decision";
 import { decisions, evidence, gateResults, runs, tasks } from "@/db/schema";
 import type { Contract } from "@/domain/contract";
 import { classifyVerdict } from "@/domain/lifecycle";
@@ -556,6 +557,14 @@ export async function markDone(ctx: TaskCtx): Promise<void> {
   const ep = await assemblePackage(ctx.db, ctx.task, { head: g.headSha, stage: "done" });
   if (ep.pkg.status !== "complete")
     return blockEvidence(ctx, `DONE requires complete evidence for ${g.headSha.slice(0, 8)}; the evidence package is ${ep.pkg.status}: ${[...ep.pkg.body.inconsistencies, ...ep.pkg.body.gaps].join("; ").slice(0, 400)}`, { head: g.headSha, evidence_package: ep.id }, { auto: false });
+  // Decision: the record the acceptance rests on, computed from the final package of this exact head (never from prose)
+  const rec = decide(ep.pkg.body, ep.sha256, { strict: strictFor(ep.pkg.body.constraints) });
+  if (rec.outcome !== "ready")
+    return blockEvidence(ctx, `The result cannot be offered for acceptance: ${rec.blockers.join("; ").slice(0, 400)}`, { head: g.headSha, evidence_package: ep.id, decision_blockers: rec.blockers }, { auto: false });
+  const recArtifact = await ctx.artifact("decision-record", `decision-${g.headSha.slice(0, 12)}.json`, recordText(rec), false);
+  const recSha = recordSha(rec);
+  const brief = ownerSummary(rec);
+  await ctx.log("system", `Decision record for ${g.headSha.slice(0, 8)}: ready for acceptance; ${rec.residual.length ? `${rec.residual.length} item(s) accepted without proof are listed` : "nothing is accepted without proof"}.`, { decision_record: recArtifact, sha256: recSha, attention: rec.attention });
   await ctx.transition("DONE", `All must-criteria verified by the gate for ${g.headSha.slice(0, 8)}${ctx.data.acceptance ? "; independent Verifier check found no blocking defect" : ""}`, {
     gate_result: g.id,
     check_run: g.checkRunId,
@@ -564,6 +573,8 @@ export async function markDone(ctx: TaskCtx): Promise<void> {
     acceptance: ctx.data.acceptance ?? null,
     evidence_package: ep.id,
     evidence_package_sha256: ep.sha256,
+    decision_record: recArtifact,
+    decision_record_sha256: recSha,
   });
   const parent = ctx.task.stackParentId ? (await ctx.db.select().from(tasks).where(eq(tasks.id, ctx.task.stackParentId)))[0] : undefined;
   if (parent && parent.state === "ACCEPTED") {
@@ -582,15 +593,15 @@ export async function markDone(ctx: TaskCtx): Promise<void> {
   await ctx.openDecision({
     kind: "acceptance",
     title: together ? `Accept ${together}${ctx.task.key} together (one PR): ${parent!.title} / ${ctx.task.title}` : `Accept ${ctx.task.key}: ${ctx.task.title}`,
-    why: "The work is DONE by mechanical evidence. Merging needs your approval of the exact head on GitHub.",
+    why: brief.why,
     options: [
       { id: "github", label: `Approve PR #${ctx.task.prNumber} on GitHub`, consequence: "The control system merges it; the task becomes ACCEPTED." },
       { id: "reject", label: "Reject the result", consequence: "The PR is closed; nothing is merged." },
     ],
     recommendation: "github",
-    context: { pr: ctx.task.prNumber, head: ctx.task.headSha, repo: ctx.project.repo, org: ctx.project.org, stack: together ? [parent!.id, ctx.task.id] : null, evidencePackage: { id: ep.id, sha256: ep.sha256, artifactId: ep.artifactId, status: ep.pkg.status } },
+    context: { pr: ctx.task.prNumber, head: ctx.task.headSha, repo: ctx.project.repo, org: ctx.project.org, stack: together ? [parent!.id, ctx.task.id] : null, evidencePackage: { id: ep.id, sha256: ep.sha256, artifactId: ep.artifactId, status: ep.pkg.status }, decisionRecord: { artifactId: recArtifact, sha256: recSha, attention: rec.attention, residual: brief.lines } },
   });
-  await ctx.goto("await_acceptance", { head: ctx.task.headSha });
+  await ctx.goto("await_acceptance", { head: ctx.task.headSha, decisionRecord: recSha });
 }
 
 export async function awaitAcceptance(ctx: TaskCtx): Promise<void> {
@@ -659,6 +670,7 @@ async function finishAccepted(ctx: TaskCtx, mergeCommit: string, approvedAt: str
     head: ctx.task.headSha,
     merge_commit: mergeCommit,
     owner_approved_at: approvedAt,
+    decision_record_sha256: ctx.data.decisionRecord ?? null,
   }, { mergeCommit });
   await ctx.goto("cleanup", {});
 }

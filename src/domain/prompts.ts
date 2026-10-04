@@ -124,7 +124,11 @@ export const CONTRACT_V2_RULES = `- TRACEABILITY (mechanically checked): every c
     {"kind": "dependency_present" | "dependency_absent", "name": "<package>", "section": "dependencies" | "devDependencies" | "any"}
     {"kind": "unchanged" | "changed_only", "paths": ["<glob>", ...]}                         (what this change may touch)
   Globs: "*" stays inside one directory, "**" spans directories. A fact states what must be true; it never names a tool. If no
-  such fact proves the constraint, its class is not "static": use "blackbox" when the product shows it, otherwise "judgment".
+  such fact proves the constraint, its class is not "static": use "blackbox" when the product shows it.
+- A constraint that affects acceptance must be PROVABLE (static / blackbox / measure / suite). Restate it until it is: name the
+  observable behaviour or the repository fact that shows it holds. "judgment" is allowed only with "advisory": true - a
+  constraint that is explicitly non-blocking and never decides acceptance. A security, privacy or prohibited constraint is
+  never advisory and never "judgment".
 - A structural criterion may be "must" only with "verify": "static" and a "fact" of the kinds above (not "unchanged" /
   "changed_only": those describe this change and belong in a constraint). An experience criterion cannot be "must" yet.
 - Optional planning hints (they never change the outcome): "group": "<deliverable name>" on criteria when the contract contains

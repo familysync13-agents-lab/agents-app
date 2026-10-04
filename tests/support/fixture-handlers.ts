@@ -27,7 +27,7 @@ export const V3_EXTRA = {
   constraints: [
     { id: "C1", kind: "regression", statement: "Everything else on the list index stays as it is.", verify: "blackbox", trace: { source: "project", ref: "earlier accepted contracts" } },
     { id: "C2", kind: "prohibited", statement: "No database migration is added.", verify: "static", fact: { kind: "unchanged", paths: ["drizzle/**"] }, trace: { source: "necessary", ref: "AC1: sorting is a view of existing data" } },
-    { id: "C3", kind: "prohibited", statement: "Nothing is estimated or animated.", verify: "judgment", trace: { source: "intent", ref: "Let owners" } },
+    { id: "C3", kind: "design", statement: "Nothing is estimated or animated.", verify: "judgment", advisory: true, trace: { source: "intent", ref: "Let owners" } },
     { id: "C4", kind: "security", statement: "The sort parameter is never reflected unescaped.", verify: "blackbox", trace: { source: "necessary", ref: "AC1: the sort choice travels in the URL" } },
   ],
 };

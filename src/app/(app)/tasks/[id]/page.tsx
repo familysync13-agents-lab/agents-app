@@ -252,6 +252,13 @@ function OwnerAction({ d, dec }: { d: Detail; dec: Detail["decisions"][number] }
       <div className="text-xs font-semibold tracking-wide text-owner uppercase">Your decision</div>
       <h2 className="mt-1 text-lg font-semibold">{dec.title}</h2>
       <p className="mt-1 max-w-3xl text-sm text-ink-2">{dec.why}</p>
+      {Array.isArray((dec.context as { decisionRecord?: { residual?: string[] } }).decisionRecord?.residual) && (dec.context as { decisionRecord: { residual: string[] } }).decisionRecord.residual.length ? (
+        <ul className="mt-2 max-w-3xl list-disc pl-5 text-sm text-ink-2">
+          {(dec.context as { decisionRecord: { residual: string[] } }).decisionRecord.residual.map((x, i) => (
+            <li key={i}>{x}</li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
   if (dec.kind === "contract_approval") {

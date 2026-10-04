@@ -43,6 +43,10 @@ describe("GT2 lint: structural musts and static constraints need a fact; experie
     expect(lint(v3({ constraints: [{ ...V3_EXTRA.constraints[1], fact: undefined }] })).problems.join()).toMatch(/C2: a static constraint needs a valid "fact".*its class is judgment or blackbox/);
     expect(lint(v3({ constraints: [{ ...V3_EXTRA.constraints[1], fact: { kind: "shell" } }] })).ok).toBe(false);
     expect(lint(v3({ constraints: [{ ...V3_EXTRA.constraints[0], fact: { kind: "path_exists", path: "a" } }] })).problems.join()).toMatch(/C1: "fact" belongs to static constraints only/);
+    // Decision phase: a judgment constraint is provable or explicitly advisory; a security / privacy / prohibited one is never left to judgment
+    expect(lint(v3({ constraints: [{ ...V3_EXTRA.constraints[2], advisory: undefined }] })).problems.join()).toMatch(/C3: a judgment-class constraint cannot decide acceptance: restate it in a provable form/);
+    expect(lint(v3({ constraints: [{ ...V3_EXTRA.constraints[2], kind: "security" }] })).problems.join()).toMatch(/C3: a security constraint materially affects acceptance and must be provable/);
+    expect(lint(v3({ constraints: [{ ...V3_EXTRA.constraints[0], advisory: true }] })).problems.join()).toMatch(/C1: "advisory" belongs to judgment-class constraints only/);
     const exp = { id: "AC4", type: "experience", priority: "must", tags: [], statement: "Feels quick", refs: ["DESIGN"], verify: "judgment", evidence: "a recording", trace: { source: "intent", ref: "Let owners" } };
     expect(lint(v3({ criteria: [...CONTRACT("T9").criteria, exp] })).problems.join()).toMatch(/AC4: the gate verifies must-criteria of type behavior, threshold and structural only/);
   });
@@ -160,7 +164,7 @@ describe("GT6 end to end: a contract with a structural must and constraints of e
     expect(ps.map((p) => [p.headSha, p.stage, p.status])).toEqual([["h1", "gate", "incomplete"], ["h2", "gate", "complete"], ["h2", "done", "complete"]]);
     const body = JSON.parse((await db.select().from(artifacts).where(eq(artifacts.id, ps.at(-1)!.artifactId)))[0]!.content);
     expect(body.criteria.filter((k: { priority: string }) => k.priority === "must").map((k: { id: string; status: string }) => [k.id, k.status])).toEqual([["AC1", "verified"], ["AC3", "verified"]]);
-    expect(body.constraints.map((k: { id: string; counted: boolean }) => [k.id, k.counted])).toEqual([["C1", true], ["C2", true], ["C3", true], ["C4", true]]); // C3: decided by the independent Verifier's judgment (Verifier phase)
+    expect(body.constraints.map((k: { id: string; counted: boolean }) => [k.id, k.counted])).toEqual([["C1", true], ["C2", true], ["C3", false], ["C4", true]]); // C3: advisory - judged by the independent Verifier, reported, never counted (Decision phase)
     expect(body.scans.map((s: { scanner: string; status: string }) => [s.scanner, s.status])).toEqual([["dependencies", "partially_verified"], ["secrets", "verified"], ["static-analysis", "verified"]]);
     expect(body.handoff.verifier.judgment_constraints).toEqual(["C3"]);
     void tasks;

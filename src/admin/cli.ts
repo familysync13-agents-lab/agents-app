@@ -8,7 +8,7 @@ import { activity, qualificationBatches, qualificationRecords, tasks } from "@/d
 import type { SemanticClass } from "@/domain/router";
 import { runAdmin } from "@/server/admin";
 import { verifierCalibration } from "@/worker/steps-verify";
-import { assemblePackage, auditEvidence, replayEvidence } from "@/worker/evidence";
+import { assemblePackage, auditEvidence, replayEvidence, replayDecisions } from "@/worker/evidence";
 import { proposeIntent } from "@/server/proposals";
 import { routeTable } from "@/worker/shadow";
 import { holdoutDecide, holdoutReference, holdoutStatus, qualifyRun, qualifyStatus, qualifyVerify, routeTableAll, submitSemantic } from "@/worker/qualify";
@@ -37,6 +37,7 @@ async function main() {
   }
   // Verifier calibration: how its findings stood up to the control plane's own reproduction, and how much it covered (read-only)
   if (op === "verifier_calibration") out({ ok: true, ...(await verifierCalibration(db)) });
+  if (op === "decision_replay") out({ ok: true, ...(await replayDecisions(db, (req as { taskId?: number }).taskId)) });
   if (op === "evidence_replay") out({ ok: true, ...(await replayEvidence(db, (req as { taskId?: number }).taskId)) });
   if (op === "evidence_package") {
     const r = req as { taskId: number; head?: string; full?: boolean };

@@ -68,8 +68,10 @@ export const Criterion = z
 export type Criterion = z.infer<typeof Criterion>;
 
 export const CONSTRAINT_KINDS = ["compatibility", "security", "privacy", "interface", "prohibited", "regression", "design"] as const;
+/** Constraint kinds that always materially affect acceptance: never left to judgment (Decision phase, owner rule). */
+export const MATERIAL_KINDS: readonly string[] = ["security", "privacy", "prohibited"];
 export const Constraint = z
-  .object({ id: z.string().regex(/^C[0-9]+$/), kind: z.enum(CONSTRAINT_KINDS), statement: Text, verify: z.enum(VERIFY_CLASSES), trace: Trace, fact: z.unknown().optional() })
+  .object({ id: z.string().regex(/^C[0-9]+$/), kind: z.enum(CONSTRAINT_KINDS), statement: Text, verify: z.enum(VERIFY_CLASSES), trace: Trace, fact: z.unknown().optional(), /** Decision phase: a judgment-class constraint is explicitly non-blocking (never decides acceptance) */ advisory: z.boolean().optional() })
   .loose();
 export type Constraint = z.infer<typeof Constraint>;
 
@@ -218,6 +220,12 @@ function lintV2(c: Contract, ctx: V2Context): string[] {
       const f = Fact.safeParse(x.fact);
       if (!f.success) problems.push(`${x.id}: a static constraint needs a valid "fact" (${FACT_KINDS.join(" | ")}); if no repository fact proves it, its class is judgment or blackbox`);
     } else if (x.fact !== undefined) problems.push(`${x.id}: "fact" belongs to static constraints only`);
+    // Decision phase (owner rule): a requirement nobody can prove is never a normal final state. A judgment-class constraint either
+    // is rewritten into a provable form, or is declared advisory - explicitly non-blocking, shown to the owner as such.
+    if (x.verify === "judgment") {
+      if (MATERIAL_KINDS.includes(x.kind)) problems.push(`${x.id}: a ${x.kind} constraint materially affects acceptance and must be provable: restate it with verify "static" (a repository fact), "blackbox", "measure" or "suite"`);
+      else if (x.advisory !== true) problems.push(`${x.id}: a judgment-class constraint cannot decide acceptance: restate it in a provable form (static / blackbox / measure / suite), or mark it "advisory": true if it does not materially affect acceptance`);
+    } else if (x.advisory !== undefined) problems.push(`${x.id}: "advisory" belongs to judgment-class constraints only; a provable constraint always counts`);
   }
   const aids = new Set<string>();
   for (const a of c.assumptions ?? []) {

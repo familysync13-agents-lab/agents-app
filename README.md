@@ -87,7 +87,7 @@ computed (`src/domain/verification.ts`), never taken from its wording:
 
 - **Coverage** by id: one verdict (conforms / violated / not checked) per must-criterion and observable constraint.
 - **Judgment** with captured evidence for requirements whose proof is judgment (experience criteria, judgment-class constraints).
-  A judgment-class constraint is decided by it; a judgment without evidence is "cannot judge".
+  A judgment without evidence is "cannot judge". A judgment-class constraint is always advisory (see Decision).
 - **Findings** tied to a criterion id (or none), with a class: only `implementation` is the Builder's; `check`, `infrastructure`,
   `evidence` and `control_plane` are recorded as failures of the verification and never sent to the Builder.
 - **Materiality**: a finding sends the work back only when it is an implementation defect, critical or high, against a
@@ -100,6 +100,23 @@ computed (`src/domain/verification.ts`), never taken from its wording:
 - **Handoff**: the assessment is stored as an artifact (`verifier-report`) tied to head, run and contract version; the final
   evidence package carries coverage, findings by disposition, judgments and - when the Verifier could not verify - the class of
   that failure. Calibration figures: operator check `verifier_calibration`.
+
+## Decision
+
+What the owner's acceptance rests on is a **decision record** computed from the final evidence package of the exact head
+(`src/domain/decision.ts`) - never written by a worker:
+
+- **Readiness**, in order of precedence: the package is complete, evidence integrity verifies, the gate passed this head, the
+  independent Verifier confirmed no blocking defect. A head that is not ready is never offered for acceptance.
+- **Basis**: what was proven, by id, bound to head, contract version and package hash.
+- **Residual**: everything that would be accepted without proof - unproven requirements, unconfirmed and advisory findings, what
+  the Verifier did not check or could not verify, unclean scans, waivers, advisory constraints, unverified should-criteria. The
+  owner sees this list on the acceptance decision; nothing is dropped silently.
+- **Requirements nobody can prove** are never a normal final state. A constraint that affects acceptance must be provable
+  (`static`, `blackbox`, `measure`, `suite`); a `judgment` constraint must be marked `advisory: true` and is explicitly
+  non-blocking; security, privacy and prohibited constraints are never advisory. Contract lint enforces this.
+- The record is stored as an artifact (`decision-record`); its hash is in the DONE and ACCEPTED facts. Operator check:
+  `decision_replay`.
 
 ## Development
 
