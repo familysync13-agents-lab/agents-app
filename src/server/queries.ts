@@ -9,6 +9,7 @@ import {
   contracts,
   decisions,
   evidence,
+  evidencePackages,
   executorJobs,
   gateResults,
   heartbeats,
@@ -195,6 +196,24 @@ export async function taskDetail(id: number) {
     .where(eq(artifacts.taskId, id))
     .orderBy(desc(artifacts.id));
   return { task: t, project: p!, contracts: cs, runs: rs, gates: gs, evidence: ev, decisions: ds, transitions: tr, activity: ac, artifacts: arts };
+}
+
+/**
+ * The evidence package of the task's current head: the most recently stored package for (task, headSha), ordered by highest id exactly
+ * as the control loop's latestPackage reads it. Null when the task has no head or no package is stored for its current head (a package
+ * of an earlier head is never returned). Read-only: never assembles, stores or re-hashes a package.
+ */
+export async function currentEvidencePackage(taskId: number, db?: Db) {
+  const d = db ?? (await getDb());
+  const [t] = await d.select({ headSha: tasks.headSha }).from(tasks).where(eq(tasks.id, taskId));
+  if (!t?.headSha) return null;
+  const [p] = await d
+    .select()
+    .from(evidencePackages)
+    .where(and(eq(evidencePackages.taskId, taskId), eq(evidencePackages.headSha, t.headSha)))
+    .orderBy(desc(evidencePackages.id))
+    .limit(1);
+  return p ?? null;
 }
 
 export async function artifactBody(taskId: number, artifactId: number) {

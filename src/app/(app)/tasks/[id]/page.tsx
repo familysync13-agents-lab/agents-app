@@ -4,12 +4,13 @@ import type { TaskState } from "@/db/schema";
 import { MAIN_PATH, STATE_LABEL } from "@/domain/lifecycle";
 import { AdminForm, BlockDecisionForm, ContractReviewForm, RejectResultForm } from "@/components/forms";
 import { FlowMap } from "@/components/flow-map";
+import { EvidencePackageCard } from "@/components/evidence-package";
 import { failureRouting, flowState, PARTY } from "@/domain/ops";
 import { currentTime } from "@/domain/time";
 import { LiveRefresh } from "@/components/live-refresh";
 import { stepInfo } from "@/components/steps";
 import { Ago, buttonPrimary, Card, CardHeader, cx, Empty, EvidenceChip, RoleTag, Sha, StateChip, type Role } from "@/components/ui";
-import { taskDetail } from "@/server/queries";
+import { currentEvidencePackage, taskDetail } from "@/server/queries";
 import { requireOwner } from "@/server/auth";
 
 export const metadata = { title: "Task" };
@@ -25,6 +26,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const d = await taskDetail(Number(id));
   if (!d) notFound();
+  const pkg = await currentEvidencePackage(d.task.id);
   const t = d.task;
   const s = stepInfo(t.step);
   const activeRun = d.runs.find((r) => r.status === "running" || r.status === "starting");
@@ -102,6 +104,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
         <div className="space-y-6">
           <WorkPanel d={d} />
           <Timeline d={d} />
+          <EvidencePackageCard pkg={pkg} />
           <Card>
             <CardHeader title="Evidence files" meta={`${d.artifacts.length}`} />
             {d.artifacts.length === 0 ? (
