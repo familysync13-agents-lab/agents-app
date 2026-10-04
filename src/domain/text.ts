@@ -17,3 +17,15 @@ export function shortenTitle(title: string, max = TITLE_MAX): string {
   const kept = head.slice(0, cut).join("").trimEnd() || head.join("").trimEnd();
   return `${kept}…`;
 }
+
+/**
+ * Task number from a route segment: only decimal digits with a value of at least 1 ("12", not "0", "1.5", "-3", "+5",
+ * "1e3", "0x10", "NaN", "Infinity" or "12abc"); anything else is null. A number above TASK_ID_MAX cannot be any
+ * task's id, so it is null too rather than reaching the database (which would fail with an out-of-range error).
+ */
+export const TASK_ID_MAX = 2147483647; // tasks.id is a Postgres serial (int4)
+export function parseTaskId(id: string): number | null {
+  if (!/^[0-9]+$/.test(id)) return null;
+  const n = Number(id);
+  return n >= 1 && n <= TASK_ID_MAX ? n : null;
+}

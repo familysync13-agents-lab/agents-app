@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shortenTitle, TITLE_MAX } from "@/domain/text";
+import { parseTaskId, shortenTitle, TASK_ID_MAX, TITLE_MAX } from "@/domain/text";
 
 const LONG =
   "Should reading progress be computed per book from the pages a reader marks as read, or per list from the number of books marked finished, and should it be visible to people who open the list through a share link or only to the owner of the list?";
@@ -34,5 +34,24 @@ describe("shortened decision titles", () => {
     expect(len(s)).toBe(100);
     expect(s).toBe(`${"😀".repeat(99)}…`);
     expect(len(shortenTitle(`${"é ".repeat(60)}`))).toBeLessThanOrEqual(100);
+  });
+});
+
+describe("task identifiers from the address", () => {
+  it("accepts decimal digits with a value of at least 1", () => {
+    expect(parseTaskId("1")).toBe(1);
+    expect(parseTaskId("42")).toBe(42);
+    expect(parseTaskId("999999")).toBe(999999);
+    expect(parseTaskId("2147483647")).toBe(TASK_ID_MAX);
+  });
+  it("rejects numbers too large for the tasks id column", () => {
+    for (const id of ["2147483648", "99999999999", "9".repeat(400)]) {
+      expect(parseTaskId(id), id).toBeNull();
+    }
+  });
+  it("rejects every other identifier", () => {
+    for (const id of ["", "invalid", "1.5", "-3", "0", "00", "+5", "1e3", "0x10", "NaN", "Infinity", "12abc", " 1", "1 ", "١٢"]) {
+      expect(parseTaskId(id), id).toBeNull();
+    }
   });
 });
