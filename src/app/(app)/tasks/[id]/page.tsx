@@ -79,7 +79,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
       <Card className={cx(s.waitingOnOwner || open.length ? "border-owner/40" : "")}>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4">
           <RoleTag role={nowRole} live={!!activeRun} />
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 break-words">
             <div className="font-medium">{t.step === "done" ? STATE_LABEL[t.state] : s.label}</div>
             {t.stateReason ? <div className="mt-0.5 text-sm text-mute">{t.stateReason}</div> : null}
           </div>
@@ -96,12 +96,12 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
         ))}
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_1fr]">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_1fr]">
+        <div className="min-w-0 space-y-6">
           <ContractPanel d={d} />
           <VerificationPanel d={d} />
         </div>
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <WorkPanel d={d} />
           <Timeline d={d} />
           <EvidencePackageCard pkg={pkg} />
@@ -125,7 +125,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
           </Card>
           <AdminPanel d={d} />
           {approved?.mergeCommit || contract ? (
-            <p className="text-xs text-mute">
+            <p className="text-xs break-words text-mute">
               Intent recorded <Ago at={t.createdAt} />. Approved contract hash <Sha value={approved?.sha256} n={16} />.
             </p>
           ) : null}
@@ -177,9 +177,9 @@ function AtAGlance({ d }: { d: Detail }) {
     { k: "Reached main", v: t.mergeCommit ? `Yes - merged ${t.mergeCommit.slice(0, 8)}` : "Not yet", tone: t.mergeCommit ? "text-ok" : undefined },
   ];
   return (
-    <section aria-label="At a glance" className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 xl:grid-cols-4">
+    <section aria-label="At a glance" className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 xl:grid-cols-4">
       {cells.map((c) => (
-        <div key={c.k} className={cx("bg-panel px-4 py-3", c.k === "Being built" && "sm:col-span-2 xl:col-span-1")}>
+        <div key={c.k} className={cx("min-w-0 bg-panel px-4 py-3 break-words", c.k === "Being built" && "sm:col-span-2 xl:col-span-1")}>
           <div className="text-[11px] tracking-[0.16em] text-mute uppercase">{c.k}</div>
           <div className={cx("mt-1 text-sm leading-snug", c.tone ?? "text-ink")}>{c.v}</div>
         </div>
@@ -223,7 +223,7 @@ function Stepper({ d }: { d: Detail }) {
             key={st}
             aria-current={isCur ? "step" : undefined}
             className={cx(
-              "rounded-xl border px-3 py-2.5",
+              "min-w-0 rounded-xl border px-3 py-2.5 break-words",
               isCur ? "border-accent/60 bg-accent/10" : done ? "border-line bg-panel" : "border-line/60 bg-panel/40",
               blocked && i === lastReached && "border-owner/60 bg-owner/10",
             )}
@@ -237,7 +237,7 @@ function Stepper({ d }: { d: Detail }) {
         );
       })}
       {blocked || terminalBad ? (
-        <li className="col-span-3 rounded-xl border border-owner/50 bg-owner/10 px-3 py-2 text-sm text-owner sm:col-span-6">
+        <li className="col-span-3 rounded-xl border border-owner/50 bg-owner/10 px-3 py-2 text-sm break-words text-owner sm:col-span-6">
           {STATE_LABEL[cur]}: {d.task.stateReason}
         </li>
       ) : null}
@@ -248,7 +248,7 @@ function Stepper({ d }: { d: Detail }) {
 function OwnerAction({ d, dec }: { d: Detail; dec: Detail["decisions"][number] }) {
   const ctx = dec.context as Record<string, unknown>;
   const heading = (
-    <div className="mb-4">
+    <div className="mb-4 break-words">
       <div className="text-xs font-semibold tracking-wide text-owner uppercase">Your decision</div>
       <h2 className="mt-1 text-lg font-semibold">{dec.title}</h2>
       <p className="mt-1 max-w-3xl text-sm text-ink-2">{dec.why}</p>
@@ -267,7 +267,7 @@ function OwnerAction({ d, dec }: { d: Detail; dec: Detail["decisions"][number] }
     return (
       <div>
         {heading}
-        <p className="mb-4 text-sm text-mute">
+        <p className="mb-4 text-sm break-words text-mute">
           Review the contract below (v{c.version}, sha256 <Sha value={c.sha256} n={12} />) and the oracle that will judge it (sha256{" "}
           <Sha value={c.oracleSha256} n={12} />, written blind by the Verifier).
           {ctx.notes ? " The Verifier left notes (see Evidence files)." : ""}
@@ -314,7 +314,7 @@ function ContractPanel({ d }: { d: Detail }) {
     return (
       <Card>
         <CardHeader title="Contract" />
-        <div className="space-y-3 px-5 py-4 text-sm">
+        <div className="space-y-3 px-5 py-4 text-sm break-words">
           <div className="text-xs font-semibold tracking-wide text-mute uppercase">Your intent</div>
           <p className="whitespace-pre-wrap text-ink-2">{d.task.intent}</p>
           <p className="text-mute">The contract is being drafted from this intent.</p>
@@ -343,7 +343,7 @@ function ContractPanel({ d }: { d: Detail }) {
           </span>
         }
       />
-      <div className="space-y-4 px-5 py-4 text-sm">
+      <div className="space-y-4 px-5 py-4 text-sm break-words">
         {body.scope?.summary ? <p className="text-ink-2">{body.scope.summary}</p> : null}
         {!c.lint.ok ? (
           <div role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3.5 py-2.5 text-bad">
@@ -433,7 +433,7 @@ function VerificationPanel({ d }: { d: Detail }) {
       {!g ? (
         <Empty>No gate evaluation yet. The gate runs on the exact commit the Builder submits.</Empty>
       ) : (
-        <div className="space-y-4 px-5 py-4">
+        <div className="space-y-4 px-5 py-4 break-words">
           <div className="flex flex-wrap items-center gap-3">
             <RoleTag role="gate" />
             <span className={cx("rounded-lg px-2.5 py-1 font-mono text-sm font-semibold", g.kind === "pass" ? "bg-ok/15 text-ok" : g.kind === "blocked" ? "bg-warn/15 text-warn" : "bg-bad/15 text-bad")}>
@@ -460,7 +460,7 @@ function VerificationPanel({ d }: { d: Detail }) {
           ) : null}
         </div>
       )}
-      <div className="border-t border-line px-5 py-4">
+      <div className="border-t border-line px-5 py-4 break-words">
         <div className="mb-2 flex items-center gap-3">
           <RoleTag role="verifier" />
           <span className="text-sm text-ink-2">Independent check (blind, different vendor) · agent judgment, one evidence source</span>
@@ -538,7 +538,7 @@ function WorkPanel({ d }: { d: Detail }) {
       ) : (
         <ul className="divide-y divide-line">
           {d.runs.map((r) => (
-            <li key={r.id} className="px-5 py-3">
+            <li key={r.id} className="px-5 py-3 break-words">
               <div className="flex flex-wrap items-center gap-3">
                 <RoleTag role={r.role} live={r.status === "running"} />
                 <span className="text-sm font-medium">{PURPOSE[r.purpose] ?? r.purpose}</span>
@@ -577,11 +577,11 @@ function Timeline({ d }: { d: Detail }) {
       ) : (
         <ol className="max-h-[560px] space-y-0 overflow-y-auto px-5 py-3">
           {items.map((a) => (
-            <li key={a.id} className="grid grid-cols-[92px_1fr] gap-3 py-1.5 text-sm">
+            <li key={a.id} className="grid grid-cols-[92px_minmax(0,1fr)] gap-3 py-1.5 text-sm">
               <span className="pt-0.5 text-xs text-mute">
                 <Ago at={a.at} />
               </span>
-              <span>
+              <span className="break-words">
                 <RoleTag role={a.actor as Role} /> <span className="ml-1 text-ink-2">{a.message}</span>
               </span>
             </li>

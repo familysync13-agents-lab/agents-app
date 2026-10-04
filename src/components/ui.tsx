@@ -79,10 +79,10 @@ export function Card({ children, className, as: As = "section" }: { children: Re
 export function CardHeader({ title, meta, id }: { title: ReactNode; meta?: ReactNode; id?: string }) {
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-5 py-3.5">
-      <h2 id={id} className="text-sm font-semibold tracking-wide text-ink">
+      <h2 id={id} className="min-w-0 text-sm font-semibold tracking-wide break-words text-ink">
         {title}
       </h2>
-      {meta ? <div className="text-xs text-mute">{meta}</div> : null}
+      {meta ? <div className="min-w-0 text-xs break-words text-mute">{meta}</div> : null}
     </div>
   );
 }

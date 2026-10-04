@@ -35,7 +35,7 @@ export function EvidencePackageCard({ pkg }: { pkg: EvidencePackageView | null }
       {!pkg ? (
         <Empty>No evidence package yet.</Empty>
       ) : (
-        <dl className="grid grid-cols-1 gap-x-4 gap-y-1 px-5 py-4 text-sm sm:grid-cols-[max-content_1fr] sm:gap-y-2.5">
+        <dl className="grid grid-cols-1 gap-x-4 gap-y-1 px-5 py-4 text-sm break-words sm:grid-cols-[max-content_minmax(0,1fr)] sm:gap-y-2.5">
           <dt className="text-xs tracking-wide text-mute uppercase sm:pt-0.5">Status</dt>
           <dd className="mb-2 text-ink sm:mb-0">{pkg.status}</dd>
           <dt className="text-xs tracking-wide text-mute uppercase sm:pt-0.5">Required criteria verified</dt>
