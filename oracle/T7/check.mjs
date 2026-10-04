@@ -109,7 +109,9 @@ for (const criterion of ids) {
       await eventually(async () => assert.equal(await page.title(), 'Task · Agents'), 'Document title');
       const lists = card.locator('dl');
       assert.equal(await lists.count(), 1, 'Expected one evidence description list');
-      assert.deepEqual(await lists.locator('dt').allInnerTexts().then(items => items.map(item => item.trim())), terms,
+      // Read each semantic term separately: innerText applies CSS text-transform,
+      // which can capitalize the presentation without changing the term's text.
+      assert.deepEqual(await lists.locator('dt').evaluateAll(items => items.map(item => (item.textContent ?? '').trim())), terms,
         'Description terms must match in order');
       for (const label of terms) await field(card, label);
     } else if (criterion === 'AC2') {

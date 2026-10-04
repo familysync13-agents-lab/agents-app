@@ -7,7 +7,7 @@
   "by": "FamilySYNC13",
   "contract_sha256": "50fe2470ea69b7ad99e1fac8fcfca6f1058711b590c0ffe196badfa79fd4bdc1",
   "at": "2026-10-04",
-  "basis": "owner intent recorded in Agents App task 11; contract v2 approved under the owner's standing V1 escalation policy (within intent) or by the owner in person; hash-bound amendment confirmed by the gate"
+  "basis": "owner intent recorded in Agents App task 11; contract v3 approved under the owner's standing V1 escalation policy (within intent) or by the owner in person; hash-bound amendment confirmed by the gate"
  },
  "checks": {
   "AC1": "oracle:oracle/T7/check.mjs",
@@ -52,6 +52,16 @@
    "files": {
     "tasks/T7/contract.json": "50fe2470ea69b7ad99e1fac8fcfca6f1058711b590c0ffe196badfa79fd4bdc1",
     "oracle/T7/check.mjs": "ceb8c664bed112d7e85c16e6d2099492c9aced7dd538ce2e648a756a15a4e834"
+   }
+  },
+  {
+   "id": "A4",
+   "at": "2026-10-04T04:04:17Z",
+   "kind": "oracle-repair",
+   "reason": "Agents App: repaired oracle of record (contract unchanged, sha256 50fe2470ea69b7ad99e1fac8fcfca6f1058711b590c0ffe196badfa79fd4bdc1); the previous check was defective as a check. Calibrated against main; no criterion weakened.",
+   "files": {
+    "tasks/T7/contract.json": "50fe2470ea69b7ad99e1fac8fcfca6f1058711b590c0ffe196badfa79fd4bdc1",
+    "oracle/T7/check.mjs": "513cdb763ae586eebbe545880c4b25a7416f68a9c989330dcc6a8a9d9677b8a2"
    }
   }
  ]
