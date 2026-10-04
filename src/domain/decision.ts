@@ -108,3 +108,21 @@ export function ownerSummary(r: DecisionRecord): { why: string; lines: string[] 
   const why = r.attention === "clean" ? `${proven} Nothing is accepted without proof. Merging needs your approval of the exact head on GitHub.` : `${proven} ${r.residual.filter((x) => x.kind !== "should" && x.kind !== "advisory_constraint").length} item(s) would be accepted without proof - listed below. Merging needs your approval of the exact head on GitHub.`;
   return { why, lines };
 }
+
+/**
+ * What a recorded decision record says is accepted without proof, as one plain statement (Decisions page): the residual items that
+ * are neither unverified should-criteria nor advisory constraints - the same count ownerSummary writes. Null when the stored text is
+ * not a decision record (nothing recorded, nothing shown). Read-only: counts the recorded residual, never recomputes the record.
+ */
+export function withoutProofStatement(content: string): string | null {
+  let r: unknown;
+  try {
+    r = JSON.parse(content);
+  } catch {
+    return null;
+  }
+  const rec = r as Partial<DecisionRecord> | null;
+  if (!rec || rec.schema !== "agents-app/decision-record@1" || !Array.isArray(rec.residual)) return null;
+  const n = rec.residual.filter((x) => x && x.kind !== "should" && x.kind !== "advisory_constraint").length;
+  return n === 0 ? "Nothing is accepted without proof" : n === 1 ? "1 item would be accepted without proof" : `${n} items would be accepted without proof`;
+}

@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { AcceptanceItem } from "@/components/acceptance-item";
 import { BatchApproveForm } from "@/components/forms";
 import { LiveRefresh } from "@/components/live-refresh";
 import { Ago, Card, CardHeader, Empty } from "@/components/ui";
 import { shortenTitle } from "@/domain/text";
-import { openDecisionsList } from "@/server/queries";
+import { acceptanceProofStatements, openDecisionsList } from "@/server/queries";
 import { requireOwner } from "@/server/auth";
 
 export const metadata = { title: "Decisions" };
@@ -20,6 +21,7 @@ export default async function Decisions() {
   // checked here too: the layout renders concurrently, so its check alone would let page data stream into the redirect
   await requireOwner();
   const rows = await openDecisionsList();
+  const proof = await acceptanceProofStatements(rows);
   // contracts of one project awaiting review in the same sitting can be approved together (one GitHub PR follows)
   const groups = new Map<number, typeof rows>();
   for (const r of rows.filter((x) => x.d.kind === "contract_approval")) groups.set(r.p.id, [...(groups.get(r.p.id) ?? []), r]);
@@ -59,20 +61,24 @@ export default async function Decisions() {
           <Empty>No open decisions. The control system continues on its own.</Empty>
         ) : (
           <ul className="divide-y divide-line">
-            {rows.map(({ d, t, p }) => (
-              <li key={d.id}>
-                <Link href={`/tasks/${t.id}`} className="block px-5 py-4 hover:bg-panel-2/60">
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-mute">
-                    <span className="rounded-md border border-owner/40 bg-owner/10 px-1.5 py-0.5 font-semibold text-owner">{KIND[d.kind] ?? d.kind}</span>
-                    {p.name} · {t.key ?? "new"} · <Ago at={d.createdAt} />
-                  </div>
-                  <div className="mt-1.5 line-clamp-2 font-medium break-words" title={d.title}>
-                    {shortenTitle(d.title)}
-                  </div>
-                  <p className="mt-1 line-clamp-3 text-sm text-ink-2">{d.why}</p>
-                </Link>
-              </li>
-            ))}
+            {rows.map(({ d, t, p }) =>
+              d.kind === "acceptance" ? (
+                <AcceptanceItem key={d.id} taskId={t.id} taskKey={t.key} taskTitle={t.title} project={p.name} title={d.title} why={d.why} createdAt={d.createdAt} proof={proof.get(d.id) ?? null} />
+              ) : (
+                <li key={d.id}>
+                  <Link href={`/tasks/${t.id}`} className="block px-5 py-4 hover:bg-panel-2/60">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-mute">
+                      <span className="rounded-md border border-owner/40 bg-owner/10 px-1.5 py-0.5 font-semibold text-owner">{KIND[d.kind] ?? d.kind}</span>
+                      {p.name} · {t.key ?? "new"} · <Ago at={d.createdAt} />
+                    </div>
+                    <div className="mt-1.5 line-clamp-2 font-medium break-words" title={d.title}>
+                      {shortenTitle(d.title)}
+                    </div>
+                    <p className="mt-1 line-clamp-3 text-sm text-ink-2">{d.why}</p>
+                  </Link>
+                </li>
+              ),
+            )}
           </ul>
         )}
       </Card>
