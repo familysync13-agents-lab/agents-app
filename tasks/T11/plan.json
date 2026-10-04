@@ -1,0 +1,39 @@
+{
+ "contract": "T11",
+ "contract_version": 2,
+ "contract_sha256": "20fb020d7f1b41c2299e1f6711c0126502e9147567201f102386efe4c4df0fcf",
+ "plan_version": 2,
+ "tasks": [
+  {
+   "id": "T11.a",
+   "covers": [
+    "AC1",
+    "AC2",
+    "AC3",
+    "AC4",
+    "AC7",
+    "C1"
+   ],
+   "contributes": [
+    "AC6"
+   ],
+   "depends_on": []
+  },
+  {
+   "id": "T11.b",
+   "covers": [
+    "AC5",
+    "C1"
+   ],
+   "contributes": [
+    "AC6"
+   ],
+   "depends_on": [
+    "T11.a"
+   ]
+  }
+ ],
+ "integration": [
+  "AC6"
+ ]
+}

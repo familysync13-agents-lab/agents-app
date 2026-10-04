@@ -32,6 +32,15 @@
     "tasks/T11/contract.json": "20fb020d7f1b41c2299e1f6711c0126502e9147567201f102386efe4c4df0fcf",
     "oracle/T11/check.mjs": "e8318c32c4e4a1737fdc2f9c5aa959b26a11ce56748caab1be9d797a74424793"
    }
+  },
+  {
+   "id": "A2",
+   "at": "2026-10-04T18:32:25Z",
+   "kind": "plan",
+   "reason": "Agents App: plan v2 for contract v2 (2 tasks; contract unchanged, sha256 20fb020d7f1b41c2299e1f6711c0126502e9147567201f102386efe4c4df0fcf).",
+   "files": {
+    "tasks/T11/plan.json": "bfb3faaf542cd37826570e366c946030b7a85452c083b1ed06f8a7d4495fc14e"
+   }
   }
  ]
 }
