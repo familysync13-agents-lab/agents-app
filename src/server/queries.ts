@@ -23,6 +23,7 @@ import {
 } from "@/db/schema";
 import { qualification, route, ROUTES, TASK_CLASSES, WORKERS, type QualRecord } from "@/domain/router";
 import type { RoutingRow } from "@/components/routing-table";
+import { withoutProofStatement } from "@/domain/decision";
 
 const TERMINAL: TaskState[] = ["ACCEPTED", "REJECTED", "ABANDONED"];
 
@@ -231,6 +232,35 @@ export async function openDecisionsList() {
     .innerJoin(projects, eq(projects.id, tasks.projectId))
     .where(eq(decisions.status, "open"))
     .orderBy(desc(decisions.createdAt));
+}
+
+/**
+ * The recorded decision record of each open acceptance decision, as its "accepted without proof" statement (decision id -> text).
+ * Read from the decision-record artifact the decision's context references (same task, kind "decision-record"); a decision without
+ * one (e.g. opened before decision records existed) is absent. Read-only.
+ */
+export async function acceptanceProofStatements(rows: { d: { id: number; taskId: number; kind: string; context: unknown } }[], db?: Db) {
+  const refs = new Map<number, { taskId: number; artifactId: number }>();
+  for (const { d } of rows) {
+    if (d.kind !== "acceptance") continue;
+    const id = (d.context as { decisionRecord?: { artifactId?: unknown } } | null)?.decisionRecord?.artifactId;
+    if (typeof id === "number" && Number.isInteger(id)) refs.set(d.id, { taskId: d.taskId, artifactId: id });
+  }
+  const out = new Map<number, string>();
+  if (!refs.size) return out;
+  const dd = db ?? (await getDb());
+  const arts = await dd
+    .select({ id: artifacts.id, taskId: artifacts.taskId, content: artifacts.content })
+    .from(artifacts)
+    .where(and(inArray(artifacts.id, [...new Set([...refs.values()].map((r) => r.artifactId))]), eq(artifacts.kind, "decision-record")));
+  const byId = new Map(arts.map((a) => [a.id, a]));
+  for (const [decisionId, ref] of refs) {
+    const a = byId.get(ref.artifactId);
+    if (!a || a.taskId !== ref.taskId) continue;
+    const s = withoutProofStatement(a.content);
+    if (s) out.set(decisionId, s);
+  }
+  return out;
 }
 
 export async function activeRunsByTask(taskIds: number[]) {

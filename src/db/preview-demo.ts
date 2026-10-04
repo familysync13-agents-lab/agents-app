@@ -1,6 +1,8 @@
+import { createHash } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import type { Db } from "./client";
 import type { CapabilityProfile } from "@/domain/profile";
+import { ownerSummary, recordSha, recordText, type DecisionRecord } from "@/domain/decision";
 import { artifacts, contracts, decisions, evidencePackages, projects, qualificationRecords, runs, tasks, transitions } from "./schema";
 
 /** Demonstration capability profile of the demo project (no control loop runs in a preview, so nothing would ever detect one). */
@@ -35,6 +37,7 @@ export async function seedPreviewDemo(db: Db) {
   if (!existing.length) await seedDemoTasks(db, p.id);
   await seedDemoLedger(db, p.id);
   await seedDemoEvidencePackage(db, p.id);
+  await seedDemoAcceptances(db, p.id);
 }
 
 async function seedDemoTasks(db: Db, projectId: number) {
@@ -136,4 +139,66 @@ async function seedDemoEvidencePackage(db: Db, projectId: number) {
     .values({ taskId: t3.id, kind: "evidence-package", name: `evidence package (task, ${DEMO_HEAD.slice(0, 8)}, gate)`, content, sha256: DEMO_PACKAGE.sha256, workerAuthored: false })
     .returning({ id: artifacts.id });
   await db.insert(evidencePackages).values({ taskId: t3.id, scope: "task", planTask: null, headSha: DEMO_HEAD, contractVersion: null, contractSha256: null, status: DEMO_PACKAGE.status, summary: { ...DEMO_PACKAGE.summary, must: { ...DEMO_PACKAGE.summary.must } }, artifactId: a!.id, sha256: DEMO_PACKAGE.sha256, stage: "gate" });
+}
+
+/** The demonstration decision records of demo tasks T4 and T5 (contract T9, A3): what each acceptance would take without proof. */
+function demoRecord(key: string, attention: DecisionRecord["attention"], residual: DecisionRecord["residual"]): DecisionRecord {
+  return {
+    schema: "agents-app/decision-record@1",
+    task: key,
+    head: (key === "T4" ? "4" : "5").repeat(40),
+    contract: null,
+    evidence_package: { sha256: "0".repeat(64), status: "complete" },
+    outcome: "ready",
+    blockers: [],
+    basis: { must_verified: 2, must_total: 2, constraints_proven: [], regressions_verified: 0, gate: "PASS", verifier: "pass", verifier_coverage: "2/2" },
+    residual,
+    attention,
+  };
+}
+export const DEMO_ACCEPTANCES = [
+  {
+    key: "T4",
+    title: "Demo: share a list",
+    record: demoRecord("T4", "review", [
+      { kind: "finding", id: "AC1", text: "[low] Demo finding: the share link is not shortened" },
+      { kind: "verifier", id: null, text: "the independent Verifier did not check AC2 (the gate did)" },
+      { kind: "should", id: "AC3", text: "should-criterion not verified" },
+    ]),
+  },
+  { key: "T5", title: "Demo: book covers", record: demoRecord("T5", "clean", [{ kind: "should", id: "AC2", text: "should-criterion not verified" }]) },
+] as const;
+
+/**
+ * GATE PREVIEW ONLY: demo tasks T4 and T5 (state DONE), each with one open acceptance decision whose recorded context references a
+ * stored decision-record artifact, so the Decisions page's "accepted without proof" statement can be checked black-box. No runs,
+ * evidence packages or qualification records. Idempotent per task, also on a preview database seeded before these rows existed.
+ * Never called in production (see instrumentation.ts).
+ */
+async function seedDemoAcceptances(db: Db, projectId: number) {
+  for (const x of DEMO_ACCEPTANCES) {
+    const [has] = await db.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.projectId, projectId), eq(tasks.key, x.key)));
+    if (has) continue;
+    const [t] = await db.insert(tasks).values({ projectId, key: x.key, title: x.title, intent: `Demo intent for ${x.title}.`, state: "DONE", step: "await_acceptance", headSha: x.record.head }).returning();
+    await db.insert(transitions).values({ taskId: t!.id, fromState: null, toState: "PROPOSED", reason: DEMO_NOTE, fact: { demo: true } });
+    const content = recordText(x.record);
+    const [a] = await db
+      .insert(artifacts)
+      .values({ taskId: t!.id, kind: "decision-record", name: `decision-${x.record.head.slice(0, 12)}.json`, content, sha256: createHash("sha256").update(content).digest("hex"), workerAuthored: false })
+      .returning({ id: artifacts.id });
+    const brief = ownerSummary(x.record);
+    const [d] = await db
+      .insert(decisions)
+      .values({
+        taskId: t!.id,
+        kind: "acceptance",
+        title: `Accept ${x.key}: ${x.title}`,
+        why: "Demo acceptance decision (gate preview).",
+        options: [],
+        recommendation: null,
+        context: { pr: null, head: x.record.head, repo: null, org: null, stack: null, evidencePackage: null, decisionRecord: { artifactId: a!.id, sha256: recordSha(x.record), attention: x.record.attention, residual: brief.lines } },
+      })
+      .returning();
+    await db.update(tasks).set({ stepData: { head: x.record.head, decisionRecord: recordSha(x.record), awaiting: d!.id } }).where(eq(tasks.id, t!.id));
+  }
 }
