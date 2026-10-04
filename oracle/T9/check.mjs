@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 
 const ids = ['AC1', 'AC2', 'AC3', 'AC4', 'AC5'];
-const base = process.argv[2];
+// Both sources are supplied by the gate; no private fixture environment is used.
+const base = process.argv[2] || process.env.BASE_URL;
 let browser, context, page, setupError;
 try {
-  if (!base) throw new Error('Missing baseURL argument');
+  if (!base) throw new Error('Missing baseURL argument and BASE_URL');
   new URL(base);
   const { chromium } = await import('playwright');
   browser = await chromium.launch({ args: ['--no-sandbox', '--disable-dev-shm-usage'] });
