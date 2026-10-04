@@ -1,0 +1,34 @@
+{
+ "id": "T10",
+ "status": "CONTRACTED",
+ "tier": "standard",
+ "contract": "tasks/T10/contract.json",
+ "approval": {
+  "by": "FamilySYNC13",
+  "contract_sha256": "51502aede6631423b591b0f1fcac239a43429a4bec12829c53aaf7455ee29b14",
+  "at": "2026-10-04",
+  "basis": "owner intent recorded in Agents App task 14; contract v1 approved under the owner's standing V1 escalation policy (within intent) or by the owner in person; hash-bound amendment confirmed by the gate"
+ },
+ "checks": {
+  "AC1": "oracle:oracle/T10/check.mjs",
+  "AC2": "oracle:oracle/T10/check.mjs",
+  "AC3": "oracle:oracle/T10/check.mjs",
+  "C1": "regression-set",
+  "C2": "static:fact"
+ },
+ "gate_version": 3,
+ "probe_params": {},
+ "oracle_timeout_s": 900,
+ "amendments": [
+  {
+   "id": "A1",
+   "at": "2026-10-04T16:54:42Z",
+   "kind": "contract+oracle-of-record",
+   "reason": "Agents App: owner-approved contract v1 and its oracle of record (blind Verifier, authored from the contract before implementation).",
+   "files": {
+    "tasks/T10/contract.json": "51502aede6631423b591b0f1fcac239a43429a4bec12829c53aaf7455ee29b14",
+    "oracle/T10/check.mjs": "178b339366ccac45d8fe2c559057199f0052aa412b559c27735d353c08af080e"
+   }
+  }
+ ]
+}

@@ -1,0 +1,169 @@
+{
+ "assumptions": [
+  {
+   "basis": "existing behaviour",
+   "chosen": "By the kind of the residual item in the decision record recorded for the acceptance decision (the decision-record artifact it references): kinds \"should\" (unverified should-criteria) and \"advisory_constraint\" (advisory constraints) go to \"Noted\"; every other kind (\"not_proven\", \"unconfirmed_finding\", \"finding\", \"verifier\", \"scan\", \"waiver\") goes to \"Needs your review\". This is the same split the product already uses for what counts as \"would be accepted without proof\" (the decision explanation and the Decisions page count exactly the items outside \"should\" and \"advisory_constraint\"), so waivers and unconfirmed findings need review.",
+   "id": "A1",
+   "question": "Which recorded items go into \"Needs your review\" and which into \"Noted\"; in particular where do waived must-criteria and material findings the control system could not reproduce go, which the intent does not name?",
+   "reversible": true
+  },
+  {
+   "basis": "stated intent",
+   "chosen": "In the order in which the recorded decision record lists them (the order the flat list shows today), keeping only the items of that group.",
+   "id": "A2",
+   "question": "In which order are the items listed inside a group?",
+   "reversible": true
+  }
+ ],
+ "canary_routes": [
+  "/",
+  "/decisions"
+ ],
+ "constraints": [
+  {
+   "id": "C1",
+   "kind": "regression",
+   "statement": "Everything accepted in earlier tasks keeps working and their checks of record keep passing (T0, T1, T4, T5, T6, T7, T8, T9), among others the Decisions page with its acceptance list items and their \"... would be accepted without proof\" statements, the demo tasks T1-T5 of the Demo Project and their open decisions, the demo worker runs, qualification records and the T3 evidence package.",
+   "trace": {
+    "ref": "accepted contracts T0, T1, T4, T5, T6, T7, T8 and T9 and their checks of record",
+    "source": "project"
+   },
+   "verify": "blackbox"
+  },
+  {
+   "fact": {
+    "kind": "unchanged",
+    "paths": [
+     "drizzle/**",
+     "src/db/schema.ts",
+     "src/worker/**",
+     "src/db/preview-demo.ts"
+    ]
+   },
+   "id": "C2",
+   "kind": "prohibited",
+   "statement": "This change only changes how the task page presents a recorded decision record: it does not touch the database schema, the migrations, the control loop that computes and records decision records, or the preview demo data.",
+   "trace": {
+    "ref": "The wording of each item and everything else on the task page stay as they are.",
+    "source": "intent"
+   },
+   "verify": "static"
+  }
+ ],
+ "criteria": [
+  {
+   "given": "the gate preview with its demo data, in which demo task T4 \"Demo: share a list\" has an open acceptance decision whose recorded decision record lists a finding, an item the Verifier did not check and an unverified should-criterion, and the owner signed in via /auth/preview",
+   "id": "AC1",
+   "priority": "must",
+   "tags": [],
+   "then": "the task page responds with HTTP 200; it contains exactly one element whose whole visible text is \"Needs your review\" and exactly one whose whole visible text is \"Noted\"; the \"Needs your review\" label precedes the \"Noted\" label in document order; the list that is the next sibling element of the \"Needs your review\" label contains exactly two list items whose whole visible texts are, in this order, \"AC1: [low] Demo finding: the share link is not shortened\" and \"the independent Verifier did not check AC2 (the gate did)\"; the list that is the next sibling element of the \"Noted\" label contains exactly one list item whose whole visible text is \"AC3: should-criterion not verified\"; no other list item on the page has any of these three texts",
+   "trace": {
+    "ref": "shows its list of items accepted without proof in two groups: first \"Needs your review\" (unproven requirements, findings, what the Verifier did not check, scanner results), then \"Noted\" (should-criteria and advisory constraints)",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /decisions, activates the link whose whole visible text is \"T4 · Demo: share a list\" and reads the resulting task page"
+  },
+  {
+   "given": "the gate preview with its demo data, in which demo task T5 \"Demo: book covers\" has an open acceptance decision whose recorded decision record lists only one unverified should-criterion, and the owner signed in via /auth/preview",
+   "id": "AC2",
+   "priority": "must",
+   "tags": [],
+   "then": "the task page responds with HTTP 200; it contains no element whose whole visible text is \"Needs your review\"; it contains exactly one element whose whole visible text is \"Noted\", and the list that is its next sibling element contains exactly one list item, whose whole visible text is \"AC2: should-criterion not verified\"; no other list item on the page has that text",
+   "trace": {
+    "ref": "A group with no items is not shown.",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /decisions, activates the link whose whole visible text is \"T5 · Demo: book covers\" and reads the resulting task page"
+  },
+  {
+   "given": "the gate preview with its demo data, in which the open decisions of demo tasks T1 (kind contract_approval, badge \"Contract review\" on /decisions) and T2 (kind block, badge \"Decision\" on /decisions) carry no decision record and so no items accepted without proof, and the owner signed in via /auth/preview",
+   "id": "AC3",
+   "priority": "must",
+   "tags": [],
+   "then": "each task page responds with HTTP 200, shows an element whose whole visible text is \"Your decision\" (compared case-insensitively), and contains no element whose whole visible text is \"Needs your review\" or \"Noted\"",
+   "trace": {
+    "ref": "When the decision has no such items at all, nothing is listed, as today.",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "verify": "blackbox",
+   "when": "the owner opens /decisions, activates the task link (href /tasks/{id}) of the list item containing the badge \"Contract review\" and, separately, of the list item containing the badge \"Decision\", and reads each resulting task page"
+  },
+  {
+   "given": "an open acceptance decision whose recorded decision record has no residual item at all, the owner signed in",
+   "id": "AC4",
+   "priority": "should",
+   "tags": [],
+   "then": "the \"Your decision\" section shows the decision title and explanation, no element whose whole visible text is \"Needs your review\" or \"Noted\", and no list of items accepted without proof",
+   "trace": {
+    "ref": "When the decision has no such items at all, nothing is listed, as today.",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "when": "the owner opens its task page"
+  },
+  {
+   "given": "an open acceptance decision whose recorded decision record lists an item of each kind - unproven requirement (not_proven), unconfirmed finding, finding, Verifier, scan, waiver, advisory constraint and should-criterion - the owner signed in",
+   "id": "AC5",
+   "priority": "should",
+   "tags": [],
+   "then": "the not_proven, unconfirmed finding, finding, Verifier, scan and waiver items are list items under \"Needs your review\" and the advisory constraint and should-criterion items are list items under \"Noted\" (A1), each with its text exactly as recorded and in the record's order (A2)",
+   "trace": {
+    "ref": "first \"Needs your review\" (unproven requirements, findings, what the Verifier did not check, scanner results), then \"Noted\" (should-criteria and advisory constraints)",
+    "source": "intent"
+   },
+   "type": "behavior",
+   "when": "the owner opens its task page"
+  },
+  {
+   "id": "AC6",
+   "priority": "should",
+   "refs": [
+    "/tasks/{id}",
+    "src/app/(app)/tasks/[id]/page.tsx"
+   ],
+   "statement": "The two group labels read as small sub-headings inside the existing \"Your decision\" section, in the section's existing look (same text size and colours as the current list), so the owner sees at a glance what needs review and what is only noted; nothing else in the section moves or changes appearance.",
+   "tags": [],
+   "trace": {
+    "ref": "The wording of each item and everything else on the task page stay as they are.",
+    "source": "intent"
+   },
+   "type": "experience"
+  }
+ ],
+ "id": "T10",
+ "intent_sha256": "d48c3cf396362ef55b86e38f82cab123850988d62dcb7244f9f52031f0c41f66",
+ "interface": {
+  "ui": "Sign-in for the gate preview: GET /auth/preview (redirects to / with an owner session). Decisions page: route /decisions; each open acceptance decision is a list item containing exactly one link (role link) to /tasks/{id} (id = decimal digits) whose whole visible text is \"{task key} · {task title}\", e.g. \"T4 · Demo: share a list\". Task page: route /tasks/{id}, document title \"Task · Agents\", h1 whose visible text contains the task key and the task title; an open decision is shown in a section introduced by an element whose whole visible text is \"Your decision\" (case as rendered: the label may be rendered in uppercase by styling) followed by an h2 with the decision title. Text matching rule: the \"visible text\" of an element is its rendered text content with surrounding whitespace removed and inner runs of whitespace collapsed to one space; \"an element whose whole visible text is X\" means some element on the page has exactly that text. NEW on the task page of an open acceptance decision whose recorded decision record lists at least one item accepted without proof: the items are shown in up to two groups. Each group consists of a label element whose whole visible text is exactly \"Needs your review\" respectively \"Noted\", and a list (ul, role list) that is the label element's next sibling element and contains one list item (li, role listitem) per item of that group. The whole visible text of each list item is the item's text exactly as listed today: \"{id}: {text}\" when the item has an id, otherwise \"{text}\". The \"Needs your review\" group, when shown, comes before the \"Noted\" group in document order. A group with no items is not shown (neither its label nor its list); when there are no items at all, neither label and no item list is shown. Grouping rule: A1. Preview demo data (unchanged): Demo Project task T4 \"Demo: share a list\" has an open acceptance decision whose recorded decision record lists, in this order, \"AC1: [low] Demo finding: the share link is not shortened\" (kind finding), \"the independent Verifier did not check AC2 (the gate did)\" (kind verifier) and \"AC3: should-criterion not verified\" (kind should); task T5 \"Demo: book covers\" has an open acceptance decision whose recorded decision record lists only \"AC2: should-criterion not verified\" (kind should). Demo tasks T1 \"Demo: export a list as CSV\" (open decision of kind contract_approval, badge \"Contract review\" on /decisions) and T2 (open decision of kind block, badge \"Decision\" on /decisions) have no decision record."
+ },
+ "non_goals": [
+  "Changing the wording of any item, the decision title, the explanation paragraph, the \"Your decision\" label, the buttons or links of the acceptance decision, or any other part of the task page.",
+  "Changing how decision records are computed, stored or hashed (decide, ownerSummary, the decision-record artifact, the acceptance decision's recorded context), the evidence package, the gate, the Verifier or the control loop.",
+  "Changing the Decisions page (/decisions), its \"... would be accepted without proof\" statement, the Command page (/) or any other page.",
+  "Changing which items count as accepted without proof, their counts, or the order in which the decision record lists them.",
+  "Grouping or changing lists of decisions of any kind other than acceptance.",
+  "Collapsing, hiding, filtering, sorting or making the groups interactive; adding buttons, forms, actions or API endpoints.",
+  "Changing the database schema, migrations or the preview demo data.",
+  "Adding test-only attributes (such as data-* or ids) for the sake of checking; the checks rely on the visible elements named in the interface."
+ ],
+ "open_questions": [],
+ "policies": [
+  "policy.json"
+ ],
+ "scope": {
+  "paths": [
+   "**"
+  ],
+  "summary": "On the task page (/tasks/{id}), in the \"Your decision\" section of an open acceptance decision, the list of items the recorded decision record would accept without proof is shown in two groups instead of one flat list: first a group labelled \"Needs your review\" (unproven requirements, findings, what the Verifier did not check or could not verify, scanner results, and the other items that count as accepted without proof), then a group labelled \"Noted\" (unverified should-criteria and advisory constraints). Which group an item belongs to follows from the kind of the item in the recorded decision record (A1). A group with no items is not shown; when the decision has no such items at all, no group and no list is shown, as today. The text of each item, the order of items within a group, the decision's title and explanation, the buttons and every other part of the task page stay as they are. Decision records themselves, how they are computed, stored and hashed, and the Decisions page are not changed. The gate preview's existing demo tasks T4 and T5 (with their recorded decision records) are enough to check the feature black-box; the demo data is not changed."
+ },
+ "tier": "standard",
+ "title": "Acceptance decision separates what needs review from what is only noted",
+ "traces_to": [
+  "OWNER-INTENT-T10"
+ ],
+ "version": 1
+}
